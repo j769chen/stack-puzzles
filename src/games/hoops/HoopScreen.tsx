@@ -33,6 +33,7 @@ function HoopGame({ level, onBack, onNext }: GameProps) {
   const [selected, setSelected] = useState<number | null>(null);
   const [hint, setHint] = useState<Move | null>(null);
   const [hintMessage, setHintMessage] = useState<string | null>(null);
+  const [plan, setPlan] = useState<Move[] | null>(null);
   const { width } = useWindowDimensions();
 
   const rods = history[history.length - 1];
@@ -62,6 +63,7 @@ function HoopGame({ level, onBack, onNext }: GameProps) {
       setSelected(null);
     } else if (canPour(rods, selected, rod)) {
       setHistory((h) => [...h, pour(rods, selected, rod)]);
+      setPlan((p) => (p?.[0][0] === selected && p[0][1] === rod ? p.slice(1) : null));
       reset();
     } else {
       setSelected(rods[rod].length && !isRodComplete(rods[rod]) ? rod : null);
@@ -70,7 +72,8 @@ function HoopGame({ level, onBack, onNext }: GameProps) {
 
   const showHint = () => {
     setSelected(null);
-    const path = solveHoops(rods);
+    const path = plan?.length ? plan : solveHoops(rods);
+    setPlan(path);
     setHint(path?.[0] ?? null);
     setHintMessage(path ? null : 'No solution from here. Try undo.');
   };
@@ -87,11 +90,13 @@ function HoopGame({ level, onBack, onNext }: GameProps) {
       onUndo={() => {
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
         setHistory((h) => (h.length > 1 ? h.slice(0, -1) : h));
+        setPlan(null);
         reset();
       }}
       canUndo={moves > 0}
       onRestart={() => {
         setHistory([start]);
+        setPlan(null);
         reset();
       }}
       onHint={showHint}
