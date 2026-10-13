@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { theme } from '../theme';
@@ -22,6 +22,14 @@ type Props = {
 };
 
 export function GameShell(props: Props) {
+  const [showWin, setShowWin] = useState(false);
+
+  useEffect(() => {
+    if (!props.won) return setShowWin(false);
+    const timer = setTimeout(() => setShowWin(true), 650);
+    return () => clearTimeout(timer);
+  }, [props.won]);
+
   return (
     <SafeAreaView style={styles.root}>
       <View style={styles.header}>
@@ -47,7 +55,7 @@ export function GameShell(props: Props) {
         <Button label="Hint" onPress={props.onHint} disabled={props.won} />
       </View>
 
-      {props.won && (
+      {showWin && (
         <View style={styles.overlay}>
           <View style={styles.winCard}>
             <Text style={styles.winTitle}>Solved!</Text>

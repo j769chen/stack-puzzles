@@ -1,0 +1,88 @@
+import { Board } from '../../three/Board';
+import { Piece } from '../../three/Piece';
+import { Plank, Rod } from '../../three/Rod';
+import { theme } from '../../theme';
+import { CAPACITY, type Move, type Rods, isRodComplete, liftCount } from './logic';
+
+const RING_COLORS = ['#E63946', '#F4A261', '#F6D743', '#4CAF50', '#2A9D8F', '#457B9D', '#8E44AD', '#FF7EB6', '#8D6E63', '#1D3557'];
+const SPACING = 2.1;
+const ROW_GAP = 3.2;
+const TUBE = 0.27;
+const RING_R = 0.62;
+const RING_H = TUBE * 2;
+const PLANK_DEPTH = 2.2;
+const POLE_H = CAPACITY * RING_H + 0.35;
+const LIFT_Y = POLE_H + 0.35;
+const HINT_NUDGE = 0.35;
+
+type Props = {
+  rods: Rods;
+  ids: number[][];
+  selected: number | null;
+  hint: Move | null;
+  onPress: (rod: number) => void;
+};
+
+function boardLayout(count: number) {
+  const rows = count <= 5 ? 1 : count <= 8 ? 2 : 3;
+  const cols = Math.ceil(count / rows);
+  const rowSizes = Array.from({ length: rows }, (_, r) => Math.min(cols, count - r * cols));
+  const rowZ = rowSizes.map((_, r) => (r - (rows - 1) / 2) * ROW_GAP);
+  const positions = Array.from({ length: count }, (_, i) => {
+    const r = Math.floor(i / cols);
+    return { x: ((i % cols) - (rowSizes[r] - 1) / 2) * SPACING, z: rowZ[r] };
+  });
+  const size = {
+    width: cols * SPACING + 0.3,
+    height: LIFT_Y + CAPACITY * RING_H,
+    depth: (rows - 1) * ROW_GAP + PLANK_DEPTH,
+  };
+  return { rows, rowSizes, rowZ, positions, size, tilt: rows === 1 ? 0.55 : 0.85 };
+}
+
+export function HoopBoard({ rods, ids, selected, hint, onPress }: Props) {
+  const { rowSizes, rowZ, positions, size, tilt } = boardLayout(rods.length);
+
+  return (
+    <Board {...size} tilt={tilt}>
+      {rowZ.map((z, r) => (
+        <Plank key={`plank${r}`} width={rowSizes[r] * SPACING + 0.3} depth={PLANK_DEPTH} z={z} />
+      ))}
+      {rods.map((rod, i) => {
+        const { x, z } = positions[i];
+        const lift = selected === i ? liftCount(rods, i) : 0;
+        const firstLifted = rod.length - lift;
+        const firstNudged = hint?.[0] === i ? rod.length - liftCount(rods, i) : rod.length;
+        const hintColor = hint?.[0] === i ? theme.hintFrom : hint?.[1] === i ? theme.hintTo : undefined;
+        return [
+          <Rod
+            key={`rod${i}`}
+            x={x}
+            z={z}
+            height={POLE_H}
+            padRadius={SPACING / 2 - 0.04}
+            hitRadius={SPACING / 2}
+            hitHeight={POLE_H + 0.3}
+            poleColor={isRodComplete(rod) ? theme.done : hintColor}
+            padColor={hintColor}
+            onPress={() => onPress(i)}
+          />,
+          ...rod.map((color, k) => (
+            <Piece
+              key={ids[i][k]}
+              x={x}
+              y={k >= firstLifted ? LIFT_Y + (k - firstLifted) * RING_H : k * RING_H + (k >= firstNudged ? HINT_NUDGE : 0)}
+              z={z}
+              liftY={LIFT_Y}
+            >
+              <mesh position-y={TUBE} rotation-x={Math.PI / 2} castShadow receiveShadow>
+                <torusGeometry args={[RING_R, TUBE, 20, 48]} />
+                <meshStandardMaterial color={RING_COLORS[color]} roughness={0.3} />
+              </mesh>
+            </Piece>
+          )),
+        ];
+      })}
+    </Board>
+  );
+}

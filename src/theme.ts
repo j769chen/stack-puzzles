@@ -7,7 +7,8 @@ export const theme = {
   pole: '#8A6F52',
   base: '#5C4A38',
   done: '#E9B44C',
-  hintFrom: 'rgba(243, 167, 18, 0.22)',
-  hintTo: 'rgba(42, 157, 143, 0.22)',
+  pad: '#6B5641',
+  hintFrom: '#F3A712',
+  hintTo: '#2A9D8F',
   overlay: 'rgba(20, 16, 12, 0.55)',
 };

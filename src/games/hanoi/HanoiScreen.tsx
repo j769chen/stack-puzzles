@@ -1,7 +1,5 @@
 import { useState } from 'react';
-import { LayoutAnimation, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { GameShell } from '../../components/GameShell';
-import { theme } from '../../theme';
 import { usePersistentNumber } from '../../usePersistentNumber';
 import {
   HANOI_MAX_LEVEL,
@@ -15,9 +13,7 @@ import {
   moveDisk,
   nextHanoiMove,
 } from './logic';
-
-const DISK_COLORS = ['#E4572E', '#F3A712', '#A8C686', '#2A9D8F', '#669BBC', '#29335C', '#6D597A', '#B5838D', '#E9C46A', '#264653'];
-const PEG_LABELS = ['A', 'B', 'C'];
+import { HanoiBoard } from './HanoiBoard';
 
 export function HanoiScreen({ onBack }: { onBack: () => void }) {
   const [level, setLevel, loaded] = usePersistentNumber('hanoi.level', 1);
@@ -39,17 +35,10 @@ function HanoiGame({ level, onBack, onNext }: GameProps) {
   const [history, setHistory] = useState<HanoiState[]>(() => [createHanoi(disks)]);
   const [selected, setSelected] = useState<number | null>(null);
   const [hint, setHint] = useState<Move | null>(null);
-  const { width } = useWindowDimensions();
 
   const state = history[history.length - 1];
   const moves = history.length - 1;
   const solved = isHanoiSolved(state, disks);
-
-  const pegW = (Math.min(width, 560) - 32) / 3;
-  const diskH = disks <= 6 ? 26 : disks <= 8 ? 22 : 18;
-  const areaH = (disks + 2) * diskH;
-  const minDiskW = pegW * 0.3;
-  const diskWidth = (size: number) => minDiskW + ((pegW - 10 - minDiskW) * (size - 1)) / Math.max(disks - 1, 1);
 
   const reset = () => {
     setSelected(null);
@@ -58,7 +47,6 @@ function HanoiGame({ level, onBack, onNext }: GameProps) {
 
   const press = (peg: number) => {
     if (solved) return;
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     if (selected === null) {
       if (state[peg].length) setSelected(peg);
     } else if (selected === peg) {
@@ -73,7 +61,7 @@ function HanoiGame({ level, onBack, onNext }: GameProps) {
 
   const optimal = minMoves(disks);
   const message = hint
-    ? `Move peg ${PEG_LABELS[hint[0]]} → peg ${PEG_LABELS[hint[1]]}`
+    ? 'Move the top disk from the amber peg to the teal peg'
     : `Move all ${disks} disks to another peg · best ${optimal}`;
 
   return (
@@ -84,8 +72,7 @@ function HanoiGame({ level, onBack, onNext }: GameProps) {
       message={message}
       onBack={onBack}
       onUndo={() => {
-        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-        setHistory((h) => (h.length > 1 ? h.slice(0, -1) : h));
+            setHistory((h) => (h.length > 1 ? h.slice(0, -1) : h));
         reset();
       }}
       canUndo={moves > 0}
@@ -106,69 +93,7 @@ function HanoiGame({ level, onBack, onNext }: GameProps) {
       nextLabel={level >= HANOI_MAX_LEVEL ? 'Play again from level 1' : 'Next level'}
       onNext={onNext}
     >
-      <View style={styles.row}>
-        {state.map((peg, i) => {
-          const lifted = selected === i ? peg[peg.length - 1] : undefined;
-          const resting = lifted === undefined ? peg : peg.slice(0, -1);
-          return (
-            <Pressable
-              key={i}
-              onPress={() => press(i)}
-              style={[
-                styles.peg,
-                { width: pegW },
-                hint?.[0] === i && { backgroundColor: theme.hintFrom },
-                hint?.[1] === i && { backgroundColor: theme.hintTo },
-              ]}
-            >
-              <View style={[styles.area, { height: areaH }]}>
-                <View style={[styles.pole, { height: areaH - diskH * 1.5 }]} />
-                {resting.map((size) => (
-                  <Disk key={size} size={size} width={diskWidth(size)} height={diskH} />
-                ))}
-                {lifted !== undefined && (
-                  <>
-                    <View style={styles.spacer} />
-                    <Disk size={lifted} width={diskWidth(lifted)} height={diskH} />
-                  </>
-                )}
-              </View>
-              <View style={styles.base} />
-              <Text style={styles.label}>{PEG_LABELS[i]}</Text>
-            </Pressable>
-          );
-        })}
-      </View>
+      <HanoiBoard state={state} disks={disks} selected={selected} hint={hint} onPress={press} />
     </GameShell>
   );
 }
-
-function Disk({ size, width, height }: { size: number; width: number; height: number }) {
-  return (
-    <View
-      style={[
-        styles.disk,
-        {
-          width,
-          height: height - 4,
-          borderRadius: (height - 4) / 2,
-          backgroundColor: DISK_COLORS[(size - 1) % DISK_COLORS.length],
-        },
-      ]}
-    >
-      <View style={styles.shine} />
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'flex-end' },
-  peg: { alignItems: 'center', paddingTop: 8, borderRadius: 16 },
-  area: { width: '100%', alignItems: 'center', flexDirection: 'column-reverse' },
-  pole: { position: 'absolute', bottom: 0, width: 10, borderTopLeftRadius: 5, borderTopRightRadius: 5, backgroundColor: theme.pole },
-  spacer: { flex: 1 },
-  base: { width: '92%', height: 12, borderRadius: 6, backgroundColor: theme.base },
-  label: { marginTop: 6, marginBottom: 6, fontWeight: '700', color: theme.muted },
-  disk: { marginVertical: 2, borderWidth: 2, borderColor: 'rgba(0,0,0,0.18)', overflow: 'hidden' },
-  shine: { position: 'absolute', top: 2, left: '12%', right: '12%', height: 3, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.45)' },
-});
