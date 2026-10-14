@@ -1,5 +1,5 @@
 import { create } from '@react-three/test-renderer';
-import { Color, type Mesh, type MeshStandardMaterial, type Object3D } from 'three';
+import { Color, type CylinderGeometry, type Mesh, type MeshStandardMaterial, type Object3D } from 'three';
 import { theme } from '../../theme';
 import type { Move } from '../useHistory';
 import { HoopBoard } from './HoopBoard';
@@ -7,15 +7,15 @@ import type { Rods } from './logic';
 
 jest.mock('../../three/Board', () => ({ Board: ({ children }: { children: unknown }) => children }));
 
-type Props = { rods: Rods; ids?: number[][]; selected?: number | null; hint?: Move | null; onPress?: (rod: number) => void };
+type Props = { rods: Rods; capacity?: number; ids?: number[][]; selected?: number | null; hint?: Move | null; onPress?: (rod: number) => void };
 
 function idsFor(rods: Rods) {
   let next = 0;
   return rods.map((rod) => rod.map(() => next++));
 }
 
-const board = ({ rods, ids = idsFor(rods), selected = null, hint = null, onPress = jest.fn() }: Props) => (
-  <HoopBoard rods={rods} ids={ids} selected={selected} hint={hint} onPress={onPress} />
+const board = ({ rods, capacity = 4, ids = idsFor(rods), selected = null, hint = null, onPress = jest.fn() }: Props) => (
+  <HoopBoard rods={rods} capacity={capacity} ids={ids} selected={selected} hint={hint} onPress={onPress} />
 );
 
 const renderBoard = (props: Props) => create(board(props));
@@ -80,6 +80,15 @@ describe('HoopBoard', () => {
     const ys = (r: Renderer) => rings(r).map((o) => o.position.y);
     expect(ys(hinted)[0]).toBe(ys(plain)[0]);
     expect(ys(hinted)[1]).toBeGreaterThan(ys(plain)[1]);
+  });
+
+  it('grows the poles and marks completion for taller rods', async () => {
+    const short = await renderBoard({ rods: [[1, 1, 1, 1], []] });
+    const tall = await renderBoard({ rods: [[1, 1, 1, 1], []], capacity: 6 });
+    const poleHeight = (r: Renderer) => ((rodGroups(r)[0].children[0].instance as Mesh).geometry as CylinderGeometry).parameters.height;
+    expect(poleHeight(tall)).toBeGreaterThan(poleHeight(short));
+    expect(poleColor(short, 0).equals(new Color(theme.done))).toBe(true);
+    expect(poleColor(tall, 0).equals(new Color(theme.pole))).toBe(true);
   });
 
   it('paints rings with the ring palette', async () => {

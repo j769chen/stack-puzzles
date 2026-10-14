@@ -3,7 +3,7 @@ import { Piece } from '../../three/Piece';
 import { Plank, Rod } from '../../three/Rod';
 import { theme } from '../../theme';
 import type { Move } from '../useHistory';
-import { CAPACITY, type Rods, isRodComplete, topRun } from './logic';
+import { type Rods, isRodComplete, topRun } from './logic';
 
 const SPACING = 2.1;
 const ROW_GAP = 3.2;
@@ -11,19 +11,20 @@ const TUBE = 0.27;
 const RING_R = 0.62;
 const RING_H = TUBE * 2;
 const PLANK_DEPTH = 2.2;
-const POLE_H = CAPACITY * RING_H + 0.35;
-const LIFT_Y = POLE_H + 0.35;
 const HINT_NUDGE = 0.35;
 
 type Props = {
   rods: Rods;
+  capacity: number;
   ids: number[][];
   selected: number | null;
   hint: Move | null;
   onPress: (rod: number) => void;
 };
 
-function boardLayout(count: number) {
+function boardLayout(count: number, capacity: number) {
+  const poleHeight = capacity * RING_H + 0.35;
+  const liftY = poleHeight + 0.35;
   const rows = count <= 5 ? 1 : count <= 8 ? 2 : 3;
   const cols = Math.ceil(count / rows);
   const rowSizes = Array.from({ length: rows }, (_, r) => Math.min(cols, count - r * cols));
@@ -34,14 +35,14 @@ function boardLayout(count: number) {
   });
   const size = {
     width: cols * SPACING + 0.3,
-    height: LIFT_Y + CAPACITY * RING_H,
+    height: liftY + capacity * RING_H,
     depth: (rows - 1) * ROW_GAP + PLANK_DEPTH,
   };
-  return { rows, rowSizes, rowZ, positions, size, tilt: rows === 1 ? 0.55 : 0.85 };
+  return { poleHeight, liftY, rowSizes, rowZ, positions, size, tilt: rows === 1 ? 0.55 : 0.85 };
 }
 
-export function HoopBoard({ rods, ids, selected, hint, onPress }: Props) {
-  const { rowSizes, rowZ, positions, size, tilt } = boardLayout(rods.length);
+export function HoopBoard({ rods, capacity, ids, selected, hint, onPress }: Props) {
+  const { poleHeight, liftY, rowSizes, rowZ, positions, size, tilt } = boardLayout(rods.length, capacity);
 
   return (
     <Board {...size} tilt={tilt}>
@@ -59,11 +60,11 @@ export function HoopBoard({ rods, ids, selected, hint, onPress }: Props) {
             key={`rod${i}`}
             x={x}
             z={z}
-            height={POLE_H}
+            height={poleHeight}
             padRadius={SPACING / 2 - 0.04}
             hitRadius={SPACING / 2}
-            hitHeight={POLE_H + 0.3}
-            poleColor={isRodComplete(rod) ? theme.done : hintColor}
+            hitHeight={poleHeight + 0.3}
+            poleColor={isRodComplete(rod, capacity) ? theme.done : hintColor}
             padColor={hintColor}
             onPress={() => onPress(i)}
           />,
@@ -71,9 +72,9 @@ export function HoopBoard({ rods, ids, selected, hint, onPress }: Props) {
             <Piece
               key={ids[i][k]}
               x={x}
-              y={k >= firstLifted ? LIFT_Y + (k - firstLifted) * RING_H : k * RING_H + (k >= firstNudged ? HINT_NUDGE : 0)}
+              y={k >= firstLifted ? liftY + (k - firstLifted) * RING_H : k * RING_H + (k >= firstNudged ? HINT_NUDGE : 0)}
               z={z}
-              liftY={LIFT_Y}
+              liftY={liftY}
             >
               <mesh position-y={TUBE} rotation-x={Math.PI / 2} castShadow receiveShadow>
                 <torusGeometry args={[RING_R, TUBE, 20, 48]} />

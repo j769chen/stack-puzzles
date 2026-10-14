@@ -2,12 +2,28 @@ import type { Move } from '../useHistory';
 
 export type Rods = number[][];
 
-export const CAPACITY = 4;
 export const EMPTY_RODS = 2;
 export const MAX_COLORS = 10;
 
-export function colorsForLevel(level: number): number {
-  return Math.min(3 + Math.floor((level - 1) / 3), MAX_COLORS);
+const LEVELS_PER_COLOR = 3;
+const TIERS = [
+  { capacity: 4, firstColors: 3 },
+  { capacity: 5, firstColors: 7 },
+  { capacity: 6, firstColors: 7 },
+];
+
+export type LevelSpec = { colors: number; capacity: number };
+
+export function levelSpec(level: number): LevelSpec {
+  let tierStart = 1;
+  for (const { capacity, firstColors } of TIERS) {
+    const tierLevels = (MAX_COLORS - firstColors + 1) * LEVELS_PER_COLOR;
+    if (level < tierStart + tierLevels) {
+      return { capacity, colors: firstColors + Math.floor((level - tierStart) / LEVELS_PER_COLOR) };
+    }
+    tierStart += tierLevels;
+  }
+  return { capacity: TIERS[TIERS.length - 1].capacity, colors: MAX_COLORS };
 }
 
 export function topRun(rod: number[]): number {
@@ -21,7 +37,7 @@ function isUniform(rod: number[]): boolean {
   return rod.every((c) => c === rod[0]);
 }
 
-export function canPour(rods: Rods, from: number, to: number, cap = CAPACITY): boolean {
+export function canPour(rods: Rods, from: number, to: number, cap: number): boolean {
   if (from === to) return false;
   const src = rods[from];
   const dst = rods[to];
@@ -29,22 +45,22 @@ export function canPour(rods: Rods, from: number, to: number, cap = CAPACITY): b
   return dst.length === 0 || dst.at(-1) === src.at(-1);
 }
 
-export function pour(rods: Rods, from: number, to: number, cap = CAPACITY): Rods {
+export function pour(rods: Rods, from: number, to: number, cap: number): Rods {
   const next = rods.map((r) => [...r]);
   const count = Math.min(topRun(next[from]), cap - next[to].length);
   for (let i = 0; i < count; i++) next[to].push(next[from].pop()!);
   return next;
 }
 
-export function isRodComplete(rod: number[], cap = CAPACITY): boolean {
+export function isRodComplete(rod: number[], cap: number): boolean {
   return rod.length === cap && isUniform(rod);
 }
 
-export function isHoopsSolved(rods: Rods, cap = CAPACITY): boolean {
+export function isHoopsSolved(rods: Rods, cap: number): boolean {
   return rods.every((r) => r.length === 0 || isRodComplete(r, cap));
 }
 
-export function hasAnyMove(rods: Rods, cap = CAPACITY): boolean {
+export function hasAnyMove(rods: Rods, cap: number): boolean {
   return rods.some((_, f) => rods.some((_, t) => canPour(rods, f, t, cap)));
 }
 
@@ -119,7 +135,7 @@ class MinHeap<T> {
   }
 }
 
-export function solveHoops(start: Rods, cap = CAPACITY, nodeLimit = 200_000): Move[] | null {
+export function solveHoops(start: Rods, cap: number, nodeLimit = 200_000): Move[] | null {
   const bestCost = new Map([[stateKey(start), 0]]);
   const open = new MinHeap<SearchNode>();
   open.push(movesLeftLowerBound(start), { rods: start, cost: 0, parent: null, move: null });
@@ -156,8 +172,8 @@ function mulberry32(seed: number): () => number {
   };
 }
 
-export function generateLevel(level: number, cap = CAPACITY): Rods {
-  const colors = colorsForLevel(level);
+export function generateLevel(level: number): Rods {
+  const { colors, capacity: cap } = levelSpec(level);
   const rand = mulberry32(level * 9973 + 17);
 
   for (;;) {
