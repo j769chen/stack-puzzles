@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { AccessibilityInfo } from 'react-native';
 import { GameShell } from '../../components/GameShell';
 import { RodButtons } from '../../components/RodButtons';
+import { feedback } from '../../feedback';
 import { usePersistentNumber } from '../../usePersistentNumber';
 import { type Move, useHistory } from '../useHistory';
 import {
@@ -59,15 +60,22 @@ function HanoiGame({ level, onBack, onNext }: GameProps) {
   const press = (peg: number) => {
     if (solved) return;
     if (selected === null) {
-      if (state[peg].length) setSelected(peg);
+      if (!state[peg].length) return;
+      setSelected(peg);
+      feedback.pick();
     } else if (selected === peg) {
       setSelected(null);
     } else if (canMoveDisk(state, selected, peg)) {
-      history.push(moveDisk(state, selected, peg));
+      const after = moveDisk(state, selected, peg);
+      history.push(after);
+      if (!isHanoiSolved(after, disks)) feedback.drop();
       AccessibilityInfo.announceForAccessibility(`Moved disk ${state[selected].at(-1)} to the ${PEG_NAMES[peg]} peg`);
       clearSelection();
+    } else if (state[peg].length) {
+      setSelected(peg);
+      feedback.pick();
     } else {
-      setSelected(state[peg].length ? peg : null);
+      setSelected(null);
     }
   };
 

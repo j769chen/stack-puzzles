@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { AccessibilityInfo } from 'react-native';
 import { GameShell } from '../../components/GameShell';
 import { RodButtons } from '../../components/RodButtons';
+import { feedback } from '../../feedback';
 import { theme } from '../../theme';
 import { usePersistentNumber } from '../../usePersistentNumber';
 import { type Move, useHistory } from '../useHistory';
@@ -81,20 +82,30 @@ function HoopGame({ level, onBack, onNext }: GameProps) {
   const press = (rod: number) => {
     if (solved) return;
     if (selected === null) {
-      if (selectable(rod)) setSelected(rod);
+      if (!selectable(rod)) return;
+      setSelected(rod);
+      feedback.pick();
     } else if (selected === rod) {
       setSelected(null);
     } else if (canPour(rods, selected, rod, capacity)) {
       const after = pourSnapshot(current, selected, rod, capacity);
       const moved = rods[selected].length - after.rods[selected].length;
       history.push(after);
+      if (isRodComplete(after.rods[rod], capacity)) {
+        if (!isHoopsSolved(after.rods, capacity)) feedback.complete();
+      } else {
+        feedback.drop();
+      }
       const color = colorName(rods[selected][rods[selected].length - 1]);
       AccessibilityInfo.announceForAccessibility(`Moved ${moved} ${color} to rod ${rod + 1}`);
       const [next, ...rest] = plan ?? [];
       setPlan(next?.[0] === selected && next[1] === rod ? rest : null);
       clearSelection();
+    } else if (selectable(rod)) {
+      setSelected(rod);
+      feedback.pick();
     } else {
-      setSelected(selectable(rod) ? rod : null);
+      setSelected(null);
     }
   };
 

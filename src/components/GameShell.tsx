@@ -2,6 +2,7 @@ import { type ReactNode, useEffect, useState } from 'react';
 import { AccessibilityInfo, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { theme } from '../theme';
+import { feedback } from '../feedback';
 import { Button } from './Button';
 
 type Props = {
@@ -26,6 +27,7 @@ export function GameShell(props: Props) {
 
   useEffect(() => {
     if (!props.won) return setShowWin(false);
+    feedback.win();
     const timer = setTimeout(() => setShowWin(true), 650);
     return () => clearTimeout(timer);
   }, [props.won]);

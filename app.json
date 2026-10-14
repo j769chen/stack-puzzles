@@ -13,7 +13,14 @@
       "edgeToEdgeEnabled": true
     },
     "plugins": [
-      "expo-asset"
+      "expo-asset",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ]
     ]
   }
 }
