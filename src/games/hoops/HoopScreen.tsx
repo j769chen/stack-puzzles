@@ -9,6 +9,7 @@ import {
   hasAnyMove,
   isHoopsSolved,
   isRodComplete,
+  levelSpec,
   pour,
   solveHoops,
 } from './logic';
@@ -27,8 +28,8 @@ function createSnapshot(rods: Rods): Snapshot {
   return { rods, ids: rods.map((rod) => rod.map(() => next++)) };
 }
 
-function pourSnapshot({ rods, ids }: Snapshot, from: number, to: number): Snapshot {
-  const nextRods = pour(rods, from, to);
+function pourSnapshot({ rods, ids }: Snapshot, from: number, to: number, capacity: number): Snapshot {
+  const nextRods = pour(rods, from, to, capacity);
   const nextIds = ids.map((r) => [...r]);
   for (let i = rods[from].length - nextRods[from].length; i > 0; i--) nextIds[to].push(nextIds[from].pop()!);
   return { rods: nextRods, ids: nextIds };
@@ -37,8 +38,9 @@ function pourSnapshot({ rods, ids }: Snapshot, from: number, to: number): Snapsh
 type GameProps = { level: number; onBack: () => void; onNext: () => void };
 
 function HoopGame({ level, onBack, onNext }: GameProps) {
+  const { capacity } = levelSpec(level);
   const history = useHistory(() => createSnapshot(generateLevel(level)));
-  const [optimal] = useState(() => solveHoops(history.current.rods)!.length);
+  const [optimal] = useState(() => solveHoops(history.current.rods, capacity)!.length);
   const [selected, setSelected] = useState<number | null>(null);
   const [hint, setHint] = useState<Move | null>(null);
   const [hintMessage, setHintMessage] = useState<string | null>(null);
@@ -47,9 +49,9 @@ function HoopGame({ level, onBack, onNext }: GameProps) {
   const current = history.current;
   const { rods } = current;
   const { moves } = history;
-  const solved = isHoopsSolved(rods);
-  const stuck = !solved && !hasAnyMove(rods);
-  const selectable = (rod: number) => rods[rod].length > 0 && !isRodComplete(rods[rod]);
+  const solved = isHoopsSolved(rods, capacity);
+  const stuck = !solved && !hasAnyMove(rods, capacity);
+  const selectable = (rod: number) => rods[rod].length > 0 && !isRodComplete(rods[rod], capacity);
 
   const clearSelection = () => {
     setSelected(null);
@@ -63,8 +65,8 @@ function HoopGame({ level, onBack, onNext }: GameProps) {
       if (selectable(rod)) setSelected(rod);
     } else if (selected === rod) {
       setSelected(null);
-    } else if (canPour(rods, selected, rod)) {
-      history.push(pourSnapshot(current, selected, rod));
+    } else if (canPour(rods, selected, rod, capacity)) {
+      history.push(pourSnapshot(current, selected, rod, capacity));
       const [next, ...rest] = plan ?? [];
       setPlan(next?.[0] === selected && next[1] === rod ? rest : null);
       clearSelection();
@@ -75,7 +77,7 @@ function HoopGame({ level, onBack, onNext }: GameProps) {
 
   const showHint = () => {
     setSelected(null);
-    const path = plan?.length ? plan : solveHoops(rods);
+    const path = plan?.length ? plan : solveHoops(rods, capacity);
     setPlan(path);
     setHint(path?.[0] ?? null);
     setHintMessage(path ? null : 'No solution from here. Try undo.');
@@ -112,7 +114,7 @@ function HoopGame({ level, onBack, onNext }: GameProps) {
       nextLabel="Next level"
       onNext={onNext}
     >
-      <HoopBoard rods={rods} ids={current.ids} selected={selected} hint={hint} onPress={press} />
+      <HoopBoard rods={rods} capacity={capacity} ids={current.ids} selected={selected} hint={hint} onPress={press} />
     </GameShell>
   );
 }

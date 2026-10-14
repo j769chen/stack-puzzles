@@ -49,6 +49,15 @@ describe('HoopScreen', () => {
     expect(screen.getByText('Sort each color onto its own rod · best 4')).toBeOnTheScreen();
   });
 
+  it('deals taller rods on later levels', async () => {
+    await AsyncStorage.setItem('hoops.level', '30');
+    await render(<HoopScreen onBack={jest.fn()} />);
+    await screen.findByText('Level 30');
+    const { colors, capacity } = logic.levelSpec(30);
+    expect(capacity).toBe(5);
+    for (let i = 0; i < colors; i++) expect(rodText(i).split(',')).toHaveLength(capacity);
+  });
+
   it('pours a matching run and counts the move', async () => {
     await start([[0, 1], [1], [0, 0, 0, 1], [], [1]]);
     await pour(0, 1);
@@ -134,7 +143,7 @@ describe('HoopScreen', () => {
     it('reports extra moves against the minimum', async () => {
       await start([[0, 1], [1], [0, 0, 0, 1], [], [1]]);
       await pour(4, 3);
-      for (const [from, to] of logic.solveHoops([[0, 1], [1], [0, 0, 0, 1], [1], []])!) await pour(from, to);
+      for (const [from, to] of logic.solveHoops([[0, 1], [1], [0, 0, 0, 1], [1], []], 4)!) await pour(from, to);
       await act(() => jest.advanceTimersByTime(650));
       expect(screen.getByText(/^\d+ moves\. The minimum is 4\.$/)).toBeOnTheScreen();
     });
