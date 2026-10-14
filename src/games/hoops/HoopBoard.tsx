@@ -1,6 +1,8 @@
+import { TorusGeometry } from 'three';
 import { Board } from '../../three/Board';
 import { Piece } from '../../three/Piece';
 import { Plank, Rod } from '../../three/Rod';
+import { standardMaterial } from '../../three/shared';
 import { theme } from '../../theme';
 import type { Move } from '../useHistory';
 import { type Rods, isRodComplete, topRun } from './logic';
@@ -12,6 +14,7 @@ const RING_R = 0.62;
 const RING_H = TUBE * 2;
 const PLANK_DEPTH = 2.2;
 const HINT_NUDGE = 0.35;
+const RING_GEOMETRY = new TorusGeometry(RING_R, TUBE, 20, 48);
 
 type Props = {
   rods: Rods;
@@ -76,10 +79,14 @@ export function HoopBoard({ rods, capacity, ids, selected, hint, onPress }: Prop
               z={z}
               liftY={liftY}
             >
-              <mesh position-y={TUBE} rotation-x={Math.PI / 2} castShadow receiveShadow>
-                <torusGeometry args={[RING_R, TUBE, 20, 48]} />
-                <meshStandardMaterial color={theme.rings[color]} roughness={0.3} />
-              </mesh>
+              <mesh
+                geometry={RING_GEOMETRY}
+                material={standardMaterial(theme.rings[color], 0.3)}
+                position-y={TUBE}
+                rotation-x={Math.PI / 2}
+                castShadow
+                receiveShadow
+              />
             </Piece>
           )),
         ];
