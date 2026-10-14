@@ -11,7 +11,9 @@ export function HomeScreen({ onOpen }: Props) {
 
   return (
     <SafeAreaView style={styles.root}>
-      <Text style={styles.title}>Stack Puzzles</Text>
+      <Text style={styles.title} accessibilityRole="header">
+        Stack Puzzles
+      </Text>
       <Text style={styles.subtitle}>Two classic stacking puzzles</Text>
 
       <GameCard
@@ -36,7 +38,13 @@ type CardProps = { title: string; description: string; level: number | null; col
 
 function GameCard({ title, description, level, colors, onPress }: CardProps) {
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+      accessibilityRole="button"
+      accessibilityLabel={level === null ? title : `${title}, level ${level}`}
+      accessibilityHint={description}
+    >
       <View style={styles.preview}>
         {colors.map((c, i) => (
           <View key={c} style={[styles.chip, { backgroundColor: c, width: 30 + i * 14 }]} />

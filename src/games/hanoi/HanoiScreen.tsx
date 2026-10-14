@@ -1,9 +1,12 @@
 import { useState } from 'react';
+import { AccessibilityInfo } from 'react-native';
 import { GameShell } from '../../components/GameShell';
+import { RodButtons } from '../../components/RodButtons';
 import { usePersistentNumber } from '../../usePersistentNumber';
 import { type Move, useHistory } from '../useHistory';
 import {
   HANOI_MAX_LEVEL,
+  type HanoiState,
   canMoveDisk,
   createHanoi,
   disksForLevel,
@@ -15,6 +18,13 @@ import {
 import { HanoiBoard } from './HanoiBoard';
 
 const PEG_NAMES = ['left', 'middle', 'right'];
+
+function pegLabel(state: HanoiState, peg: number, hint: Move | null) {
+  const disks = state[peg];
+  const contents = disks.length ? `disks ${disks.join(', ')} from the bottom` : 'empty';
+  const hinted = hint?.[0] === peg ? ', hint: move from here' : hint?.[1] === peg ? ', hint: move here' : '';
+  return `${PEG_NAMES[peg]} peg, ${contents}${hinted}`;
+}
 
 export function HanoiScreen({ onBack }: { onBack: () => void }) {
   const [level, setLevel, loaded] = usePersistentNumber('hanoi.level', 1);
@@ -54,6 +64,7 @@ function HanoiGame({ level, onBack, onNext }: GameProps) {
       setSelected(null);
     } else if (canMoveDisk(state, selected, peg)) {
       history.push(moveDisk(state, selected, peg));
+      AccessibilityInfo.announceForAccessibility(`Moved disk ${state[selected].at(-1)} to the ${PEG_NAMES[peg]} peg`);
       clearSelection();
     } else {
       setSelected(state[peg].length ? peg : null);
@@ -82,8 +93,14 @@ function HanoiGame({ level, onBack, onNext }: GameProps) {
         clearSelection();
       }}
       onHint={() => {
+        const move = nextHanoiMove(state, disks);
         setSelected(null);
-        setHint(nextHanoiMove(state, disks));
+        setHint(move);
+        if (move) {
+          AccessibilityInfo.announceForAccessibility(
+            `Hint: move the top disk from the ${PEG_NAMES[move[0]]} peg to the ${PEG_NAMES[move[1]]} peg`,
+          );
+        }
       }}
       won={solved}
       winText={
@@ -95,6 +112,12 @@ function HanoiGame({ level, onBack, onNext }: GameProps) {
       onNext={onNext}
     >
       <HanoiBoard state={state} disks={disks} selected={selected} hint={hint} onPress={press} />
+      <RodButtons
+        labels={state.map((_, peg) => pegLabel(state, peg, hint))}
+        rowSizes={[state.length]}
+        selected={selected}
+        onPress={press}
+      />
     </GameShell>
   );
 }

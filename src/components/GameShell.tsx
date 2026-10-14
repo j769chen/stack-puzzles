@@ -1,5 +1,5 @@
 import { type ReactNode, useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { AccessibilityInfo, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { theme } from '../theme';
 import { Button } from './Button';
@@ -30,13 +30,25 @@ export function GameShell(props: Props) {
     return () => clearTimeout(timer);
   }, [props.won]);
 
+  useEffect(() => {
+    if (showWin) AccessibilityInfo.announceForAccessibility(`Solved! ${props.winText}`);
+  }, [showWin, props.winText]);
+
   return (
     <SafeAreaView style={styles.root}>
       <View style={styles.header}>
-        <Pressable onPress={props.onBack} hitSlop={12} style={styles.back}>
+        <Pressable
+          onPress={props.onBack}
+          hitSlop={12}
+          style={styles.back}
+          accessibilityRole="button"
+          accessibilityLabel="Back"
+        >
           <Text style={styles.backText}>‹ Back</Text>
         </Pressable>
-        <Text style={styles.title}>{props.title}</Text>
+        <Text style={styles.title} accessibilityRole="header">
+          {props.title}
+        </Text>
         <View style={styles.back} />
       </View>
 
@@ -47,7 +59,9 @@ export function GameShell(props: Props) {
 
       <View style={styles.board}>{props.children}</View>
 
-      <Text style={styles.message}>{props.message ?? ' '}</Text>
+      <Text style={styles.message} accessibilityLiveRegion="polite">
+        {props.message ?? ' '}
+      </Text>
 
       <View style={styles.controls}>
         <Button label="Undo" onPress={props.onUndo} disabled={!props.canUndo || props.won} />
@@ -56,9 +70,11 @@ export function GameShell(props: Props) {
       </View>
 
       {showWin && (
-        <View style={styles.overlay}>
+        <View style={styles.overlay} accessibilityViewIsModal>
           <View style={styles.winCard}>
-            <Text style={styles.winTitle}>Solved!</Text>
+            <Text style={styles.winTitle} accessibilityRole="header">
+              Solved!
+            </Text>
             <Text style={styles.winText}>{props.winText}</Text>
             <Button label={props.nextLabel} onPress={props.onNext} primary />
             <Button label="Menu" onPress={props.onBack} />

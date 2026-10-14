@@ -5,6 +5,7 @@ import { Plank, Rod } from '../../three/Rod';
 import { standardMaterial } from '../../three/shared';
 import { theme } from '../../theme';
 import type { Move } from '../useHistory';
+import { rodRows } from './layout';
 import { type Rods, isRodComplete, topRun } from './logic';
 
 const SPACING = 2.1;
@@ -28,9 +29,9 @@ type Props = {
 function boardLayout(count: number, capacity: number) {
   const poleHeight = capacity * RING_H + 0.35;
   const liftY = poleHeight + 0.35;
-  const rows = count <= 5 ? 1 : count <= 8 ? 2 : 3;
-  const cols = Math.ceil(count / rows);
-  const rowSizes = Array.from({ length: rows }, (_, r) => Math.min(cols, count - r * cols));
+  const rowSizes = rodRows(count);
+  const rows = rowSizes.length;
+  const cols = rowSizes[0];
   const rowZ = rowSizes.map((_, r) => (r - (rows - 1) / 2) * ROW_GAP);
   const positions = Array.from({ length: count }, (_, i) => {
     const r = Math.floor(i / cols);

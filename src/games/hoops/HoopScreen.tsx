@@ -1,5 +1,8 @@
 import { useState } from 'react';
+import { AccessibilityInfo } from 'react-native';
 import { GameShell } from '../../components/GameShell';
+import { RodButtons } from '../../components/RodButtons';
+import { theme } from '../../theme';
 import { usePersistentNumber } from '../../usePersistentNumber';
 import { type Move, useHistory } from '../useHistory';
 import {
@@ -12,10 +15,26 @@ import {
   levelSpec,
   pour,
   solveHoops,
+  topRun,
 } from './logic';
 import { HoopBoard } from './HoopBoard';
+import { rodRows } from './layout';
 
 type Snapshot = { rods: Rods; ids: number[][] };
+
+const colorName = (color: number) => theme.ringNames[color];
+
+function rodLabel(rods: Rods, rod: number, capacity: number, hint: Move | null) {
+  const rings = rods[rod];
+  let contents = 'empty';
+  if (isRodComplete(rings, capacity)) contents = `complete, ${colorName(rings[0])}`;
+  else if (rings.length) {
+    const top = `${topRun(rings)} ${colorName(rings[rings.length - 1])}`;
+    contents = `${rings.map(colorName).join(', ')} from the bottom, top ${top}`;
+  }
+  const hinted = hint?.[0] === rod ? ', hint: move from here' : hint?.[1] === rod ? ', hint: move here' : '';
+  return `Rod ${rod + 1}, ${contents}${hinted}`;
+}
 
 export function HoopScreen({ onBack }: { onBack: () => void }) {
   const [level, setLevel, loaded] = usePersistentNumber('hoops.level', 1);
@@ -66,7 +85,11 @@ function HoopGame({ level, onBack, onNext }: GameProps) {
     } else if (selected === rod) {
       setSelected(null);
     } else if (canPour(rods, selected, rod, capacity)) {
-      history.push(pourSnapshot(current, selected, rod, capacity));
+      const after = pourSnapshot(current, selected, rod, capacity);
+      const moved = rods[selected].length - after.rods[selected].length;
+      history.push(after);
+      const color = colorName(rods[selected][rods[selected].length - 1]);
+      AccessibilityInfo.announceForAccessibility(`Moved ${moved} ${color} to rod ${rod + 1}`);
       const [next, ...rest] = plan ?? [];
       setPlan(next?.[0] === selected && next[1] === rod ? rest : null);
       clearSelection();
@@ -81,6 +104,9 @@ function HoopGame({ level, onBack, onNext }: GameProps) {
     setPlan(path);
     setHint(path?.[0] ?? null);
     setHintMessage(path ? null : 'No solution from here. Try undo.');
+    AccessibilityInfo.announceForAccessibility(
+      path ? `Hint: move from rod ${path[0][0] + 1} to rod ${path[0][1] + 1}` : 'No solution from here. Try undo.',
+    );
   };
 
   const message =
@@ -115,6 +141,12 @@ function HoopGame({ level, onBack, onNext }: GameProps) {
       onNext={onNext}
     >
       <HoopBoard rods={rods} capacity={capacity} ids={current.ids} selected={selected} hint={hint} onPress={press} />
+      <RodButtons
+        labels={rods.map((_, rod) => rodLabel(rods, rod, capacity, hint))}
+        rowSizes={rodRows(rods.length)}
+        selected={selected}
+        onPress={press}
+      />
     </GameShell>
   );
 }

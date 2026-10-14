@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
-import { Text } from 'react-native';
+import { AccessibilityInfo, Text } from 'react-native';
 import { GameShell } from './GameShell';
 
 async function renderShell(overrides: Partial<Parameters<typeof GameShell>[0]> = {}) {
@@ -46,6 +46,14 @@ describe('GameShell', () => {
     expect(props.onHint).toHaveBeenCalledTimes(1);
   });
 
+  it('labels the back button and reports disabled controls', async () => {
+    await renderShell({ canUndo: false });
+    expect(screen.getByRole('button', { name: 'Back' })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Undo' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Hint' })).toBeEnabled();
+    expect(screen.getByRole('header', { name: 'Test Game' })).toBeOnTheScreen();
+  });
+
   it('disables undo when there is nothing to undo', async () => {
     const props = await renderShell({ canUndo: false });
     await fireEvent.press(screen.getByText('Undo'));
@@ -64,6 +72,7 @@ describe('GameShell', () => {
       expect(screen.getByText('Solved!')).toBeOnTheScreen();
       expect(screen.getByText('Well done')).toBeOnTheScreen();
 
+      expect(AccessibilityInfo.announceForAccessibility).toHaveBeenCalledWith('Solved! Well done');
       await fireEvent.press(screen.getByText('Next level'));
       await fireEvent.press(screen.getByText('Menu'));
       expect(props.onNext).toHaveBeenCalledTimes(1);
