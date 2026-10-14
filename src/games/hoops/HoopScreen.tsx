@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { GameShell } from '../../components/GameShell';
 import { usePersistentNumber } from '../../usePersistentNumber';
+import { type Move, useHistory } from '../useHistory';
 import {
-  type Move,
   type Rods,
   canPour,
   generateLevel,
@@ -37,20 +37,20 @@ function pourSnapshot({ rods, ids }: Snapshot, from: number, to: number): Snapsh
 type GameProps = { level: number; onBack: () => void; onNext: () => void };
 
 function HoopGame({ level, onBack, onNext }: GameProps) {
-  const [start] = useState(() => createSnapshot(generateLevel(level)));
-  const [history, setHistory] = useState<Snapshot[]>([start]);
+  const history = useHistory(() => createSnapshot(generateLevel(level)));
   const [selected, setSelected] = useState<number | null>(null);
   const [hint, setHint] = useState<Move | null>(null);
   const [hintMessage, setHintMessage] = useState<string | null>(null);
   const [plan, setPlan] = useState<Move[] | null>(null);
 
-  const current = history[history.length - 1];
+  const current = history.current;
   const { rods } = current;
-  const moves = history.length - 1;
+  const { moves } = history;
   const solved = isHoopsSolved(rods);
   const stuck = !solved && !hasAnyMove(rods);
+  const selectable = (rod: number) => rods[rod].length > 0 && !isRodComplete(rods[rod]);
 
-  const reset = () => {
+  const clearSelection = () => {
     setSelected(null);
     setHint(null);
     setHintMessage(null);
@@ -59,15 +59,16 @@ function HoopGame({ level, onBack, onNext }: GameProps) {
   const press = (rod: number) => {
     if (solved) return;
     if (selected === null) {
-      if (rods[rod].length && !isRodComplete(rods[rod])) setSelected(rod);
+      if (selectable(rod)) setSelected(rod);
     } else if (selected === rod) {
       setSelected(null);
     } else if (canPour(rods, selected, rod)) {
-      setHistory((h) => [...h, pourSnapshot(current, selected, rod)]);
-      setPlan((p) => (p?.[0][0] === selected && p[0][1] === rod ? p.slice(1) : null));
-      reset();
+      history.push(pourSnapshot(current, selected, rod));
+      const [next, ...rest] = plan ?? [];
+      setPlan(next?.[0] === selected && next[1] === rod ? rest : null);
+      clearSelection();
     } else {
-      setSelected(rods[rod].length && !isRodComplete(rods[rod]) ? rod : null);
+      setSelected(selectable(rod) ? rod : null);
     }
   };
 
@@ -89,15 +90,15 @@ function HoopGame({ level, onBack, onNext }: GameProps) {
       message={message}
       onBack={onBack}
       onUndo={() => {
-        setHistory((h) => (h.length > 1 ? h.slice(0, -1) : h));
+        history.undo();
         setPlan(null);
-        reset();
+        clearSelection();
       }}
       canUndo={moves > 0}
       onRestart={() => {
-        setHistory([start]);
+        history.restart();
         setPlan(null);
-        reset();
+        clearSelection();
       }}
       onHint={showHint}
       won={solved}

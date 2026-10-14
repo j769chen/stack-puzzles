@@ -2,9 +2,9 @@ import { Board } from '../../three/Board';
 import { Piece } from '../../three/Piece';
 import { Plank, Rod } from '../../three/Rod';
 import { theme } from '../../theme';
-import { CAPACITY, type Move, type Rods, isRodComplete, liftCount } from './logic';
+import type { Move } from '../useHistory';
+import { CAPACITY, type Rods, isRodComplete, topRun } from './logic';
 
-const RING_COLORS = ['#E63946', '#F4A261', '#F6D743', '#4CAF50', '#2A9D8F', '#457B9D', '#8E44AD', '#FF7EB6', '#8D6E63', '#1D3557'];
 const SPACING = 2.1;
 const ROW_GAP = 3.2;
 const TUBE = 0.27;
@@ -48,11 +48,11 @@ export function HoopBoard({ rods, ids, selected, hint, onPress }: Props) {
       {rowZ.map((z, r) => (
         <Plank key={`plank${r}`} width={rowSizes[r] * SPACING + 0.3} depth={PLANK_DEPTH} z={z} />
       ))}
-      {rods.map((rod, i) => {
+      {rods.flatMap((rod, i) => {
         const { x, z } = positions[i];
-        const lift = selected === i ? liftCount(rods, i) : 0;
+        const lift = selected === i ? topRun(rod) : 0;
         const firstLifted = rod.length - lift;
-        const firstNudged = hint?.[0] === i ? rod.length - liftCount(rods, i) : rod.length;
+        const firstNudged = hint?.[0] === i ? rod.length - topRun(rod) : rod.length;
         const hintColor = hint?.[0] === i ? theme.hintFrom : hint?.[1] === i ? theme.hintTo : undefined;
         return [
           <Rod
@@ -77,7 +77,7 @@ export function HoopBoard({ rods, ids, selected, hint, onPress }: Props) {
             >
               <mesh position-y={TUBE} rotation-x={Math.PI / 2} castShadow receiveShadow>
                 <torusGeometry args={[RING_R, TUBE, 20, 48]} />
-                <meshStandardMaterial color={RING_COLORS[color]} roughness={0.3} />
+                <meshStandardMaterial color={theme.rings[color]} roughness={0.3} />
               </mesh>
             </Piece>
           )),

@@ -1,5 +1,6 @@
+import type { Move } from '../useHistory';
+
 export type Rods = number[][];
-export type Move = [from: number, to: number];
 
 export const CAPACITY = 4;
 export const EMPTY_RODS = 2;
@@ -9,7 +10,7 @@ export function colorsForLevel(level: number): number {
   return Math.min(3 + Math.floor((level - 1) / 3), MAX_COLORS);
 }
 
-function topRun(rod: number[]): number {
+export function topRun(rod: number[]): number {
   const top = rod.at(-1);
   let n = 0;
   for (let i = rod.length - 1; i >= 0 && rod[i] === top; i--) n++;
@@ -26,10 +27,6 @@ export function canPour(rods: Rods, from: number, to: number, cap = CAPACITY): b
   const dst = rods[to];
   if (src.length === 0 || dst.length >= cap) return false;
   return dst.length === 0 || dst.at(-1) === src.at(-1);
-}
-
-export function liftCount(rods: Rods, from: number): number {
-  return topRun(rods[from]);
 }
 
 export function pour(rods: Rods, from: number, to: number, cap = CAPACITY): Rods {

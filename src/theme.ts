@@ -11,4 +11,8 @@ export const theme = {
   hintFrom: '#F3A712',
   hintTo: '#2A9D8F',
   overlay: 'rgba(20, 16, 12, 0.55)',
+  border: '#E3DACB',
+  onAccent: '#FFFFFF',
+  disks: ['#E4572E', '#F3A712', '#A8C686', '#2A9D8F', '#669BBC', '#29335C', '#6D597A', '#B5838D', '#E9C46A', '#264653'],
+  rings: ['#E63946', '#F4A261', '#F6D743', '#4CAF50', '#2A9D8F', '#457B9D', '#8E44AD', '#FF7EB6', '#8D6E63', '#1D3557'],
 };

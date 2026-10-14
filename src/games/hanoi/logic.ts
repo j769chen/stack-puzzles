@@ -1,5 +1,6 @@
+import type { Move } from '../useHistory';
+
 export type HanoiState = number[][];
-export type Move = [from: number, to: number];
 
 export const HANOI_MAX_LEVEL = 8;
 

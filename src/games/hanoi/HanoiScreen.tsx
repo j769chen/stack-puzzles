@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { GameShell } from '../../components/GameShell';
 import { usePersistentNumber } from '../../usePersistentNumber';
+import { type Move, useHistory } from '../useHistory';
 import {
   HANOI_MAX_LEVEL,
-  type HanoiState,
-  type Move,
   canMoveDisk,
   createHanoi,
   disksForLevel,
@@ -14,6 +13,8 @@ import {
   nextHanoiMove,
 } from './logic';
 import { HanoiBoard } from './HanoiBoard';
+
+const PEG_NAMES = ['left', 'middle', 'right'];
 
 export function HanoiScreen({ onBack }: { onBack: () => void }) {
   const [level, setLevel, loaded] = usePersistentNumber('hanoi.level', 1);
@@ -32,15 +33,15 @@ type GameProps = { level: number; onBack: () => void; onNext: () => void };
 
 function HanoiGame({ level, onBack, onNext }: GameProps) {
   const disks = disksForLevel(level);
-  const [history, setHistory] = useState<HanoiState[]>(() => [createHanoi(disks)]);
+  const history = useHistory(() => createHanoi(disks));
   const [selected, setSelected] = useState<number | null>(null);
   const [hint, setHint] = useState<Move | null>(null);
 
-  const state = history[history.length - 1];
-  const moves = history.length - 1;
+  const state = history.current;
+  const { moves } = history;
   const solved = isHanoiSolved(state, disks);
 
-  const reset = () => {
+  const clearSelection = () => {
     setSelected(null);
     setHint(null);
   };
@@ -52,8 +53,8 @@ function HanoiGame({ level, onBack, onNext }: GameProps) {
     } else if (selected === peg) {
       setSelected(null);
     } else if (canMoveDisk(state, selected, peg)) {
-      setHistory((h) => [...h, moveDisk(state, selected, peg)]);
-      reset();
+      history.push(moveDisk(state, selected, peg));
+      clearSelection();
     } else {
       setSelected(state[peg].length ? peg : null);
     }
@@ -61,7 +62,7 @@ function HanoiGame({ level, onBack, onNext }: GameProps) {
 
   const optimal = minMoves(disks);
   const message = hint
-    ? 'Move the top disk from the amber peg to the teal peg'
+    ? `Move the top disk from the ${PEG_NAMES[hint[0]]} peg to the ${PEG_NAMES[hint[1]]} peg`
     : `Move all ${disks} disks to another peg · best ${optimal}`;
 
   return (
@@ -72,13 +73,13 @@ function HanoiGame({ level, onBack, onNext }: GameProps) {
       message={message}
       onBack={onBack}
       onUndo={() => {
-            setHistory((h) => (h.length > 1 ? h.slice(0, -1) : h));
-        reset();
+        history.undo();
+        clearSelection();
       }}
       canUndo={moves > 0}
       onRestart={() => {
-        setHistory([createHanoi(disks)]);
-        reset();
+        history.restart();
+        clearSelection();
       }}
       onHint={() => {
         setSelected(null);
