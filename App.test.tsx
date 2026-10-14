@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { BackHandler } from 'react-native';
 import App from './App';
+import { getSettings, loadSettings } from './src/settings';
 
 jest.mock('./src/three/Board', () => ({ Board: () => null }));
 
@@ -28,6 +29,14 @@ async function open(game: string) {
 }
 
 describe('App', () => {
+  it('loads saved settings at launch', async () => {
+    await loadSettings();
+    await AsyncStorage.setItem('settings', JSON.stringify({ haptics: false }));
+    await renderApp();
+    expect(getSettings().haptics).toBe(false);
+    expect(screen.getByRole('switch', { name: 'Haptics' })).toHaveProp('value', false);
+  });
+
   it('starts on the home screen', async () => {
     await renderApp();
     expect(screen.getByText('Stack Puzzles')).toBeOnTheScreen();
