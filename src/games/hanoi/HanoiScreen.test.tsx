@@ -1,7 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { HanoiScreen } from './HanoiScreen';
-import { HANOI_MAX_LEVEL, minMoves } from './logic';
+import * as logic from './logic';
+
+const { HANOI_MAX_LEVEL, minMoves } = logic;
 
 jest.mock('./HanoiBoard', () => {
   const { Pressable, Text } = jest.requireActual<typeof import('react-native')>('react-native');
@@ -41,6 +43,7 @@ async function solveWithHints() {
 }
 
 beforeEach(() => AsyncStorage.clear());
+afterEach(() => jest.restoreAllMocks());
 
 describe('HanoiScreen', () => {
   it('starts level 1 with three disks on the left peg', async () => {
@@ -115,10 +118,12 @@ describe('HanoiScreen', () => {
     });
 
     it('wraps to level 1 after the last level', async () => {
+      jest.spyOn(logic, 'disksForLevel').mockReturnValue(1);
       await AsyncStorage.setItem('hanoi.level', String(HANOI_MAX_LEVEL));
       await render(<HanoiScreen onBack={jest.fn()} />);
       await act(() => jest.runAllTimersAsync());
-      await solveWithHints();
+      await move(0, 2);
+      await act(() => jest.advanceTimersByTime(650));
       await fireEvent.press(screen.getByText('Play again from level 1'));
       await act(() => jest.runAllTimersAsync());
       expect(screen.getByText('Level 1')).toBeOnTheScreen();
