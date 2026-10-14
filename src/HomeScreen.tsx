@@ -6,8 +6,8 @@ import { usePersistentNumber } from './usePersistentNumber';
 type Props = { onOpen: (game: 'hanoi' | 'hoops') => void };
 
 export function HomeScreen({ onOpen }: Props) {
-  const [hanoiLevel] = usePersistentNumber('hanoi.level', 1);
-  const [hoopLevel] = usePersistentNumber('hoops.level', 1);
+  const [hanoiLevel, , hanoiLoaded] = usePersistentNumber('hanoi.level', 1);
+  const [hoopLevel, , hoopLoaded] = usePersistentNumber('hoops.level', 1);
 
   return (
     <SafeAreaView style={styles.root}>
@@ -17,14 +17,14 @@ export function HomeScreen({ onOpen }: Props) {
       <GameCard
         title="Tower Stack"
         description="Move the whole tower to another peg. A disk can never sit on a smaller one."
-        level={hanoiLevel}
+        level={hanoiLoaded ? hanoiLevel : null}
         colors={['#E4572E', '#F3A712', '#2A9D8F']}
         onPress={() => onOpen('hanoi')}
       />
       <GameCard
         title="Ring Sort"
         description="Sort the colored rings so every rod holds a single color."
-        level={hoopLevel}
+        level={hoopLoaded ? hoopLevel : null}
         colors={['#E63946', '#457B9D', '#F6D743']}
         onPress={() => onOpen('hoops')}
       />
@@ -32,7 +32,7 @@ export function HomeScreen({ onOpen }: Props) {
   );
 }
 
-type CardProps = { title: string; description: string; level: number; colors: string[]; onPress: () => void };
+type CardProps = { title: string; description: string; level: number | null; colors: string[]; onPress: () => void };
 
 function GameCard({ title, description, level, colors, onPress }: CardProps) {
   return (
@@ -45,7 +45,7 @@ function GameCard({ title, description, level, colors, onPress }: CardProps) {
       <View style={styles.cardBody}>
         <Text style={styles.cardTitle}>{title}</Text>
         <Text style={styles.cardText}>{description}</Text>
-        <Text style={styles.cardLevel}>Level {level} ›</Text>
+        <Text style={styles.cardLevel}>{level === null ? ' ' : `Level ${level} ›`}</Text>
       </View>
     </Pressable>
   );

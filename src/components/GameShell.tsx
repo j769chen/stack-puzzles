@@ -25,7 +25,8 @@ export function GameShell(props: Props) {
   const [showWin, setShowWin] = useState(false);
 
   useEffect(() => {
-    if (!props.won) return setShowWin(false);
+    setShowWin(false);
+    if (!props.won) return;
     const timer = setTimeout(() => setShowWin(true), 650);
     return () => clearTimeout(timer);
   }, [props.won]);
@@ -61,6 +62,7 @@ export function GameShell(props: Props) {
             <Text style={styles.winTitle}>Solved!</Text>
             <Text style={styles.winText}>{props.winText}</Text>
             <Button label={props.nextLabel} onPress={props.onNext} primary />
+            <Button label="Menu" onPress={props.onBack} />
           </View>
         </View>
       )}

@@ -10,7 +10,7 @@ export function usePersistentNumber(key: string, initial: number) {
     AsyncStorage.getItem(key)
       .then((stored) => {
         const n = Number(stored);
-        if (active && stored !== null && Number.isFinite(n)) setValue(n);
+        if (active && stored !== null && Number.isInteger(n) && n >= 1) setValue(n);
       })
       .catch(() => {})
       .finally(() => active && setLoaded(true));
