@@ -1,6 +1,7 @@
 import { createHash } from 'crypto';
 import {
   EMPTY_RODS,
+  MAX_COLORS,
   type Rods,
   canPour,
   generateLevel,
@@ -134,5 +135,162 @@ describe('hoops logic', () => {
 
   it('returns null for a dead end', () => {
     expect(solveHoops([[0, 1, 0, 1], [1, 0, 1, 0]], CAP)).toBeNull();
+  });
+});
+
+function seededRandom(seed: number) {
+  let state = seed;
+  return () => {
+    state = (Math.imul(state, 1103515245) + 12345) >>> 0;
+    return state / 2 ** 32;
+  };
+}
+
+function legalPours(rods: Rods, cap: number): [number, number][] {
+  const pours: [number, number][] = [];
+  rods.forEach((_, from) => rods.forEach((_, to) => canPour(rods, from, to, cap) && pours.push([from, to])));
+  return pours;
+}
+
+function randomWalk(start: Rods, cap: number, steps: number, rand: () => number) {
+  const states = [start];
+  let rods = start;
+  for (let i = 0; i < steps; i++) {
+    const pours = legalPours(rods, cap);
+    if (pours.length === 0) break;
+    rods = pour(rods, ...pours[Math.floor(rand() * pours.length)], cap);
+    states.push(rods);
+  }
+  return states;
+}
+
+const sortedRings = (rods: Rods) => rods.flat().sort((a, b) => a - b);
+
+describe('hoops rules under random play', () => {
+  const levels = [3, 18, 27, 40];
+  const walks = levels.flatMap((level) => {
+    const { capacity } = levelSpec(level);
+    const rand = seededRandom(level);
+    return Array.from({ length: 15 }, () => ({ capacity, states: randomWalk(generateLevel(level), capacity, 40, rand) }));
+  });
+  const positions = walks.flatMap(({ capacity, states }) => states.map((rods) => ({ capacity, rods })));
+
+  it('visits enough positions to mean something', () => {
+    expect(positions.length).toBeGreaterThan(1500);
+  });
+
+  it('allows a pour exactly when the source has rings and the target has room and a matching top', () => {
+    const wrong: string[] = [];
+    for (const { capacity, rods } of positions)
+      rods.forEach((src, from) =>
+        rods.forEach((dst, to) => {
+          const expected =
+            from !== to && src.length > 0 && dst.length < capacity && (dst.length === 0 || dst.at(-1) === src.at(-1));
+          if (canPour(rods, from, to, capacity) !== expected) wrong.push(`${JSON.stringify(rods)} ${from}->${to}`);
+        }),
+      );
+    expect(wrong).toEqual([]);
+  });
+
+  it('moves as much of the top run as fits, keeps every ring, and never overfills', () => {
+    const wrong: string[] = [];
+    for (const { capacity, rods } of positions)
+      for (const [from, to] of legalPours(rods, capacity)) {
+        const after = pour(rods, from, to, capacity);
+        const moved = Math.min(topRun(rods[from]), capacity - rods[to].length);
+        const expectedFrom = rods[from].slice(0, rods[from].length - moved);
+        const expectedTo = [...rods[to], ...Array(moved).fill(rods[from].at(-1))];
+        const ok =
+          JSON.stringify(after[from]) === JSON.stringify(expectedFrom) &&
+          JSON.stringify(after[to]) === JSON.stringify(expectedTo) &&
+          JSON.stringify(sortedRings(after)) === JSON.stringify(sortedRings(rods)) &&
+          after.every((rod) => rod.length <= capacity);
+        if (!ok) wrong.push(`${JSON.stringify(rods)} ${from}->${to} gave ${JSON.stringify(after)}`);
+      }
+    expect(wrong).toEqual([]);
+  });
+
+  it('reports a stuck position exactly when no pour is legal', () => {
+    const wrong = positions.filter(({ capacity, rods }) => hasAnyMove(rods, capacity) !== legalPours(rods, capacity).length > 0);
+    expect(wrong).toEqual([]);
+  });
+
+  it('only calls a position solved when every color sits alone on one full rod', () => {
+    const wrong = positions.filter(({ capacity, rods }) => {
+      const sorted = rods.every((rod) => rod.length === 0 || (rod.length === capacity && new Set(rod).size === 1));
+      return isHoopsSolved(rods, capacity) !== sorted;
+    });
+    expect(wrong).toEqual([]);
+  });
+});
+
+describe('hoops solver on mid-game positions', () => {
+  const rand = seededRandom(7);
+  const positions = [1, 2, 4, 6, 8].flatMap((level) =>
+    Array.from({ length: 6 }, () => {
+      const states = randomWalk(generateLevel(level), CAP, 4 + Math.floor(rand() * 12), rand);
+      return states[states.length - 1];
+    }),
+  );
+
+  it('agrees with brute force on whether a position can be solved, and how fast', () => {
+    for (const rods of positions) {
+      const path = solveHoops(rods, CAP);
+      const fewest = fewestMovesByBruteForce(rods, CAP);
+      expect(path?.length ?? null).toBe(fewest);
+      if (path) expect(isHoopsSolved(play(rods, path, CAP), CAP)).toBe(true);
+    }
+  });
+
+  it('includes dead ends among the sampled positions', () => {
+    expect(positions.some((rods) => fewestMovesByBruteForce(rods, CAP) === null)).toBe(true);
+  });
+
+  it('does not change the position it is given', () => {
+    const rods = generateLevel(12);
+    const copy = JSON.stringify(rods);
+    solveHoops(rods, levelSpec(12).capacity);
+    expect(JSON.stringify(rods)).toBe(copy);
+  });
+
+  it('gives up and returns null when the search budget runs out', () => {
+    const rods = generateLevel(40);
+    const { capacity } = levelSpec(40);
+    expect(solveHoops(rods, capacity, 5)).toBeNull();
+    expect(solveHoops(rods, capacity)).not.toBeNull();
+  });
+});
+
+describe('hoops level progression', () => {
+  const specs = Array.from({ length: 200 }, (_, i) => levelSpec(i + 1));
+
+  it('never makes rods shorter as levels go up', () => {
+    specs.forEach((spec, i) => i > 0 && expect(spec.capacity).toBeGreaterThanOrEqual(specs[i - 1].capacity));
+  });
+
+  it('only steps difficulty every third level within a rod height', () => {
+    specs.forEach((spec, i) => {
+      if (i === 0 || spec.capacity !== specs[i - 1].capacity) return;
+      expect(spec.colors - specs[i - 1].colors).toBeGreaterThanOrEqual(0);
+      expect(spec.colors - specs[i - 1].colors).toBeLessThanOrEqual(1);
+    });
+    const runs = new Map<string, number>();
+    specs.slice(0, 45).forEach((spec) => runs.set(`${spec.capacity}/${spec.colors}`, (runs.get(`${spec.capacity}/${spec.colors}`) ?? 0) + 1));
+    expect([...runs.values()].every((count) => count === 3)).toBe(true);
+  });
+
+  it('never asks for more colors than the palette has', () => {
+    expect(specs.every((spec) => spec.colors >= 3 && spec.colors <= MAX_COLORS)).toBe(true);
+  });
+
+  it('deals different rings for different levels', () => {
+    const deals = new Set(Array.from({ length: 30 }, (_, i) => JSON.stringify(generateLevel(i + 1))));
+    expect(deals.size).toBe(30);
+  });
+
+  it('rerolls a deal that turns out to be unsolvable', () => {
+    const { capacity } = levelSpec(78);
+    const rods = generateLevel(78);
+    expect(solveHoops(rods, capacity)).not.toBeNull();
   });
 });

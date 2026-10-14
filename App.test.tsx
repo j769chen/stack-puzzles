@@ -50,6 +50,15 @@ describe('App', () => {
     expect(await screen.findAllByText('Level 1 ›')).toHaveLength(2);
   });
 
+  it('stops listening for the back button when it unmounts', async () => {
+    const remove = jest.fn();
+    jest.mocked(BackHandler.addEventListener).mockImplementation(() => ({ remove }));
+    const { unmount } = await render(<App />);
+    await screen.findAllByText('Level 1 ›');
+    unmount();
+    expect(remove).toHaveBeenCalled();
+  });
+
   it('returns home on the Android back button, and lets the OS handle it at home', async () => {
     await renderApp();
     expect(backPress()).toBe(false);

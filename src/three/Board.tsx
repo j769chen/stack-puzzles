@@ -7,9 +7,17 @@ import { type BoardSize, fitCamera } from './fit';
 
 type Props = BoardSize & { tilt?: number; children: ReactNode };
 
-export function Board({ children, tilt = 0.55, ...size }: Props) {
+export function Board({ tilt = 0.55, ...props }: Props) {
   return (
     <Canvas style={styles.canvas} shadows="percentage" camera={{ fov: 32 }}>
+      <Scene tilt={tilt} {...props} />
+    </Canvas>
+  );
+}
+
+export function Scene({ children, tilt, ...size }: BoardSize & { tilt: number; children: ReactNode }) {
+  return (
+    <>
       <color attach="background" args={[theme.bg]} />
       <CameraRig {...size} tilt={tilt} />
       <hemisphereLight args={['#FFF8EE', '#B9A58C', 1.6]} />
@@ -29,7 +37,7 @@ export function Board({ children, tilt = 0.55, ...size }: Props) {
         <shadowMaterial opacity={0.16} />
       </mesh>
       {children}
-    </Canvas>
+    </>
   );
 }
 

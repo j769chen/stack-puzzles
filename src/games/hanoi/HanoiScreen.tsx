@@ -71,11 +71,9 @@ function HanoiGame({ level, onBack, onNext }: GameProps) {
       if (!isHanoiSolved(after, disks)) feedback.drop();
       AccessibilityInfo.announceForAccessibility(`Moved disk ${state[selected].at(-1)} to the ${PEG_NAMES[peg]} peg`);
       clearSelection();
-    } else if (state[peg].length) {
+    } else {
       setSelected(peg);
       feedback.pick();
-    } else {
-      setSelected(null);
     }
   };
 
@@ -101,14 +99,12 @@ function HanoiGame({ level, onBack, onNext }: GameProps) {
         clearSelection();
       }}
       onHint={() => {
-        const move = nextHanoiMove(state, disks);
+        const move = nextHanoiMove(state, disks)!;
         setSelected(null);
         setHint(move);
-        if (move) {
-          AccessibilityInfo.announceForAccessibility(
-            `Hint: move the top disk from the ${PEG_NAMES[move[0]]} peg to the ${PEG_NAMES[move[1]]} peg`,
-          );
-        }
+        AccessibilityInfo.announceForAccessibility(
+          `Hint: move the top disk from the ${PEG_NAMES[move[0]]} peg to the ${PEG_NAMES[move[1]]} peg`,
+        );
       }}
       won={solved}
       winText={

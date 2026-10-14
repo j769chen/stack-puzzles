@@ -98,6 +98,26 @@ describe('HoopScreen', () => {
     expect(rodText(1)).toBe('1,1,0');
   });
 
+  it('drops the selection when a full rod is tapped instead of a target', async () => {
+    await start([[0, 0, 0, 0], [1, 1], [1, 1], []]);
+    await fireEvent.press(screen.getByTestId('rod-1'));
+    expect(rodText(1)).toBe('*1,1');
+    await fireEvent.press(screen.getByTestId('rod-0'));
+    expect(rodText(1)).toBe('1,1');
+    expect(rodText(0)).toBe('0,0,0,0');
+  });
+
+  it('plans hints again from scratch after a restart', async () => {
+    await start([[0, 1], [1], [0, 0, 0, 1], [], [1]]);
+    const solve = jest.spyOn(logic, 'solveHoops');
+    await fireEvent.press(screen.getByText('Hint'));
+    await pour(0, 1);
+    await fireEvent.press(screen.getByText('Restart'));
+    await fireEvent.press(screen.getByText('Hint'));
+    expect(solve).toHaveBeenCalledTimes(2);
+    expect(hintText()).toBe('0>1');
+  });
+
   it('undoes and restarts', async () => {
     await start([[0, 1], [1], [0, 0, 0, 1], [], [1]]);
     await pour(0, 1);
@@ -186,6 +206,14 @@ describe('HoopScreen', () => {
       await fireEvent.press(screen.getByText('Next level'));
       expect(await screen.findByText('Level 2')).toBeOnTheScreen();
       expect(await AsyncStorage.getItem('hoops.level')).toBe('2');
+    });
+
+    it('ignores taps between the winning pour and the win card', async () => {
+      await start([[0, 0, 0, 0], [1, 1, 1], [1], []]);
+      await pour(2, 1);
+      await fireEvent.press(screen.getByTestId('rod-1'));
+      expect(rodText(1)).toBe('1,1,1,1');
+      expect(screen.queryByText('Solved!')).toBeNull();
     });
 
     it('reports extra moves against the minimum', async () => {

@@ -106,6 +106,13 @@ describe('HanoiScreen', () => {
     expect(drop).toHaveBeenCalledTimes(1);
   });
 
+  it('clears the hint once a move is made', async () => {
+    await start();
+    await fireEvent.press(screen.getByText('Hint'));
+    await move(0, 1);
+    expect(screen.getByText('Move all 3 disks to another peg · best 7')).toBeOnTheScreen();
+  });
+
   it('names the hinted pegs by position', async () => {
     await start();
     await fireEvent.press(screen.getByText('Hint'));
@@ -150,6 +157,15 @@ describe('HanoiScreen', () => {
       await fireEvent.press(screen.getByText('Next level'));
       expect(await screen.findByText('Level 2')).toBeOnTheScreen();
       expect(await AsyncStorage.getItem('hanoi.level')).toBe('2');
+    });
+
+    it('ignores taps between the winning move and the win card', async () => {
+      jest.spyOn(logic, 'disksForLevel').mockReturnValue(1);
+      await start();
+      await move(0, 2);
+      await fireEvent.press(peg(2));
+      expect(pegText(2)).toBe('1');
+      expect(screen.getByText('Moves 1')).toBeOnTheScreen();
     });
 
     it('reports extra moves', async () => {

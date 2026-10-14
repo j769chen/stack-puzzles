@@ -24,6 +24,18 @@ describe('useHistory', () => {
     expect(result.current.moves).toBe(0);
   });
 
+  it('drops the undone future when a new move is made', async () => {
+    const { result } = await renderHook(() => useHistory(() => 0));
+    await act(() => result.current.push(1));
+    await act(() => result.current.push(2));
+    await act(() => result.current.undo());
+    await act(() => result.current.push(3));
+    expect(result.current.current).toBe(3);
+    expect(result.current.moves).toBe(2);
+    await act(() => result.current.undo());
+    expect(result.current.current).toBe(1);
+  });
+
   it('ignores undo at the start', async () => {
     const { result } = await renderHook(() => useHistory(() => 'start'));
     await act(() => result.current.undo());

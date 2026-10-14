@@ -47,6 +47,18 @@ describe('HoopBoard', () => {
     expect(spots.size).toBe(count);
   });
 
+  it.each([5, 7, 12])('centers every row of %i rods under the camera', async (count) => {
+    const r = await renderBoard({ rods: Array.from({ length: count }, () => []) });
+    const byRow = new Map<number, number[]>();
+    for (const g of rodGroups(r)) {
+      const { x, z } = g.instance.position;
+      byRow.set(z, [...(byRow.get(z) ?? []), x]);
+    }
+    for (const xs of byRow.values()) expect(xs.reduce((a, b) => a + b, 0)).toBeCloseTo(0);
+    const rowZs = [...byRow.keys()];
+    expect(rowZs.reduce((a, b) => a + b, 0)).toBeCloseTo(0);
+  });
+
   it('keeps the same ring objects when they are poured onto another rod', async () => {
     const before: Rods = [[0, 1, 1], [1], []];
     const ids = idsFor(before);
