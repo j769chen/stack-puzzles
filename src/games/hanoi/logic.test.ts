@@ -20,6 +20,38 @@ function solveWithHints(state: HanoiState, disks: number) {
   return { state, moves };
 }
 
+function allStates(disks: number): HanoiState[] {
+  const states: HanoiState[] = [];
+  for (let code = 0; code < 3 ** disks; code++) {
+    const state: HanoiState = [[], [], []];
+    for (let size = disks, rest = code; size >= 1; size--, rest = Math.floor(rest / 3)) state[rest % 3].push(size);
+    states.push(state);
+  }
+  return states;
+}
+
+const key = (state: HanoiState) => state.map((peg) => peg.join(',')).join('|');
+
+function distancesTo(target: HanoiState): Map<string, number> {
+  const distance = new Map([[key(target), 0]]);
+  for (let frontier = [target]; frontier.length; ) {
+    const next: HanoiState[] = [];
+    for (const state of frontier)
+      for (let from = 0; from < 3; from++)
+        for (let to = 0; to < 3; to++) {
+          if (!canMoveDisk(state, from, to)) continue;
+          const after = moveDisk(state, from, to);
+          if (distance.has(key(after))) continue;
+          distance.set(key(after), distance.get(key(state))! + 1);
+          next.push(after);
+        }
+    frontier = next;
+  }
+  return distance;
+}
+
+const isWellStacked = (state: HanoiState) => state.every((peg) => peg.every((d, i) => i === 0 || peg[i - 1] > d));
+
 describe('hanoi logic', () => {
   it('maps levels to disk counts and caps at the last level', () => {
     expect(disksForLevel(1)).toBe(3);
@@ -62,6 +94,37 @@ describe('hanoi logic', () => {
   it('finishes from a scrambled mid-game state', () => {
     const { state } = solveWithHints([[5], [4, 1], [3, 2]], 5);
     expect(isHanoiSolved(state, 5)).toBe(true);
+  });
+
+  describe.each([1, 2, 3, 4, 5])('every position with %i disks', (disks) => {
+    const states = allStates(disks);
+    const tower = Array.from({ length: disks }, (_, i) => disks - i);
+    const toMiddle = distancesTo([[], tower, []]);
+    const toRight = distancesTo([[], [], tower]);
+
+    it('is reachable, so the search covers the whole game', () => {
+      expect(toRight.size).toBe(3 ** disks);
+      expect(states.every(isWellStacked)).toBe(true);
+    });
+
+    it('only ever allows moves that keep every peg well stacked', () => {
+      for (const state of states)
+        for (let from = 0; from < 3; from++)
+          for (let to = 0; to < 3; to++)
+            if (canMoveDisk(state, from, to)) expect(isWellStacked(moveDisk(state, from, to))).toBe(true);
+    });
+
+    it('is solved by following hints in exactly the fewest moves to the hinted tower', () => {
+      for (const start of states) {
+        const largestOn = start.findIndex((peg) => peg[0] === disks);
+        const target = largestOn === 1 ? toMiddle : toRight;
+        const { state, moves } = solveWithHints(start, disks);
+        expect(isHanoiSolved(state, disks)).toBe(true);
+        expect(state[largestOn === 1 ? 1 : 2]).toEqual(tower);
+        expect(moves).toBe(target.get(key(start)));
+        expect(moves).toBeLessThanOrEqual(minMoves(disks));
+      }
+    });
   });
 
   it('gives no hint once solved', () => {

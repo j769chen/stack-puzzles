@@ -42,6 +42,31 @@ describe('usePersistentNumber', () => {
     expect(result.current[0]).toBe(1);
   });
 
+  it('does not update after unmounting before storage answers', async () => {
+    let answer: (value: string | null) => void = () => {};
+    jest.mocked(AsyncStorage.getItem).mockReturnValueOnce(new Promise((resolve) => (answer = resolve)));
+    const errors = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const { result, unmount } = await renderHook(() => usePersistentNumber('level', 1));
+    unmount();
+    await act(async () => answer('9'));
+    expect(result.current[0]).toBe(1);
+    expect(errors).not.toHaveBeenCalled();
+    errors.mockRestore();
+  });
+
+  it('reloads when the key changes', async () => {
+    await AsyncStorage.multiSet([
+      ['a', '3'],
+      ['b', '8'],
+    ]);
+    const { result, rerender } = await renderHook(({ key }: { key: string }) => usePersistentNumber(key, 1), {
+      initialProps: { key: 'a' },
+    });
+    await waitFor(() => expect(result.current[0]).toBe(3));
+    await rerender({ key: 'b' });
+    await waitFor(() => expect(result.current[0]).toBe(8));
+  });
+
   it('saves updates', async () => {
     const { result } = await load();
     await act(() => result.current[1](4));

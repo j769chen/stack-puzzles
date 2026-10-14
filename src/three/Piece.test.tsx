@@ -54,6 +54,33 @@ describe('Piece', () => {
     expect(group.position.toArray()).toEqual([2, 0, 0]);
   });
 
+  it('moves a bounded distance on a long frame hitch instead of teleporting', async () => {
+    const { renderer, group, moveTo } = await renderPiece(0, 0);
+    await moveTo(0, 2);
+    await renderer.advanceFrames(1, 1);
+    expect(group.position.y).toBeGreaterThan(0);
+    expect(group.position.y).toBeLessThanOrEqual(1);
+  });
+
+  it('crosses at its current height when already above the lift line', async () => {
+    const { renderer, group, moveTo } = await renderPiece(0, LIFT + 1);
+    await moveTo(2, 0);
+    let highest = 0;
+    for (let i = 0; i < 120; i++) {
+      await renderer.advanceFrames(1, 0.016);
+      highest = Math.max(highest, group.position.y);
+    }
+    expect(highest).toBe(LIFT + 1);
+    expect(group.position.toArray()).toEqual([2, 0, 0]);
+  });
+
+  it('stays put when re-rendered at the same spot', async () => {
+    const { renderer, group, moveTo } = await renderPiece(1, 1);
+    await moveTo(1, 1);
+    await renderer.advanceFrames(10, 0.016);
+    expect(group.position.toArray()).toEqual([1, 1, 0]);
+  });
+
   it('replans from wherever it is when the target changes mid-flight', async () => {
     const { renderer, group, moveTo } = await renderPiece(0, 0);
     await moveTo(2, 0);

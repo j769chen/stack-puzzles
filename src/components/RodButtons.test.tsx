@@ -39,6 +39,16 @@ describe('RodButtons', () => {
     expect(screen.getByRole('button', { name: 'Rod 4' }).props.accessibilityHint).toBe('Moves here');
   });
 
+  it('maps buttons in uneven rows to the right rods', async () => {
+    screenReader(true);
+    const onPress = jest.fn();
+    const twelve = Array.from({ length: 12 }, (_, i) => `Rod ${i + 1}`);
+    await renderButtons({ labels: twelve, rowSizes: [4, 4, 4], onPress });
+    await fireEvent.press(screen.getByRole('button', { name: 'Rod 9' }));
+    expect(onPress).toHaveBeenCalledWith(8);
+    expect(screen.getAllByRole('button').map((b) => b.props.accessibilityLabel)).toEqual(twelve);
+  });
+
   it('presses the matching rod', async () => {
     screenReader(true);
     const onPress = jest.fn();

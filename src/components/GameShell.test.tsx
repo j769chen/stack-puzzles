@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { AccessibilityInfo, Text } from 'react-native';
+import { feedback } from '../feedback';
 import { GameShell } from './GameShell';
 
 async function renderShell(overrides: Partial<Parameters<typeof GameShell>[0]> = {}) {
@@ -32,6 +33,11 @@ describe('GameShell', () => {
     expect(screen.getByText('Moves 5')).toBeOnTheScreen();
     expect(screen.getByText('Do the thing')).toBeOnTheScreen();
     expect(screen.getByText('board')).toBeOnTheScreen();
+  });
+
+  it('keeps the message line in place when there is no message', async () => {
+    await renderShell({ message: null });
+    expect(screen.getByText(' ')).toBeOnTheScreen();
   });
 
   it('wires the header and control buttons', async () => {
@@ -77,6 +83,25 @@ describe('GameShell', () => {
       await fireEvent.press(screen.getByText('Menu'));
       expect(props.onNext).toHaveBeenCalledTimes(1);
       expect(props.onBack).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not show the win card if it unmounts before the delay', async () => {
+      const errors = jest.spyOn(console, 'error').mockImplementation(() => {});
+      await renderShell({ won: true });
+      screen.unmount();
+      await act(() => jest.advanceTimersByTime(650));
+      expect(errors).not.toHaveBeenCalled();
+      errors.mockRestore();
+    });
+
+    it('plays the win feedback once, the moment the game is won', async () => {
+      const win = jest.spyOn(feedback, 'win');
+      const props = await renderShell();
+      expect(win).not.toHaveBeenCalled();
+      await screen.rerender(<GameShell {...props} won />);
+      await screen.rerender(<GameShell {...props} won moves={6} />);
+      expect(win).toHaveBeenCalledTimes(1);
+      win.mockRestore();
     });
 
     it('locks undo and hint', async () => {
