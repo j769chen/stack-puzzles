@@ -3,6 +3,7 @@ import { Vector2 } from 'three';
 import { Board } from '../../three/Board';
 import { Piece } from '../../three/Piece';
 import { Plank, Rod } from '../../three/Rod';
+import { standardMaterial } from '../../three/shared';
 import { theme } from '../../theme';
 import type { Move } from '../useHistory';
 import type { HanoiState } from './logic';
@@ -67,9 +68,8 @@ export function HanoiBoard({ state, disks, selected, hint, onPress }: Props) {
 function Disk({ radius, color }: { radius: number; color: string }) {
   const profile = useMemo(() => ringProfile(HOLE, radius, DISK_H - 0.03, 0.1), [radius]);
   return (
-    <mesh position-y={0.015} castShadow receiveShadow>
+    <mesh material={standardMaterial(color, 0.35)} position-y={0.015} castShadow receiveShadow>
       <latheGeometry args={[profile, 56]} />
-      <meshStandardMaterial color={color} roughness={0.35} />
     </mesh>
   );
 }

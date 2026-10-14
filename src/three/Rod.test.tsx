@@ -42,3 +42,20 @@ describe('Plank', () => {
     expect(renderer.scene.children[0].instance.position.toArray()).toEqual([0, -0.15, 1]);
   });
 });
+
+describe('shared resources', () => {
+  it('reuses geometry and materials across rods', async () => {
+    const renderer = await create(
+      <>
+        <Rod {...props} onPress={jest.fn()} />
+        <Rod {...props} x={3} height={5} onPress={jest.fn()} />
+      </>,
+    );
+    const [a, b] = renderer.scene.children.map((g) => g.children.map((c) => c.instance as Mesh));
+    a.forEach((mesh, i) => {
+      expect(mesh.geometry).toBe(b[i].geometry);
+      expect(mesh.material).toBe(b[i].material);
+    });
+    expect(b[0].scale.y).toBe(5);
+  });
+});

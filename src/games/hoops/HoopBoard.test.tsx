@@ -1,5 +1,5 @@
 import { create } from '@react-three/test-renderer';
-import { Color, type CylinderGeometry, type Mesh, type MeshStandardMaterial, type Object3D } from 'three';
+import { Color, type Mesh, type MeshStandardMaterial, type Object3D } from 'three';
 import { theme } from '../../theme';
 import type { Move } from '../useHistory';
 import { HoopBoard } from './HoopBoard';
@@ -85,7 +85,7 @@ describe('HoopBoard', () => {
   it('grows the poles and marks completion for taller rods', async () => {
     const short = await renderBoard({ rods: [[1, 1, 1, 1], []] });
     const tall = await renderBoard({ rods: [[1, 1, 1, 1], []], capacity: 6 });
-    const poleHeight = (r: Renderer) => ((rodGroups(r)[0].children[0].instance as Mesh).geometry as CylinderGeometry).parameters.height;
+    const poleHeight = (r: Renderer) => rodGroups(r)[0].children[0].instance.scale.y;
     expect(poleHeight(tall)).toBeGreaterThan(poleHeight(short));
     expect(poleColor(short, 0).equals(new Color(theme.done))).toBe(true);
     expect(poleColor(tall, 0).equals(new Color(theme.pole))).toBe(true);
@@ -95,6 +95,13 @@ describe('HoopBoard', () => {
     const r = await renderBoard({ rods: [[4]] });
     const mat = (rings(r)[0].children[0] as Mesh).material as MeshStandardMaterial;
     expect(mat.color.equals(new Color(theme.rings[4]))).toBe(true);
+  });
+
+  it('shares one geometry across all rings and one material per color', async () => {
+    const r = await renderBoard({ rods: [[0, 1, 0, 1], [1, 0, 1, 0], [2, 2], [2, 2]] });
+    const meshes = rings(r).map((o) => o.children[0] as Mesh);
+    expect(new Set(meshes.map((m) => m.geometry)).size).toBe(1);
+    expect(new Set(meshes.map((m) => m.material)).size).toBe(3);
   });
 
   it('reports which rod was tapped', async () => {
