@@ -44,6 +44,11 @@ describe('HoopScreen', () => {
     logic.generateLevel(1).forEach((rod, i) => expect(rodText(i)).toBe(rod.join(',')));
   });
 
+  it('shows the fewest moves the level needs', async () => {
+    await start([[0, 1], [1], [0, 0, 0, 1], [], [1]]);
+    expect(screen.getByText('Sort each color onto its own rod · best 4')).toBeOnTheScreen();
+  });
+
   it('pours a matching run and counts the move', async () => {
     await start([[0, 1], [1], [0, 0, 0, 1], [], [1]]);
     await pour(0, 1);
@@ -52,7 +57,7 @@ describe('HoopScreen', () => {
   });
 
   it('will not select an empty or complete rod', async () => {
-    await start([[0, 0, 0, 0], [], [1, 1, 1, 0], [1]]);
+    await start([[0, 0, 0, 0], [], [1, 1, 1], [1]]);
     await fireEvent.press(screen.getByTestId('rod-0'));
     await fireEvent.press(screen.getByTestId('rod-1'));
     expect(rodText(0)).toBe('0,0,0,0');
@@ -60,19 +65,20 @@ describe('HoopScreen', () => {
   });
 
   it('switches selection when a pour is not allowed, and deselects on a second tap', async () => {
-    await start([[0, 1], [1, 0], []]);
+    await start([[0, 0, 1], [1, 1, 0], [0, 1], []]);
     await pour(0, 1);
-    expect(rodText(1)).toBe('*1,0');
+    expect(rodText(1)).toBe('*1,1,0');
     await fireEvent.press(screen.getByTestId('rod-1'));
-    expect(rodText(1)).toBe('1,0');
+    expect(rodText(1)).toBe('1,1,0');
   });
 
   it('undoes and restarts', async () => {
-    await start([[0, 1], [1], [0, 0, 0, 1], []]);
+    await start([[0, 1], [1], [0, 0, 0, 1], [], [1]]);
     await pour(0, 1);
-    await pour(2, 0);
+    await pour(4, 1);
     await fireEvent.press(screen.getByText('Undo'));
-    expect(rodText(2)).toBe('0,0,0,1');
+    expect(rodText(1)).toBe('1,1');
+    expect(rodText(4)).toBe('1');
     await fireEvent.press(screen.getByText('Restart'));
     expect(rodText(0)).toBe('0,1');
     expect(screen.getByText('Moves 0')).toBeOnTheScreen();
@@ -100,7 +106,8 @@ describe('HoopScreen', () => {
   });
 
   it('reports a dead end', async () => {
-    await start([[0, 1, 0, 1], [1, 0, 1, 0]]);
+    await start([[0, 2, 1, 1], [1, 2, 0, 0], [2, 1, 2, 0], []]);
+    await pour(0, 3);
     expect(screen.getByText('No moves left. Undo or restart.')).toBeOnTheScreen();
     await fireEvent.press(screen.getByText('Hint'));
     expect(screen.getByText('No solution from here. Try undo.')).toBeOnTheScreen();
@@ -118,10 +125,18 @@ describe('HoopScreen', () => {
         await pour(from, to);
         await act(() => jest.advanceTimersByTime(650));
       }
-      expect(screen.getByText(/^Sorted in \d+ moves\.$/)).toBeOnTheScreen();
+      expect(screen.getByText(/^Perfect! \d+ moves, the minimum possible\.$/)).toBeOnTheScreen();
       await fireEvent.press(screen.getByText('Next level'));
       expect(await screen.findByText('Level 2')).toBeOnTheScreen();
       expect(await AsyncStorage.getItem('hoops.level')).toBe('2');
+    });
+
+    it('reports extra moves against the minimum', async () => {
+      await start([[0, 1], [1], [0, 0, 0, 1], [], [1]]);
+      await pour(4, 3);
+      for (const [from, to] of logic.solveHoops([[0, 1], [1], [0, 0, 0, 1], [1], []])!) await pour(from, to);
+      await act(() => jest.advanceTimersByTime(650));
+      expect(screen.getByText(/^\d+ moves\. The minimum is 4\.$/)).toBeOnTheScreen();
     });
   });
 });

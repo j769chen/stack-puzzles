@@ -13,6 +13,28 @@ import {
   topRun,
 } from './logic';
 
+function fewestMovesByBruteForce(start: Rods) {
+  const key = (rods: Rods) => rods.map((r) => r.join(',')).sort().join('|');
+  const seen = new Set([key(start)]);
+  let frontier = [start];
+  for (let depth = 0; frontier.length; depth++) {
+    if (frontier.some((rods) => isHoopsSolved(rods))) return depth;
+    const next: Rods[] = [];
+    for (const rods of frontier)
+      rods.forEach((_, from) =>
+        rods.forEach((_, to) => {
+          if (!canPour(rods, from, to)) return;
+          const after = pour(rods, from, to);
+          if (seen.has(key(after))) return;
+          seen.add(key(after));
+          next.push(after);
+        }),
+      );
+    frontier = next;
+  }
+  return null;
+}
+
 function play(rods: Rods, path: [number, number][]) {
   for (const [from, to] of path) {
     expect(canPour(rods, from, to)).toBe(true);
@@ -85,6 +107,11 @@ describe('hoops logic', () => {
     const path = solveHoops(rods);
     expect(path).not.toBeNull();
     expect(isHoopsSolved(play(rods, path!))).toBe(true);
+  });
+
+  it.each([1, 2, 4, 7, 10])('finds the shortest solution for level %i', (level) => {
+    const rods = generateLevel(level);
+    expect(solveHoops(rods)).toHaveLength(fewestMovesByBruteForce(rods)!);
   });
 
   it('returns null for a dead end', () => {
