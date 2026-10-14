@@ -1,5 +1,6 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { updateSettings, useSettings } from './settings';
 import { theme } from './theme';
 import { usePersistentNumber } from './usePersistentNumber';
 
@@ -8,6 +9,7 @@ type Props = { onOpen: (game: 'hanoi' | 'hoops') => void };
 export function HomeScreen({ onOpen }: Props) {
   const [hanoiLevel, , hanoiLoaded] = usePersistentNumber('hanoi.level', 1);
   const [hoopLevel, , hoopLoaded] = usePersistentNumber('hoops.level', 1);
+  const settings = useSettings();
 
   return (
     <SafeAreaView style={styles.root}>
@@ -30,7 +32,28 @@ export function HomeScreen({ onOpen }: Props) {
         colors={[theme.rings[0], theme.rings[5], theme.rings[2]]}
         onPress={() => onOpen('hoops')}
       />
+
+      <View style={styles.settings}>
+        <SettingRow label="Sound" value={settings.sound} onChange={(sound) => updateSettings({ sound })} />
+        <SettingRow label="Haptics" value={settings.haptics} onChange={(haptics) => updateSettings({ haptics })} />
+      </View>
     </SafeAreaView>
+  );
+}
+
+type SettingProps = { label: string; value: boolean; onChange: (value: boolean) => void };
+
+function SettingRow({ label, value, onChange }: SettingProps) {
+  return (
+    <View style={styles.settingRow}>
+      <Text style={styles.settingLabel}>{label}</Text>
+      <Switch
+        value={value}
+        onValueChange={onChange}
+        accessibilityLabel={label}
+        trackColor={{ true: theme.accent, false: theme.border }}
+      />
+    </View>
   );
 }
 
@@ -83,4 +106,7 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 20, fontWeight: '800', color: theme.ink },
   cardText: { fontSize: 14, color: theme.muted, lineHeight: 19 },
   cardLevel: { fontSize: 15, fontWeight: '700', color: theme.accent, marginTop: 4 },
+  settings: { backgroundColor: theme.card, borderRadius: 20, paddingHorizontal: 18, paddingVertical: 6, marginTop: 8 },
+  settingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8 },
+  settingLabel: { fontSize: 16, fontWeight: '600', color: theme.ink },
 });

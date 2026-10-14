@@ -1,8 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { HomeScreen } from './HomeScreen';
+import { getSettings, loadSettings } from './settings';
 
-beforeEach(() => AsyncStorage.clear());
+beforeEach(async () => {
+  await AsyncStorage.clear();
+  await loadSettings();
+});
 
 describe('HomeScreen', () => {
   it('shows each game at its saved level', async () => {
@@ -27,6 +31,27 @@ describe('HomeScreen', () => {
     await render(<HomeScreen onOpen={jest.fn()} />);
     expect(await screen.findByRole('button', { name: 'Tower Stack, level 4' })).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: 'Ring Sort, level 1' })).toBeOnTheScreen();
+  });
+
+  it('shows sound and haptics switches that reflect saved settings', async () => {
+    await AsyncStorage.setItem('settings', JSON.stringify({ sound: false }));
+    await loadSettings();
+    await render(<HomeScreen onOpen={jest.fn()} />);
+    await screen.findAllByText('Level 1 ›');
+    expect(screen.getByRole('switch', { name: 'Sound' })).toHaveProp('value', false);
+    expect(screen.getByRole('switch', { name: 'Haptics' })).toHaveProp('value', true);
+  });
+
+  it('turns sound and haptics off and on', async () => {
+    await render(<HomeScreen onOpen={jest.fn()} />);
+    await screen.findAllByText('Level 1 ›');
+    await fireEvent(screen.getByRole('switch', { name: 'Sound' }), 'valueChange', false);
+    await fireEvent(screen.getByRole('switch', { name: 'Haptics' }), 'valueChange', false);
+    expect(getSettings()).toEqual({ sound: false, haptics: false });
+    expect(screen.getByRole('switch', { name: 'Sound' })).toHaveProp('value', false);
+
+    await fireEvent(screen.getByRole('switch', { name: 'Sound' }), 'valueChange', true);
+    expect(getSettings()).toEqual({ sound: true, haptics: false });
   });
 
   it('opens the chosen game', async () => {

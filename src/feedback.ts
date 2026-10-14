@@ -4,6 +4,7 @@ import complete from '../assets/sounds/complete.wav';
 import drop from '../assets/sounds/drop.wav';
 import pick from '../assets/sounds/pick.wav';
 import win from '../assets/sounds/win.wav';
+import { getSettings } from './settings';
 
 const sounds = { pick, drop, complete, win };
 type Sound = keyof typeof sounds;
@@ -11,6 +12,7 @@ type Sound = keyof typeof sounds;
 const players = new Map<Sound, AudioPlayer>();
 
 function play(sound: Sound) {
+  if (!getSettings().sound) return;
   let player = players.get(sound);
   if (!player) {
     if (players.size === 0) setAudioModeAsync({ playsInSilentMode: false, interruptionMode: 'mixWithOthers' });
@@ -21,21 +23,25 @@ function play(sound: Sound) {
   player.play();
 }
 
+function buzz(haptic: () => Promise<void>) {
+  if (getSettings().haptics) haptic();
+}
+
 export const feedback = {
   pick() {
-    Haptics.selectionAsync();
+    buzz(Haptics.selectionAsync);
     play('pick');
   },
   drop() {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    buzz(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light));
     play('drop');
   },
   complete() {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    buzz(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy));
     play('complete');
   },
   win() {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    buzz(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success));
     play('win');
   },
 };

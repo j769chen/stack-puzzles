@@ -5,7 +5,7 @@ Two stacking puzzles in one Expo / React Native app, rendered in 3D with three.j
 - Tower Stack: Tower of Hanoi with 3 to 10 disks across 8 levels. Includes a move counter against the optimal count, undo, restart, and an optimal next-move hint.
 - Ring Sort: sort colored rings onto rods. Levels are endless and seeded, so the same level number always deals the same rings. Every level is checked solvable before it is shown. Colors ramp from 3 to 10, then the rods grow to hold 5 rings from level 25 and 6 from level 37, with colors ramping again at each height. Includes undo, restart, shortest-path hints, a best move count, and stuck detection.
 
-Level progress persists with AsyncStorage.
+Both games give haptic and sound feedback, each of which can be switched off on the home screen. Level progress and settings persist with AsyncStorage.
 
 ## Run
 

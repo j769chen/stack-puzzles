@@ -1,6 +1,7 @@
 import { createAudioPlayer, setAudioModeAsync } from 'expo-audio';
 import * as Haptics from 'expo-haptics';
 import { feedback } from './feedback';
+import { updateSettings } from './settings';
 
 jest.mock('../assets/sounds/pick.wav', () => 'pick');
 jest.mock('../assets/sounds/drop.wav', () => 'drop');
@@ -24,6 +25,8 @@ function playerFor(sound: string) {
     creations: created.calls.filter(([source]) => source === sound).length,
   };
 }
+
+afterEach(() => updateSettings({ sound: true, haptics: true }));
 
 describe('feedback', () => {
   it('ticks and plays a click when a piece is picked up', () => {
@@ -50,6 +53,37 @@ describe('feedback', () => {
     expect(playerFor('pick').creations).toBe(1);
     expect(player!.seekTo).toHaveBeenLastCalledWith(0);
     expect(player!.play).toHaveBeenCalledTimes(plays + 2);
+  });
+
+  it('stays silent when sound is off but still buzzes', () => {
+    feedback.drop();
+    const { player } = playerFor('drop');
+    const plays = player!.play.mock.calls.length;
+    jest.mocked(Haptics.impactAsync).mockClear();
+
+    updateSettings({ sound: false });
+    feedback.drop();
+    expect(player!.play).toHaveBeenCalledTimes(plays);
+    expect(Haptics.impactAsync).toHaveBeenCalledTimes(1);
+  });
+
+  it('skips every haptic when haptics are off but still plays sound', () => {
+    feedback.win();
+    const { player } = playerFor('win');
+    const plays = player!.play.mock.calls.length;
+    jest.mocked(Haptics.selectionAsync).mockClear();
+    jest.mocked(Haptics.impactAsync).mockClear();
+    jest.mocked(Haptics.notificationAsync).mockClear();
+
+    updateSettings({ haptics: false });
+    feedback.pick();
+    feedback.drop();
+    feedback.complete();
+    feedback.win();
+    expect(Haptics.selectionAsync).not.toHaveBeenCalled();
+    expect(Haptics.impactAsync).not.toHaveBeenCalled();
+    expect(Haptics.notificationAsync).not.toHaveBeenCalled();
+    expect(player!.play).toHaveBeenCalledTimes(plays + 1);
   });
 
   it('mixes with other audio and respects the silent switch, set up once', () => {
