@@ -29,6 +29,8 @@ npm run test:coverage   # jest with coverage thresholds
 npm run check           # typecheck, lint and tests
 ```
 
+Sound effects in `assets/sounds` are synthesized by `node scripts/generate-sounds.mjs`; tweak the tones there and rerun it.
+
 Tests live next to the code they cover. Game rules and solvers are plain unit tests, screens use React Native Testing Library with the 3D board swapped for tappable stand-ins, and the 3D pieces, rods and boards render through `@react-three/test-renderer`.
 
 ## CI

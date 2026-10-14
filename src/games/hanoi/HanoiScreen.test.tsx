@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, fireEvent, renderAsync, screen } from '@testing-library/react-native';
 import { AccessibilityInfo } from 'react-native';
+import { feedback } from '../../feedback';
 import { HanoiScreen } from './HanoiScreen';
 import * as logic from './logic';
 
@@ -94,6 +95,17 @@ describe('HanoiScreen', () => {
     expect(screen.getByText('Moves 0')).toBeOnTheScreen();
   });
 
+  it('gives feedback when picking up and dropping a disk', async () => {
+    const pick = jest.spyOn(feedback, 'pick');
+    const drop = jest.spyOn(feedback, 'drop');
+    await start();
+    await fireEvent.press(peg(1));
+    expect(pick).not.toHaveBeenCalled();
+    await move(0, 2);
+    expect(pick).toHaveBeenCalledTimes(1);
+    expect(drop).toHaveBeenCalledTimes(1);
+  });
+
   it('names the hinted pegs by position', async () => {
     await start();
     await fireEvent.press(screen.getByText('Hint'));
@@ -153,7 +165,11 @@ describe('HanoiScreen', () => {
       await AsyncStorage.setItem('hanoi.level', String(HANOI_MAX_LEVEL));
       await renderAsync(<HanoiScreen onBack={jest.fn()} />);
       await act(() => jest.runAllTimersAsync());
+      const drop = jest.spyOn(feedback, 'drop');
+      const win = jest.spyOn(feedback, 'win');
       await move(0, 2);
+      expect(drop).not.toHaveBeenCalled();
+      expect(win).toHaveBeenCalledTimes(1);
       await act(() => jest.advanceTimersByTime(650));
       await fireEvent.press(screen.getByText('Play again from level 1'));
       await act(() => jest.runAllTimersAsync());

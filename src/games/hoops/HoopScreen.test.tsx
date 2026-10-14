@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, fireEvent, renderAsync, screen } from '@testing-library/react-native';
 import { AccessibilityInfo } from 'react-native';
+import { feedback } from '../../feedback';
 import { HoopScreen } from './HoopScreen';
 import * as logic from './logic';
 
@@ -67,6 +68,18 @@ describe('HoopScreen', () => {
     await pour(0, 1);
     expect(rodText(1)).toBe('1,1');
     expect(screen.getByText('Moves 1')).toBeOnTheScreen();
+  });
+
+  it('chimes when a pour completes a rod, and taps otherwise', async () => {
+    const drop = jest.spyOn(feedback, 'drop');
+    const complete = jest.spyOn(feedback, 'complete');
+    await start([[0, 1], [1], [0, 0, 0, 1], [], [1]]);
+    await pour(0, 1);
+    expect(drop).toHaveBeenCalledTimes(1);
+    await pour(4, 1);
+    await pour(2, 1);
+    expect(complete).toHaveBeenCalledTimes(1);
+    expect(drop).toHaveBeenCalledTimes(2);
   });
 
   it('will not select an empty or complete rod', async () => {
