@@ -25,6 +25,7 @@ describe('HomeScreen', () => {
   it('opens the chosen game', async () => {
     const onOpen = jest.fn();
     await render(<HomeScreen onOpen={onOpen} />);
+    await screen.findAllByText('Level 1 ›');
     await fireEvent.press(screen.getByText('Tower Stack'));
     await fireEvent.press(screen.getByText('Ring Sort'));
     expect(onOpen.mock.calls).toEqual([['hanoi'], ['hoops']]);
