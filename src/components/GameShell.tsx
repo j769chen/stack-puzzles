@@ -25,8 +25,7 @@ export function GameShell(props: Props) {
   const [showWin, setShowWin] = useState(false);
 
   useEffect(() => {
-    setShowWin(false);
-    if (!props.won) return;
+    if (!props.won) return setShowWin(false);
     const timer = setTimeout(() => setShowWin(true), 650);
     return () => clearTimeout(timer);
   }, [props.won]);
