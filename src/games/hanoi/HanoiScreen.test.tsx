@@ -1,9 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, renderAsync, screen } from '@testing-library/react-native';
+import { AccessibilityInfo } from 'react-native';
 import { HanoiScreen } from './HanoiScreen';
 import * as logic from './logic';
 
 const { HANOI_MAX_LEVEL, minMoves } = logic;
+
+let mockScreenReader = false;
+jest.mock('../../useScreenReader', () => ({ useScreenReader: () => mockScreenReader }));
 
 jest.mock('./HanoiBoard', () => {
   const { Pressable, Text } = jest.requireActual<typeof import('react-native')>('react-native');
@@ -27,7 +31,7 @@ async function move(from: number, to: number) {
 
 async function start(level?: number) {
   if (level) await AsyncStorage.setItem('hanoi.level', String(level));
-  await render(<HanoiScreen onBack={jest.fn()} />);
+  await renderAsync(<HanoiScreen onBack={jest.fn()} />);
   await screen.findByText(`Level ${level ?? 1}`);
 }
 
@@ -96,6 +100,33 @@ describe('HanoiScreen', () => {
     expect(screen.getByText('Move the top disk from the left peg to the right peg')).toBeOnTheScreen();
   });
 
+  describe('with a screen reader', () => {
+    beforeEach(() => (mockScreenReader = true));
+    afterEach(() => (mockScreenReader = false));
+
+    it('describes each peg and plays through the peg buttons', async () => {
+      await start();
+      const left = await screen.findByRole('button', { name: 'left peg, disks 3, 2, 1 from the bottom' });
+      expect(screen.getByRole('button', { name: 'right peg, empty' })).toBeOnTheScreen();
+
+      await fireEvent.press(left);
+      expect(screen.getByRole('button', { name: /^left peg/ })).toBeSelected();
+      await fireEvent.press(screen.getByRole('button', { name: 'right peg, empty' }));
+      expect(screen.getByRole('button', { name: 'right peg, disks 1 from the bottom' })).toBeOnTheScreen();
+      expect(AccessibilityInfo.announceForAccessibility).toHaveBeenCalledWith('Moved disk 1 to the right peg');
+    });
+
+    it('announces the hint and marks the pegs', async () => {
+      await start();
+      await fireEvent.press(screen.getByText('Hint'));
+      expect(AccessibilityInfo.announceForAccessibility).toHaveBeenCalledWith(
+        'Hint: move the top disk from the left peg to the right peg',
+      );
+      expect(await screen.findByRole('button', { name: /^left peg.*hint: move from here$/ })).toBeOnTheScreen();
+      expect(screen.getByRole('button', { name: 'right peg, empty, hint: move here' })).toBeOnTheScreen();
+    });
+  });
+
   describe('winning', () => {
     beforeEach(() => jest.useFakeTimers());
     afterEach(() => jest.useRealTimers());
@@ -120,7 +151,7 @@ describe('HanoiScreen', () => {
     it('wraps to level 1 after the last level', async () => {
       jest.spyOn(logic, 'disksForLevel').mockReturnValue(1);
       await AsyncStorage.setItem('hanoi.level', String(HANOI_MAX_LEVEL));
-      await render(<HanoiScreen onBack={jest.fn()} />);
+      await renderAsync(<HanoiScreen onBack={jest.fn()} />);
       await act(() => jest.runAllTimersAsync());
       await move(0, 2);
       await act(() => jest.advanceTimersByTime(650));

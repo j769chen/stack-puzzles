@@ -22,6 +22,13 @@ describe('HomeScreen', () => {
     expect(screen.queryByText(/Level/)).toBeNull();
   });
 
+  it('labels each game card with its level', async () => {
+    await AsyncStorage.setItem('hanoi.level', '4');
+    await render(<HomeScreen onOpen={jest.fn()} />);
+    expect(await screen.findByRole('button', { name: 'Tower Stack, level 4' })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Ring Sort, level 1' })).toBeOnTheScreen();
+  });
+
   it('opens the chosen game', async () => {
     const onOpen = jest.fn();
     await render(<HomeScreen onOpen={onOpen} />);

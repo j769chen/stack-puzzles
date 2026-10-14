@@ -1,9 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, renderAsync, screen } from '@testing-library/react-native';
+import { AccessibilityInfo } from 'react-native';
 import { HoopScreen } from './HoopScreen';
 import * as logic from './logic';
 
 type MockBoardProps = { rods: number[][]; selected: number | null; hint: [number, number] | null; onPress: (rod: number) => void };
+
+let mockScreenReader = false;
+jest.mock('../../useScreenReader', () => ({ useScreenReader: () => mockScreenReader }));
 
 jest.mock('./HoopBoard', () => {
   const { Pressable, Text } = jest.requireActual<typeof import('react-native')>('react-native');
@@ -31,7 +35,7 @@ async function pour(from: number, to: number) {
 
 async function start(rods?: logic.Rods) {
   if (rods) jest.spyOn(logic, 'generateLevel').mockReturnValueOnce(rods);
-  await render(<HoopScreen onBack={jest.fn()} />);
+  await renderAsync(<HoopScreen onBack={jest.fn()} />);
   await screen.findByText('Level 1');
 }
 
@@ -51,7 +55,7 @@ describe('HoopScreen', () => {
 
   it('deals taller rods on later levels', async () => {
     await AsyncStorage.setItem('hoops.level', '30');
-    await render(<HoopScreen onBack={jest.fn()} />);
+    await renderAsync(<HoopScreen onBack={jest.fn()} />);
     await screen.findByText('Level 30');
     const { colors, capacity } = logic.levelSpec(30);
     expect(capacity).toBe(5);
@@ -120,6 +124,37 @@ describe('HoopScreen', () => {
     expect(screen.getByText('No moves left. Undo or restart.')).toBeOnTheScreen();
     await fireEvent.press(screen.getByText('Hint'));
     expect(screen.getByText('No solution from here. Try undo.')).toBeOnTheScreen();
+  });
+
+  describe('with a screen reader', () => {
+    beforeEach(() => (mockScreenReader = true));
+    afterEach(() => (mockScreenReader = false));
+
+    it('describes each rod by color and plays through the rod buttons', async () => {
+      await start([[0, 0, 0, 0], [], [1, 1], [1, 1]]);
+      expect(await screen.findByRole('button', { name: 'Rod 1, complete, red' })).toBeOnTheScreen();
+      expect(screen.getByRole('button', { name: 'Rod 2, empty' })).toBeOnTheScreen();
+      const source = screen.getByRole('button', { name: 'Rod 4, orange, orange from the bottom, top 2 orange' });
+
+      await fireEvent.press(source);
+      await fireEvent.press(screen.getByRole('button', { name: 'Rod 2, empty' }));
+      expect(AccessibilityInfo.announceForAccessibility).toHaveBeenCalledWith('Moved 2 orange to rod 2');
+      expect(screen.getByRole('button', { name: 'Rod 2, orange, orange from the bottom, top 2 orange' })).toBeOnTheScreen();
+    });
+
+    it('announces the hint with rod numbers', async () => {
+      await start([[0, 1], [1], [0, 0, 0, 1], [], [1]]);
+      await fireEvent.press(screen.getByText('Hint'));
+      expect(AccessibilityInfo.announceForAccessibility).toHaveBeenCalledWith('Hint: move from rod 1 to rod 2');
+      expect(await screen.findByRole('button', { name: /^Rod 1,.*hint: move from here$/ })).toBeOnTheScreen();
+    });
+
+    it('announces when there is no way forward', async () => {
+      await start([[0, 2, 1, 1], [1, 2, 0, 0], [2, 1, 2, 0], []]);
+      await pour(0, 3);
+      await fireEvent.press(screen.getByText('Hint'));
+      expect(AccessibilityInfo.announceForAccessibility).toHaveBeenCalledWith('No solution from here. Try undo.');
+    });
   });
 
   describe('winning', () => {
