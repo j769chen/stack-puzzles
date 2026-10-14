@@ -38,6 +38,7 @@ type GameProps = { level: number; onBack: () => void; onNext: () => void };
 
 function HoopGame({ level, onBack, onNext }: GameProps) {
   const history = useHistory(() => createSnapshot(generateLevel(level)));
+  const [optimal] = useState(() => solveHoops(history.current.rods)!.length);
   const [selected, setSelected] = useState<number | null>(null);
   const [hint, setHint] = useState<Move | null>(null);
   const [hintMessage, setHintMessage] = useState<string | null>(null);
@@ -80,7 +81,8 @@ function HoopGame({ level, onBack, onNext }: GameProps) {
     setHintMessage(path ? null : 'No solution from here. Try undo.');
   };
 
-  const message = hintMessage ?? (stuck ? 'No moves left. Undo or restart.' : 'Sort the rings so each rod holds one color');
+  const message =
+    hintMessage ?? (stuck ? 'No moves left. Undo or restart.' : `Sort each color onto its own rod · best ${optimal}`);
 
   return (
     <GameShell
@@ -102,7 +104,11 @@ function HoopGame({ level, onBack, onNext }: GameProps) {
       }}
       onHint={showHint}
       won={solved}
-      winText={`Sorted in ${moves} moves.`}
+      winText={
+        moves === optimal
+          ? `Perfect! ${moves} moves, the minimum possible.`
+          : `${moves} moves. The minimum is ${optimal}.`
+      }
       nextLabel="Next level"
       onNext={onNext}
     >
