@@ -14,6 +14,8 @@ import {
 } from './logic';
 import { HanoiBoard } from './HanoiBoard';
 
+const PEG_NAMES = ['left', 'middle', 'right'];
+
 export function HanoiScreen({ onBack }: { onBack: () => void }) {
   const [level, setLevel, loaded] = usePersistentNumber('hanoi.level', 1);
   if (!loaded) return null;
@@ -60,7 +62,7 @@ function HanoiGame({ level, onBack, onNext }: GameProps) {
 
   const optimal = minMoves(disks);
   const message = hint
-    ? 'Move the top disk from the amber peg to the teal peg'
+    ? `Move the top disk from the ${PEG_NAMES[hint[0]]} peg to the ${PEG_NAMES[hint[1]]} peg`
     : `Move all ${disks} disks to another peg · best ${optimal}`;
 
   return (

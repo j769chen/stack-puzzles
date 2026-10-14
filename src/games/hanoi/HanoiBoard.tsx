@@ -7,7 +7,6 @@ import { theme } from '../../theme';
 import type { Move } from '../useHistory';
 import type { HanoiState } from './logic';
 
-const DISK_COLORS = ['#E4572E', '#F3A712', '#A8C686', '#2A9D8F', '#669BBC', '#29335C', '#6D597A', '#B5838D', '#E9C46A', '#264653'];
 const SPACING = 3.3;
 const DISK_H = 0.44;
 const HOLE = 0.17;
@@ -55,7 +54,7 @@ export function HanoiBoard({ state, disks, selected, hint, onPress }: Props) {
             const nudge = hint?.[0] === i && top ? HINT_NUDGE : 0;
             return (
               <Piece key={size} x={x} y={lifted ? liftY : k * DISK_H + nudge} z={0} liftY={liftY}>
-                <Disk radius={radius(size)} color={DISK_COLORS[(size - 1) % DISK_COLORS.length]} />
+                <Disk radius={radius(size)} color={theme.disks[(size - 1) % theme.disks.length]} />
               </Piece>
             );
           }),

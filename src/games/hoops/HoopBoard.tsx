@@ -5,7 +5,6 @@ import { theme } from '../../theme';
 import type { Move } from '../useHistory';
 import { CAPACITY, type Rods, isRodComplete, topRun } from './logic';
 
-const RING_COLORS = ['#E63946', '#F4A261', '#F6D743', '#4CAF50', '#2A9D8F', '#457B9D', '#8E44AD', '#FF7EB6', '#8D6E63', '#1D3557'];
 const SPACING = 2.1;
 const ROW_GAP = 3.2;
 const TUBE = 0.27;
@@ -78,7 +77,7 @@ export function HoopBoard({ rods, ids, selected, hint, onPress }: Props) {
             >
               <mesh position-y={TUBE} rotation-x={Math.PI / 2} castShadow receiveShadow>
                 <torusGeometry args={[RING_R, TUBE, 20, 48]} />
-                <meshStandardMaterial color={RING_COLORS[color]} roughness={0.3} />
+                <meshStandardMaterial color={theme.rings[color]} roughness={0.3} />
               </mesh>
             </Piece>
           )),

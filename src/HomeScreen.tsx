@@ -18,14 +18,14 @@ export function HomeScreen({ onOpen }: Props) {
         title="Tower Stack"
         description="Move the whole tower to another peg. A disk can never sit on a smaller one."
         level={hanoiLoaded ? hanoiLevel : null}
-        colors={['#E4572E', '#F3A712', '#2A9D8F']}
+        colors={[theme.disks[0], theme.disks[1], theme.disks[3]]}
         onPress={() => onOpen('hanoi')}
       />
       <GameCard
         title="Ring Sort"
         description="Sort the colored rings so every rod holds a single color."
         level={hoopLoaded ? hoopLevel : null}
-        colors={['#E63946', '#457B9D', '#F6D743']}
+        colors={[theme.rings[0], theme.rings[5], theme.rings[2]]}
         onPress={() => onOpen('hoops')}
       />
     </SafeAreaView>
