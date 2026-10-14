@@ -1,0 +1,81 @@
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { Text } from 'react-native';
+import { GameShell } from './GameShell';
+
+async function renderShell(overrides: Partial<Parameters<typeof GameShell>[0]> = {}) {
+  const props = {
+    title: 'Test Game',
+    level: 3,
+    moves: 5,
+    message: 'Do the thing',
+    onBack: jest.fn(),
+    onUndo: jest.fn(),
+    canUndo: true,
+    onRestart: jest.fn(),
+    onHint: jest.fn(),
+    won: false,
+    winText: 'Well done',
+    nextLabel: 'Next level',
+    onNext: jest.fn(),
+    children: <Text>board</Text>,
+    ...overrides,
+  };
+  await render(<GameShell {...props} />);
+  return props;
+}
+
+describe('GameShell', () => {
+  it('shows the title, stats, message and board', async () => {
+    await renderShell();
+    expect(screen.getByText('Test Game')).toBeOnTheScreen();
+    expect(screen.getByText('Level 3')).toBeOnTheScreen();
+    expect(screen.getByText('Moves 5')).toBeOnTheScreen();
+    expect(screen.getByText('Do the thing')).toBeOnTheScreen();
+    expect(screen.getByText('board')).toBeOnTheScreen();
+  });
+
+  it('wires the header and control buttons', async () => {
+    const props = await renderShell();
+    await fireEvent.press(screen.getByText('‹ Back'));
+    await fireEvent.press(screen.getByText('Undo'));
+    await fireEvent.press(screen.getByText('Restart'));
+    await fireEvent.press(screen.getByText('Hint'));
+    expect(props.onBack).toHaveBeenCalledTimes(1);
+    expect(props.onUndo).toHaveBeenCalledTimes(1);
+    expect(props.onRestart).toHaveBeenCalledTimes(1);
+    expect(props.onHint).toHaveBeenCalledTimes(1);
+  });
+
+  it('disables undo when there is nothing to undo', async () => {
+    const props = await renderShell({ canUndo: false });
+    await fireEvent.press(screen.getByText('Undo'));
+    expect(props.onUndo).not.toHaveBeenCalled();
+  });
+
+  describe('when won', () => {
+    beforeEach(() => jest.useFakeTimers());
+    afterEach(() => jest.useRealTimers());
+
+    it('shows the win card after the last move settles', async () => {
+      const props = await renderShell({ won: true });
+      expect(screen.queryByText('Solved!')).toBeNull();
+
+      await act(() => jest.advanceTimersByTime(650));
+      expect(screen.getByText('Solved!')).toBeOnTheScreen();
+      expect(screen.getByText('Well done')).toBeOnTheScreen();
+
+      await fireEvent.press(screen.getByText('Next level'));
+      await fireEvent.press(screen.getByText('Menu'));
+      expect(props.onNext).toHaveBeenCalledTimes(1);
+      expect(props.onBack).toHaveBeenCalledTimes(1);
+    });
+
+    it('locks undo and hint', async () => {
+      const props = await renderShell({ won: true });
+      await fireEvent.press(screen.getByText('Undo'));
+      await fireEvent.press(screen.getByText('Hint'));
+      expect(props.onUndo).not.toHaveBeenCalled();
+      expect(props.onHint).not.toHaveBeenCalled();
+    });
+  });
+});
