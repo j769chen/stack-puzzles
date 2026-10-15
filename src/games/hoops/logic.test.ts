@@ -27,7 +27,7 @@ function fewestMovesByBruteForce(start: Rods, cap: number) {
       rods.forEach((_, from) =>
         rods.forEach((_, to) => {
           if (!canPour(rods, from, to, cap)) return;
-          const after = pour(rods, from, to, cap);
+          const after = pour(rods, from, to);
           if (seen.has(key(after))) return;
           seen.add(key(after));
           next.push(after);
@@ -41,7 +41,7 @@ function fewestMovesByBruteForce(start: Rods, cap: number) {
 function play(rods: Rods, path: [number, number][], cap: number) {
   for (const [from, to] of path) {
     expect(canPour(rods, from, to, cap)).toBe(true);
-    rods = pour(rods, from, to, cap);
+    rods = pour(rods, from, to);
   }
   return rods;
 }
@@ -62,14 +62,14 @@ describe('hoops logic', () => {
     expect(canPour(rods, 0, 0, CAP)).toBe(false);
   });
 
-  it('pours the whole top run, limited by the space left', () => {
-    expect(pour([[0, 1, 1, 1], [1, 1]], 0, 1, CAP)).toEqual([[0, 1], [1, 1, 1, 1]]);
-    expect(pour([[0, 1, 1], []], 0, 1, CAP)).toEqual([[0], [1, 1]]);
+  it('moves only the top ring, even when rings below it share its color', () => {
+    expect(pour([[0, 1, 1, 1], [1, 1]], 0, 1)).toEqual([[0, 1, 1], [1, 1, 1]]);
+    expect(pour([[0, 1, 1], []], 0, 1)).toEqual([[0, 1], [1]]);
   });
 
   it('pours without mutating the previous state', () => {
     const rods: Rods = [[0, 1], []];
-    pour(rods, 0, 1, CAP);
+    pour(rods, 0, 1);
     expect(rods).toEqual([[0, 1], []]);
   });
 
@@ -104,7 +104,7 @@ describe('hoops logic', () => {
   });
 
   it('still deals the original rings for levels 1 to 24', () => {
-    const levels = JSON.stringify(Array.from({ length: 24 }, (_, i) => generateLevel(i + 1)));
+    const levels = JSON.stringify(Array.from({ length: 24 }, (_, i) => generateLevel(i + 1).rods));
     expect(createHash('sha256').update(levels).digest('hex')).toBe(
       '8e537067a9c5ff305f0603144090f5252b520be722043c0488455801fe210ad4',
     );
@@ -115,7 +115,7 @@ describe('hoops logic', () => {
   });
 
   it.each([1, 5, 12, 20, 30, 40, 50])('deals a fair, solvable level %i', (level) => {
-    const rods = generateLevel(level);
+    const { rods, solution } = generateLevel(level);
     const { colors, capacity } = levelSpec(level);
     expect(rods).toHaveLength(colors + EMPTY_RODS);
     expect(rods.every((rod) => rod.length === 0 || rod.length === capacity)).toBe(true);
@@ -123,13 +123,12 @@ describe('hoops logic', () => {
     const counts = rods.flat().reduce<number[]>((acc, c) => ((acc[c] = (acc[c] ?? 0) + 1), acc), []);
     expect(counts).toEqual(Array(colors).fill(capacity));
 
-    const path = solveHoops(rods, capacity);
-    expect(path).not.toBeNull();
-    expect(isHoopsSolved(play(rods, path!, capacity), capacity)).toBe(true);
+    expect(isHoopsSolved(play(rods, solution, capacity), capacity)).toBe(true);
+    expect(solution).toHaveLength(solveHoops(rods, capacity)!.length);
   });
 
   it.each([1, 2, 4, 7, 10])('finds the shortest solution for level %i', (level) => {
-    const rods = generateLevel(level);
+    const { rods } = generateLevel(level);
     expect(solveHoops(rods, CAP)).toHaveLength(fewestMovesByBruteForce(rods, CAP)!);
   });
 
@@ -158,7 +157,7 @@ function randomWalk(start: Rods, cap: number, steps: number, rand: () => number)
   for (let i = 0; i < steps; i++) {
     const pours = legalPours(rods, cap);
     if (pours.length === 0) break;
-    rods = pour(rods, ...pours[Math.floor(rand() * pours.length)], cap);
+    rods = pour(rods, ...pours[Math.floor(rand() * pours.length)]);
     states.push(rods);
   }
   return states;
@@ -171,7 +170,7 @@ describe('hoops rules under random play', () => {
   const walks = levels.flatMap((level) => {
     const { capacity } = levelSpec(level);
     const rand = seededRandom(level);
-    return Array.from({ length: 15 }, () => ({ capacity, states: randomWalk(generateLevel(level), capacity, 40, rand) }));
+    return Array.from({ length: 15 }, () => ({ capacity, states: randomWalk(generateLevel(level).rods, capacity, 40, rand) }));
   });
   const positions = walks.flatMap(({ capacity, states }) => states.map((rods) => ({ capacity, rods })));
 
@@ -192,14 +191,13 @@ describe('hoops rules under random play', () => {
     expect(wrong).toEqual([]);
   });
 
-  it('moves as much of the top run as fits, keeps every ring, and never overfills', () => {
+  it('moves exactly the top ring, keeps every ring, and never overfills', () => {
     const wrong: string[] = [];
     for (const { capacity, rods } of positions)
       for (const [from, to] of legalPours(rods, capacity)) {
-        const after = pour(rods, from, to, capacity);
-        const moved = Math.min(topRun(rods[from]), capacity - rods[to].length);
-        const expectedFrom = rods[from].slice(0, rods[from].length - moved);
-        const expectedTo = [...rods[to], ...Array(moved).fill(rods[from].at(-1))];
+        const after = pour(rods, from, to);
+        const expectedFrom = rods[from].slice(0, -1);
+        const expectedTo = [...rods[to], rods[from].at(-1)];
         const ok =
           JSON.stringify(after[from]) === JSON.stringify(expectedFrom) &&
           JSON.stringify(after[to]) === JSON.stringify(expectedTo) &&
@@ -228,7 +226,7 @@ describe('hoops solver on mid-game positions', () => {
   const rand = seededRandom(7);
   const positions = [1, 2, 4, 6, 8].flatMap((level) =>
     Array.from({ length: 6 }, () => {
-      const states = randomWalk(generateLevel(level), CAP, 4 + Math.floor(rand() * 12), rand);
+      const states = randomWalk(generateLevel(level).rods, CAP, 4 + Math.floor(rand() * 12), rand);
       return states[states.length - 1];
     }),
   );
@@ -247,14 +245,14 @@ describe('hoops solver on mid-game positions', () => {
   });
 
   it('does not change the position it is given', () => {
-    const rods = generateLevel(12);
+    const { rods } = generateLevel(12);
     const copy = JSON.stringify(rods);
     solveHoops(rods, levelSpec(12).capacity);
     expect(JSON.stringify(rods)).toBe(copy);
   });
 
   it('gives up and returns null when the search budget runs out', () => {
-    const rods = generateLevel(40);
+    const { rods } = generateLevel(40);
     const { capacity } = levelSpec(40);
     expect(solveHoops(rods, capacity, 5)).toBeNull();
     expect(solveHoops(rods, capacity)).not.toBeNull();
@@ -284,13 +282,13 @@ describe('hoops level progression', () => {
   });
 
   it('deals different rings for different levels', () => {
-    const deals = new Set(Array.from({ length: 30 }, (_, i) => JSON.stringify(generateLevel(i + 1))));
+    const deals = new Set(Array.from({ length: 30 }, (_, i) => JSON.stringify(generateLevel(i + 1).rods)));
     expect(deals.size).toBe(30);
   });
 
   it('rerolls a deal that turns out to be unsolvable', () => {
     const { capacity } = levelSpec(78);
-    const rods = generateLevel(78);
-    expect(solveHoops(rods, capacity)).not.toBeNull();
+    const { rods, solution } = generateLevel(78);
+    expect(isHoopsSolved(play(rods, solution, capacity), capacity)).toBe(true);
   });
 });

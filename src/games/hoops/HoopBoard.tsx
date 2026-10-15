@@ -6,7 +6,7 @@ import { standardMaterial } from '../../three/shared';
 import { theme } from '../../theme';
 import type { Move } from '../useHistory';
 import { rodRows } from './layout';
-import { type Rods, isRodComplete, topRun } from './logic';
+import { type Rods, isRodComplete } from './logic';
 
 const SPACING = 2.1;
 const ROW_GAP = 3.2;
@@ -55,9 +55,7 @@ export function HoopBoard({ rods, capacity, ids, selected, hint, onPress }: Prop
       ))}
       {rods.flatMap((rod, i) => {
         const { x, z } = positions[i];
-        const lift = selected === i ? topRun(rod) : 0;
-        const firstLifted = rod.length - lift;
-        const firstNudged = hint?.[0] === i ? rod.length - topRun(rod) : rod.length;
+        const top = rod.length - 1;
         const hintColor = hint?.[0] === i ? theme.hintFrom : hint?.[1] === i ? theme.hintTo : undefined;
         return [
           <Rod
@@ -76,7 +74,9 @@ export function HoopBoard({ rods, capacity, ids, selected, hint, onPress }: Prop
             <Piece
               key={ids[i][k]}
               x={x}
-              y={k >= firstLifted ? liftY + (k - firstLifted) * RING_H : k * RING_H + (k >= firstNudged ? HINT_NUDGE : 0)}
+              y={
+                k === top && selected === i ? liftY : k * RING_H + (k === top && hint?.[0] === i ? HINT_NUDGE : 0)
+              }
               z={z}
               liftY={liftY}
             >
