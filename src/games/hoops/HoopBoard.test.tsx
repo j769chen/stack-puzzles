@@ -1,5 +1,5 @@
 import { create } from '@react-three/test-renderer';
-import { Color, type Mesh, type MeshStandardMaterial, type Object3D } from 'three';
+import { Color, type Mesh, type MeshStandardMaterial, type Object3D, PerspectiveCamera, Vector2, Vector3 } from 'three';
 import { theme } from '../../theme';
 import { HoopBoard } from './HoopBoard';
 import type { Rods } from './logic';
@@ -27,11 +27,21 @@ const rings = (r: Renderer) => {
   });
   return found;
 };
-const rodGroups = (r: Renderer) => r.scene.allChildren.filter((c) => c.type === 'Group' && c.allChildren.length === 4);
+const rodGroups = (r: Renderer) => r.scene.allChildren.filter((c) => c.type === 'Group' && c.allChildren.length === 3);
 const planks = (r: Renderer) =>
   r.scene.children.filter((c) => (c.instance as Mesh).geometry?.type === 'BoxGeometry');
 const poleColor = (r: Renderer, i: number) =>
   ((rodGroups(r)[i].children[0].instance as Mesh).material as MeshStandardMaterial).color;
+
+const tapCamera = new PerspectiveCamera(32, 1);
+tapCamera.position.set(0, 8, 16);
+tapCamera.lookAt(0, 1, 0);
+tapCamera.updateMatrixWorld();
+
+function tapAt(position: Vector3) {
+  const p = position.clone().setY(1).project(tapCamera);
+  return { pointer: new Vector2(p.x, p.y), camera: tapCamera, stopPropagation: jest.fn() };
+}
 
 describe('HoopBoard', () => {
   it.each([
@@ -111,7 +121,8 @@ describe('HoopBoard', () => {
   it('reports which rod was tapped', async () => {
     const onPress = jest.fn();
     const r = await renderBoard({ rods: [[], [], []], onPress });
-    await r.fireEvent(rodGroups(r)[2].children[3], 'click');
+    const picker = r.scene.children.find((c) => c.type === 'Mesh' && !c.instance.visible)!;
+    await r.fireEvent(picker, 'pointerDown', tapAt(rodGroups(r)[2].instance.position));
     expect(onPress).toHaveBeenCalledWith(2);
   });
 });

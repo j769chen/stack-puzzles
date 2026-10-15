@@ -1,5 +1,5 @@
 import { create } from '@react-three/test-renderer';
-import { Color, type Mesh, type MeshStandardMaterial, type Object3D } from 'three';
+import { Color, type Mesh, type MeshStandardMaterial, type Object3D, PerspectiveCamera, Vector2, Vector3 } from 'three';
 import { theme } from '../../theme';
 import { HanoiBoard } from './HanoiBoard';
 import { type HanoiState, createHanoi, moveDisk } from './logic';
@@ -22,6 +22,16 @@ function disk(scene: Object3D, size: number) {
 }
 
 const settle = (renderer: Awaited<ReturnType<typeof create>>) => renderer.advanceFrames(200, 0.016);
+
+const tapCamera = new PerspectiveCamera(32, 1);
+tapCamera.position.set(0, 8, 16);
+tapCamera.lookAt(0, 1, 0);
+tapCamera.updateMatrixWorld();
+
+function tapAt(position: Vector3) {
+  const p = position.clone().setY(1).project(tapCamera);
+  return { pointer: new Vector2(p.x, p.y), camera: tapCamera, stopPropagation: jest.fn() };
+}
 
 describe('HanoiBoard', () => {
   it('stacks disks on the left peg, largest at the bottom', async () => {
@@ -60,8 +70,9 @@ describe('HanoiBoard', () => {
   it('reports which peg was tapped', async () => {
     const onPress = jest.fn();
     const renderer = await create(board({ state: createHanoi(3), onPress }));
-    const rods = renderer.scene.allChildren.filter((c) => c.type === 'Group' && c.allChildren.length === 4);
-    await renderer.fireEvent(rods[1].children[3], 'click');
+    const rods = renderer.scene.allChildren.filter((c) => c.type === 'Group' && c.allChildren.length === 3);
+    const picker = renderer.scene.children.find((c) => c.type === 'Mesh' && !c.instance.visible)!;
+    await renderer.fireEvent(picker, 'pointerDown', tapAt(rods[1].instance.position));
     expect(onPress).toHaveBeenCalledWith(1);
   });
 });
