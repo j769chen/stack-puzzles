@@ -169,6 +169,19 @@ describe('HoopScreen', () => {
     });
   });
 
+  it('deals an earlier level picked from level select', async () => {
+    await AsyncStorage.setItem('hoops.level', '5');
+    await renderAsync(<HoopScreen onBack={jest.fn()} />);
+    await screen.findByText('Level 5');
+    await fireEvent.press(screen.getByRole('button', { name: 'Levels' }));
+    expect(screen.getByRole('button', { name: 'Level 5, not solved' })).toBeSelected();
+    expect(screen.queryByRole('button', { name: /^Level 6/ })).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: 'Level 2, not solved' }));
+    expect(await screen.findByText('Level 2')).toBeOnTheScreen();
+    logic.generateLevel(2).rods.forEach((rod, i) => expect(rodText(i)).toBe(rod.join(',')));
+    expect(await AsyncStorage.getItem('hoops.furthest')).toBe('5');
+  });
+
   describe('winning', () => {
     beforeEach(() => jest.useFakeTimers());
     afterEach(() => jest.useRealTimers());

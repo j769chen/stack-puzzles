@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { AccessibilityInfo } from 'react-native';
+import { AccessibilityInfo, StyleSheet, View } from 'react-native';
 import { GameShell } from '../../components/GameShell';
+import { LevelSelect } from '../../components/LevelSelect';
 import { RodButtons } from '../../components/RodButtons';
 import { feedback } from '../../feedback';
-import { usePersistentNumber } from '../../usePersistentNumber';
 import { useHistory } from '../useHistory';
+import { useProgress } from '../useProgress';
 import {
   HANOI_MAX_LEVEL,
   type HanoiState,
@@ -26,21 +27,39 @@ function pegLabel(state: HanoiState, peg: number) {
 }
 
 export function HanoiScreen({ onBack }: { onBack: () => void }) {
-  const [level, setLevel, loaded] = usePersistentNumber('hanoi.level', 1);
+  const { level, unlocked, stars, goTo, loaded } = useProgress('hanoi', HANOI_MAX_LEVEL);
+  const [picking, setPicking] = useState(false);
   if (!loaded) return null;
   return (
-    <HanoiGame
-      key={level}
-      level={level}
-      onBack={onBack}
-      onNext={() => setLevel(level >= HANOI_MAX_LEVEL ? 1 : level + 1)}
-    />
+    <View style={styles.root}>
+      <HanoiGame
+        key={level}
+        level={level}
+        onBack={onBack}
+        onLevels={() => setPicking(true)}
+        onNext={() => goTo(level >= HANOI_MAX_LEVEL ? 1 : level + 1)}
+      />
+      {picking && (
+        <LevelSelect
+          title="Tower Stack"
+          count={HANOI_MAX_LEVEL}
+          unlocked={unlocked}
+          current={level}
+          stars={stars}
+          onPick={(picked) => {
+            goTo(picked);
+            setPicking(false);
+          }}
+          onBack={() => setPicking(false)}
+        />
+      )}
+    </View>
   );
 }
 
-type GameProps = { level: number; onBack: () => void; onNext: () => void };
+type GameProps = { level: number; onBack: () => void; onLevels: () => void; onNext: () => void };
 
-function HanoiGame({ level, onBack, onNext }: GameProps) {
+function HanoiGame({ level, onBack, onLevels, onNext }: GameProps) {
   const disks = disksForLevel(level);
   const history = useHistory(() => createHanoi(disks));
   const [selected, setSelected] = useState<number | null>(null);
@@ -79,6 +98,7 @@ function HanoiGame({ level, onBack, onNext }: GameProps) {
       moves={moves}
       message={`Move all ${disks} disks to another peg · best ${optimal}`}
       onBack={onBack}
+      onLevels={onLevels}
       onUndo={() => {
         history.undo();
         setSelected(null);
@@ -103,3 +123,5 @@ function HanoiGame({ level, onBack, onNext }: GameProps) {
     </GameShell>
   );
 }
+
+const styles = StyleSheet.create({ root: { flex: 1 } });

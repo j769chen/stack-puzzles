@@ -73,4 +73,18 @@ describe('App', () => {
     expect(handled).toBe(true);
     expect(await screen.findAllByText('Level 1 ›')).toHaveLength(2);
   });
+
+  it('closes level select on hardware back instead of leaving the game', async () => {
+    await renderApp();
+    await open('Tower Stack');
+    await fireEvent.press(screen.getByRole('button', { name: 'Levels' }));
+    expect(screen.getByRole('button', { name: 'Level 1, not solved' })).toBeOnTheScreen();
+    let handled: ReturnType<BackPressHandler>;
+    await act(() => {
+      handled = backPress(backEvent);
+    });
+    expect(handled).toBe(true);
+    expect(screen.queryByRole('button', { name: 'Level 1, not solved' })).toBeNull();
+    expect(screen.getByText('Moves 0')).toBeOnTheScreen();
+  });
 });

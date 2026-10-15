@@ -123,6 +123,38 @@ describe('HanoiScreen', () => {
     });
   });
 
+  describe('level select', () => {
+    it('replays an earlier level without locking the later ones', async () => {
+      await start(3);
+      await fireEvent.press(screen.getByRole('button', { name: 'Levels' }));
+      expect(screen.getByRole('button', { name: 'Level 3, not solved' })).toBeSelected();
+      expect(screen.getByRole('button', { name: 'Level 4, locked' })).toBeDisabled();
+      await fireEvent.press(screen.getByRole('button', { name: 'Level 1, not solved' }));
+      expect(await screen.findByText('Level 1')).toBeOnTheScreen();
+      expect(pegText(0)).toBe('3,2,1');
+
+      await fireEvent.press(screen.getByRole('button', { name: 'Levels' }));
+      expect(screen.getByRole('button', { name: 'Level 3, not solved' })).toBeEnabled();
+    });
+
+    it('returns to the game in progress', async () => {
+      await start();
+      await move(0, 2);
+      await fireEvent.press(screen.getByRole('button', { name: 'Levels' }));
+      await fireEvent.press(screen.getByRole('button', { name: 'Back' }));
+      expect(screen.queryByRole('button', { name: /^Level 1,/ })).toBeNull();
+      expect(screen.getByText('Moves 1')).toBeOnTheScreen();
+    });
+
+    it('resumes the game in progress when its own level is picked', async () => {
+      await start();
+      await move(0, 2);
+      await fireEvent.press(screen.getByRole('button', { name: 'Levels' }));
+      await fireEvent.press(screen.getByRole('button', { name: 'Level 1, not solved' }));
+      expect(screen.getByText('Moves 1')).toBeOnTheScreen();
+    });
+  });
+
   describe('winning', () => {
     beforeEach(() => jest.useFakeTimers());
     afterEach(() => jest.useRealTimers());
