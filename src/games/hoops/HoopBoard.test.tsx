@@ -59,24 +59,25 @@ describe('HoopBoard', () => {
     expect(rowZs.reduce((a, b) => a + b, 0)).toBeCloseTo(0);
   });
 
-  it('keeps the same ring objects when they are poured onto another rod', async () => {
+  it('keeps the same ring object when it moves to another rod', async () => {
     const before: Rods = [[0, 1, 1], [1], []];
     const ids = idsFor(before);
     const r = await renderBoard({ rods: before, ids });
-    const [, top1, top2] = rings(r);
+    const [, below, top] = rings(r);
 
-    await r.update(board({ rods: [[0], [1, 1, 1], []], ids: [[0], [3, 2, 1], []] }));
-    expect(rings(r)).toEqual(expect.arrayContaining([top1, top2]));
+    await r.update(board({ rods: [[0, 1], [1, 1], []], ids: [[0, 1], [3, 2], []] }));
+    expect(rings(r)).toEqual(expect.arrayContaining([below, top]));
     await r.advanceFrames(200, 0.016);
-    expect(top1.position.x).toBe(top2.position.x);
-    expect(top1.position.x).toBe(rodGroups(r)[1].instance.position.x);
+    expect(top.position.x).toBe(rodGroups(r)[1].instance.position.x);
+    expect(below.position.x).toBe(rodGroups(r)[0].instance.position.x);
   });
 
-  it('lifts the whole matching run of the selected rod', async () => {
-    const r = await renderBoard({ rods: [[0, 1, 1], []], selected: 0 });
-    const [bottom, mid, top] = rings(r).map((o) => o.position.y);
-    expect(mid).toBeGreaterThan(bottom + 1);
-    expect(top).toBeGreaterThan(mid);
+  it('lifts only the top ring of the selected rod, even when the ring below matches', async () => {
+    const plain = await renderBoard({ rods: [[0, 1, 1], []] });
+    const selected = await renderBoard({ rods: [[0, 1, 1], []], selected: 0 });
+    const ys = (r: Renderer) => rings(r).map((o) => o.position.y);
+    expect(ys(selected).slice(0, 2)).toEqual(ys(plain).slice(0, 2));
+    expect(ys(selected)[2]).toBeGreaterThan(ys(plain)[2] + 1);
   });
 
   it('colors complete rods and hinted rods', async () => {
@@ -86,12 +87,12 @@ describe('HoopBoard', () => {
     expect(poleColor(r, 2).equals(new Color(theme.hintTo))).toBe(true);
   });
 
-  it('nudges the run the hint says to move', async () => {
-    const plain = await renderBoard({ rods: [[0, 1], []] });
-    const hinted = await renderBoard({ rods: [[0, 1], []], hint: [0, 1] });
+  it('nudges only the ring the hint says to move', async () => {
+    const plain = await renderBoard({ rods: [[0, 1, 1], []] });
+    const hinted = await renderBoard({ rods: [[0, 1, 1], []], hint: [0, 1] });
     const ys = (r: Renderer) => rings(r).map((o) => o.position.y);
-    expect(ys(hinted)[0]).toBe(ys(plain)[0]);
-    expect(ys(hinted)[1]).toBeGreaterThan(ys(plain)[1]);
+    expect(ys(hinted).slice(0, 2)).toEqual(ys(plain).slice(0, 2));
+    expect(ys(hinted)[2]).toBeGreaterThan(ys(plain)[2]);
   });
 
   it('grows the poles and marks completion for taller rods', async () => {

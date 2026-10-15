@@ -48,23 +48,23 @@ function createSnapshot(rods: Rods): Snapshot {
   return { rods, ids: rods.map((rod) => rod.map(() => next++)) };
 }
 
-function pourSnapshot({ rods, ids }: Snapshot, from: number, to: number, capacity: number): Snapshot {
-  const nextRods = pour(rods, from, to, capacity);
+function pourSnapshot({ rods, ids }: Snapshot, from: number, to: number): Snapshot {
   const nextIds = ids.map((r) => [...r]);
-  for (let i = rods[from].length - nextRods[from].length; i > 0; i--) nextIds[to].push(nextIds[from].pop()!);
-  return { rods: nextRods, ids: nextIds };
+  nextIds[to].push(nextIds[from].pop()!);
+  return { rods: pour(rods, from, to), ids: nextIds };
 }
 
 type GameProps = { level: number; onBack: () => void; onNext: () => void };
 
 function HoopGame({ level, onBack, onNext }: GameProps) {
   const { capacity } = levelSpec(level);
-  const history = useHistory(() => createSnapshot(generateLevel(level)));
-  const [optimal] = useState(() => solveHoops(history.current.rods, capacity)!.length);
+  const [deal] = useState(() => generateLevel(level));
+  const history = useHistory(() => createSnapshot(deal.rods));
+  const optimal = deal.solution.length;
   const [selected, setSelected] = useState<number | null>(null);
   const [hint, setHint] = useState<Move | null>(null);
   const [hintMessage, setHintMessage] = useState<string | null>(null);
-  const [plan, setPlan] = useState<Move[] | null>(null);
+  const [plan, setPlan] = useState<Move[] | null>(deal.solution);
 
   const current = history.current;
   const { rods } = current;
@@ -88,8 +88,7 @@ function HoopGame({ level, onBack, onNext }: GameProps) {
     } else if (selected === rod) {
       setSelected(null);
     } else if (canPour(rods, selected, rod, capacity)) {
-      const after = pourSnapshot(current, selected, rod, capacity);
-      const moved = rods[selected].length - after.rods[selected].length;
+      const after = pourSnapshot(current, selected, rod);
       history.push(after);
       if (isRodComplete(after.rods[rod], capacity)) {
         if (!isHoopsSolved(after.rods, capacity)) feedback.complete();
@@ -97,7 +96,7 @@ function HoopGame({ level, onBack, onNext }: GameProps) {
         feedback.drop();
       }
       const color = colorName(rods[selected][rods[selected].length - 1]);
-      AccessibilityInfo.announceForAccessibility(`Moved ${moved} ${color} to rod ${rod + 1}`);
+      AccessibilityInfo.announceForAccessibility(`Moved ${color} to rod ${rod + 1}`);
       const [next, ...rest] = plan ?? [];
       setPlan(next?.[0] === selected && next[1] === rod ? rest : null);
       clearSelection();
@@ -138,7 +137,7 @@ function HoopGame({ level, onBack, onNext }: GameProps) {
       canUndo={moves > 0}
       onRestart={() => {
         history.restart();
-        setPlan(null);
+        setPlan(deal.solution);
         clearSelection();
       }}
       onHint={showHint}

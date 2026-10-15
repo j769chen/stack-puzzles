@@ -35,7 +35,7 @@ async function pour(from: number, to: number) {
 }
 
 async function start(rods?: logic.Rods) {
-  if (rods) jest.spyOn(logic, 'generateLevel').mockReturnValueOnce(rods);
+  if (rods) jest.spyOn(logic, 'generateLevel').mockReturnValueOnce({ rods, solution: logic.solveHoops(rods, 4)! });
   await renderAsync(<HoopScreen onBack={jest.fn()} />);
   await screen.findByText('Level 1');
 }
@@ -46,7 +46,7 @@ afterEach(() => jest.restoreAllMocks());
 describe('HoopScreen', () => {
   it('deals the seeded level', async () => {
     await start();
-    logic.generateLevel(1).forEach((rod, i) => expect(rodText(i)).toBe(rod.join(',')));
+    logic.generateLevel(1).rods.forEach((rod, i) => expect(rodText(i)).toBe(rod.join(',')));
   });
 
   it('shows the fewest moves the level needs', async () => {
@@ -63,7 +63,18 @@ describe('HoopScreen', () => {
     for (let i = 0; i < colors; i++) expect(rodText(i).split(',')).toHaveLength(capacity);
   });
 
-  it('pours a matching run and counts the move', async () => {
+  it('moves one ring per tap, even when the ring below it matches', async () => {
+    await start([[0, 1, 1], [1], [0, 0, 0, 1], [], []]);
+    await pour(0, 1);
+    expect(rodText(0)).toBe('0,1');
+    expect(rodText(1)).toBe('1,1');
+    await pour(0, 1);
+    expect(rodText(0)).toBe('0');
+    expect(rodText(1)).toBe('1,1,1');
+    expect(screen.getByText('Moves 2')).toBeOnTheScreen();
+  });
+
+  it('moves a ring onto a matching ring and counts the move', async () => {
     await start([[0, 1], [1], [0, 0, 0, 1], [], [1]]);
     await pour(0, 1);
     expect(rodText(1)).toBe('1,1');
@@ -107,15 +118,16 @@ describe('HoopScreen', () => {
     expect(rodText(0)).toBe('0,0,0,0');
   });
 
-  it('plans hints again from scratch after a restart', async () => {
+  it('goes back to the level solution for hints after a restart', async () => {
     await start([[0, 1], [1], [0, 0, 0, 1], [], [1]]);
     const solve = jest.spyOn(logic, 'solveHoops');
     await fireEvent.press(screen.getByText('Hint'));
-    await pour(0, 1);
+    const first = hintText();
+    await pour(4, 3);
     await fireEvent.press(screen.getByText('Restart'));
     await fireEvent.press(screen.getByText('Hint'));
-    expect(solve).toHaveBeenCalledTimes(2);
-    expect(hintText()).toBe('0>1');
+    expect(hintText()).toBe(first);
+    expect(solve).not.toHaveBeenCalled();
   });
 
   it('undoes and restarts', async () => {
@@ -130,14 +142,14 @@ describe('HoopScreen', () => {
     expect(screen.getByText('Moves 0')).toBeOnTheScreen();
   });
 
-  it('keeps following the hint plan while the player follows it', async () => {
+  it('hints from the solution found while dealing, without solving again', async () => {
     await start();
     const solve = jest.spyOn(logic, 'solveHoops');
     await fireEvent.press(screen.getByText('Hint'));
     const [from, to] = hintText().split('>').map(Number);
     await pour(from, to);
     await fireEvent.press(screen.getByText('Hint'));
-    expect(solve).toHaveBeenCalledTimes(1);
+    expect(solve).not.toHaveBeenCalled();
     expect(hintText()).not.toBe('');
   });
 
@@ -145,15 +157,15 @@ describe('HoopScreen', () => {
     await start([[0, 1], [1], [0, 0, 0, 1], [], [1]]);
     const solve = jest.spyOn(logic, 'solveHoops');
     await fireEvent.press(screen.getByText('Hint'));
-    expect(hintText()).toBe('0>1');
-    await pour(4, 1);
+    expect(hintText()).not.toBe('4>3');
+    await pour(4, 3);
     await fireEvent.press(screen.getByText('Hint'));
-    expect(solve).toHaveBeenCalledTimes(2);
+    expect(solve).toHaveBeenCalledTimes(1);
   });
 
   it('reports a dead end', async () => {
-    await start([[0, 2, 1, 1], [1, 2, 0, 0], [2, 1, 2, 0], []]);
-    await pour(0, 3);
+    await start([[1, 0, 1, 0], [2, 0, 2, 0], [1, 2, 1, 2], []]);
+    await pour(2, 3);
     expect(screen.getByText('No moves left. Undo or restart.')).toBeOnTheScreen();
     await fireEvent.press(screen.getByText('Hint'));
     expect(screen.getByText('No solution from here. Try undo.')).toBeOnTheScreen();
@@ -171,8 +183,9 @@ describe('HoopScreen', () => {
 
       await fireEvent.press(source);
       await fireEvent.press(screen.getByRole('button', { name: 'Rod 2, empty' }));
-      expect(AccessibilityInfo.announceForAccessibility).toHaveBeenCalledWith('Moved 2 orange to rod 2');
-      expect(screen.getByRole('button', { name: 'Rod 2, orange, orange from the bottom, top 2 orange' })).toBeOnTheScreen();
+      expect(AccessibilityInfo.announceForAccessibility).toHaveBeenCalledWith('Moved orange to rod 2');
+      expect(screen.getByRole('button', { name: 'Rod 2, orange from the bottom, top 1 orange' })).toBeOnTheScreen();
+      expect(screen.getByRole('button', { name: 'Rod 4, orange from the bottom, top 1 orange' })).toBeOnTheScreen();
     });
 
     it('announces the hint with rod numbers', async () => {
@@ -183,8 +196,8 @@ describe('HoopScreen', () => {
     });
 
     it('announces when there is no way forward', async () => {
-      await start([[0, 2, 1, 1], [1, 2, 0, 0], [2, 1, 2, 0], []]);
-      await pour(0, 3);
+      await start([[1, 0, 1, 0], [2, 0, 2, 0], [1, 2, 1, 2], []]);
+      await pour(2, 3);
       await fireEvent.press(screen.getByText('Hint'));
       expect(AccessibilityInfo.announceForAccessibility).toHaveBeenCalledWith('No solution from here. Try undo.');
     });
