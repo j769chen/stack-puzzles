@@ -100,10 +100,12 @@ function movesLeftLowerBound(rods: Rods): number {
   return bound;
 }
 
-const stateKey = (rods: Rods) => rods.map((r) => r.join(',')).sort().join('|');
+const stateKey = (rodKeys: string[]) => [...rodKeys].sort().join('|');
 
 type SearchNode = {
   rods: Rods;
+  rodKeys: string[];
+  key: string;
   cost: number;
   estimatedLength: number;
   parent: SearchNode | null;
@@ -153,13 +155,23 @@ class MinHeap<T> {
 }
 
 export function solveHoops(start: Rods, cap: number, nodeLimit = 200_000): Move[] | null {
-  const bestCost = new Map([[stateKey(start), 0]]);
+  const startKeys = start.map((rod) => String.fromCharCode(...rod));
+  const startKey = stateKey(startKeys);
+  const bestCost = new Map([[startKey, 0]]);
   const open = new MinHeap<SearchNode>(exploresFirst);
-  open.push({ rods: start, cost: 0, estimatedLength: movesLeftLowerBound(start), parent: null, move: null });
+  open.push({
+    rods: start,
+    rodKeys: startKeys,
+    key: startKey,
+    cost: 0,
+    estimatedLength: movesLeftLowerBound(start),
+    parent: null,
+    move: null,
+  });
 
   for (let expanded = 0; open.size > 0 && expanded < nodeLimit; ) {
     const node = open.pop();
-    if (bestCost.get(stateKey(node.rods))! < node.cost) continue;
+    if (bestCost.get(node.key)! < node.cost) continue;
     if (isHoopsSolved(node.rods, cap)) {
       const path: Move[] = [];
       for (let n: SearchNode | null = node; n?.move; n = n.parent) path.unshift(n.move);
@@ -167,12 +179,15 @@ export function solveHoops(start: Rods, cap: number, nodeLimit = 200_000): Move[
     }
     expanded++;
     for (const [f, t] of candidateMoves(node.rods, cap)) {
-      const rods = pour(node.rods, f, t);
-      const key = stateKey(rods);
+      const rodKeys = [...node.rodKeys];
+      rodKeys[t] += rodKeys[f].at(-1);
+      rodKeys[f] = rodKeys[f].slice(0, -1);
+      const key = stateKey(rodKeys);
       const cost = node.cost + 1;
       if ((bestCost.get(key) ?? Infinity) <= cost) continue;
       bestCost.set(key, cost);
-      open.push({ rods, cost, estimatedLength: cost + movesLeftLowerBound(rods), parent: node, move: [f, t] });
+      const rods = pour(node.rods, f, t);
+      open.push({ rods, rodKeys, key, cost, estimatedLength: cost + movesLeftLowerBound(rods), parent: node, move: [f, t] });
     }
   }
   return null;

@@ -1,8 +1,23 @@
+import { type RootState, useThree } from '@react-three/fiber/native';
 import { create } from '@react-three/test-renderer';
+import { useEffect } from 'react';
 import type { Group } from 'three';
 import { Piece } from './Piece';
 
 const LIFT = 3;
+
+let internal: RootState['internal'];
+const captureInternal = (found: RootState['internal']) => {
+  internal = found;
+};
+
+function FrameProbe() {
+  const found = useThree((s) => s.internal);
+  useEffect(() => {
+    captureInternal(found);
+  }, [found]);
+  return null;
+}
 
 async function renderPiece(x: number, y: number) {
   const renderer = await create(
@@ -88,5 +103,34 @@ describe('Piece', () => {
     await moveTo(-2, 1);
     await renderer.advanceFrames(200, 0.016);
     expect(group.position.toArray()).toEqual([-2, 1, 0]);
+  });
+
+  it('requests frames on demand only while it is moving', async () => {
+    jest.useFakeTimers();
+    const piece = (nx: number) => (
+      <>
+        <FrameProbe />
+        <Piece x={nx} y={0} z={0} liftY={LIFT}>
+          <mesh />
+        </Piece>
+      </>
+    );
+    const renderer = await create(piece(0), { frameloop: 'demand' });
+    const group = renderer.scene.children[0].instance as Group;
+
+    internal.frames = 0;
+    await renderer.update(piece(2));
+    expect(internal.frames).toBeGreaterThan(0);
+
+    internal.frames = 0;
+    await renderer.advanceFrames(1, 0.016);
+    expect(internal.frames).toBeGreaterThan(0);
+
+    await renderer.advanceFrames(200, 0.016);
+    expect(group.position.toArray()).toEqual([2, 0, 0]);
+    internal.frames = 0;
+    await renderer.advanceFrames(1, 0.016);
+    expect(internal.frames).toBe(0);
+    jest.useRealTimers();
   });
 });
