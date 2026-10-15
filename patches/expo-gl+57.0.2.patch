@@ -1,0 +1,81 @@
+diff --git a/node_modules/expo-gl/ios/GLView.swift b/node_modules/expo-gl/ios/GLView.swift
+index 7197e3c..67ef42f 100644
+--- a/node_modules/expo-gl/ios/GLView.swift
++++ b/node_modules/expo-gl/ios/GLView.swift
+@@ -28,9 +28,7 @@ internal final class GLView: ExpoView, EXGLContextDelegate {
+   var msaaFramebuffer: GLuint = 0
+   var msaaRenderbuffer: GLuint = 0
+ 
+-  var displayLink: CADisplayLink?
+   var isAfterLayout: Bool = false
+-  var isRenderbufferPresented: Bool = true
+   var viewBuffersSize: CGSize = .zero
+ 
+   override static var layerClass: AnyClass {
+@@ -40,10 +38,6 @@ internal final class GLView: ExpoView, EXGLContextDelegate {
+   required init(appContext: AppContext? = nil) {
+     super.init(appContext: appContext)
+ 
+-    // Set up a draw loop
+-    displayLink = CADisplayLink(target: self, selector: #selector(drawGL))
+-    displayLink?.add(to: RunLoop.main, forMode: .common)
+-
+     contentScaleFactor = EXUtilities.screenScale()
+ 
+     // Initialize properties of our backing CAEAGLLayer
+@@ -86,8 +80,6 @@ internal final class GLView: ExpoView, EXGLContextDelegate {
+ 
+   override func removeFromSuperview() {
+     glContext.destroy()
+-    displayLink?.invalidate()
+-    displayLink = nil
+     super.removeFromSuperview()
+   }
+ 
+@@ -219,34 +211,7 @@ internal final class GLView: ExpoView, EXGLContextDelegate {
+     }
+   }
+ 
+-  @objc
+-  func drawGL() {
+-    // exglCtxId may be unset if we get here (on the UI thread) before EXGLContextCreate(...) is
+-    // called on the JS thread to create the EXGL context and save its id (see EXGLContext.initializeContextWithBridge method).
+-    // In this case no GL work has been sent yet so we skip this frame.
+-    //
+-    // _viewFramebuffer may be 0 if we haven't had a layout event yet and so the size of the
+-    // framebuffer to create is unknown. In this case we have nowhere to render to so we skip
+-    // this frame (the GL work to run remains on the queue for next time).
+-
+-    if glContext.isInitialized() && viewFramebuffer != 0 {
+-      // Present current state of view buffers
+-      // This happens exactly at `gl.endFrameEXP()` in the queue
+-      if viewColorbuffer != 0 && !isRenderbufferPresented {
+-        // bind renderbuffer and present it on the layer
+-        glContext.runAsync {
+-          glBindRenderbuffer(GLenum(GL_RENDERBUFFER), self.viewColorbuffer)
+-          self.eaglContext.presentRenderbuffer(Int(GL_RENDERBUFFER))
+-        }
+-
+-        // mark renderbuffer as presented
+-        isRenderbufferPresented = true
+-      }
+-    }
+-  }
+-
+-  // [GL thread] blits framebuffers and then sets a flag that informs UI thread
+-  // about presenting the new content of the renderbuffer on the next draw call
++  // [GL thread] blits framebuffers and presents the new content of the renderbuffer
+   func blitFramebuffers() {
+     if glContext.isInitialized() && viewFramebuffer != 0 && viewColorbuffer != 0 {
+       // Save surrounding framebuffer
+@@ -283,8 +248,8 @@ internal final class GLView: ExpoView, EXGLContextDelegate {
+         glBindFramebuffer(GLenum(GL_FRAMEBUFFER), prevFramebuffer)
+       }
+ 
+-      // mark renderbuffer as not presented
+-      isRenderbufferPresented = false
++      glBindRenderbuffer(GLenum(GL_RENDERBUFFER), viewColorbuffer)
++      eaglContext.presentRenderbuffer(Int(GL_RENDERBUFFER))
+     }
+   }
+ 
