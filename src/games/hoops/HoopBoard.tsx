@@ -4,7 +4,6 @@ import { Piece } from '../../three/Piece';
 import { Plank, Rod } from '../../three/Rod';
 import { standardMaterial } from '../../three/shared';
 import { theme } from '../../theme';
-import type { Move } from '../useHistory';
 import { rodRows } from './layout';
 import { type Rods, isRodComplete } from './logic';
 
@@ -14,7 +13,6 @@ const TUBE = 0.27;
 const RING_R = 0.62;
 const RING_H = TUBE * 2;
 const PLANK_DEPTH = 2.2;
-const HINT_NUDGE = 0.35;
 const RING_GEOMETRY = new TorusGeometry(RING_R, TUBE, 20, 48);
 
 type Props = {
@@ -22,7 +20,6 @@ type Props = {
   capacity: number;
   ids: number[][];
   selected: number | null;
-  hint: Move | null;
   onPress: (rod: number) => void;
 };
 
@@ -45,7 +42,7 @@ function boardLayout(count: number, capacity: number) {
   return { poleHeight, liftY, rowSizes, rowZ, positions, size, tilt: rows === 1 ? 0.55 : 0.85 };
 }
 
-export function HoopBoard({ rods, capacity, ids, selected, hint, onPress }: Props) {
+export function HoopBoard({ rods, capacity, ids, selected, onPress }: Props) {
   const { poleHeight, liftY, rowSizes, rowZ, positions, size, tilt } = boardLayout(rods.length, capacity);
 
   return (
@@ -56,7 +53,6 @@ export function HoopBoard({ rods, capacity, ids, selected, hint, onPress }: Prop
       {rods.flatMap((rod, i) => {
         const { x, z } = positions[i];
         const top = rod.length - 1;
-        const hintColor = hint?.[0] === i ? theme.hintFrom : hint?.[1] === i ? theme.hintTo : undefined;
         return [
           <Rod
             key={`rod${i}`}
@@ -66,17 +62,14 @@ export function HoopBoard({ rods, capacity, ids, selected, hint, onPress }: Prop
             padRadius={SPACING / 2 - 0.04}
             hitRadius={SPACING / 2}
             hitHeight={poleHeight + 0.3}
-            poleColor={isRodComplete(rod, capacity) ? theme.done : hintColor}
-            padColor={hintColor}
+            poleColor={isRodComplete(rod, capacity) ? theme.done : undefined}
             onPress={() => onPress(i)}
           />,
           ...rod.map((color, k) => (
             <Piece
               key={ids[i][k]}
               x={x}
-              y={
-                k === top && selected === i ? liftY : k * RING_H + (k === top && hint?.[0] === i ? HINT_NUDGE : 0)
-              }
+              y={k === top && selected === i ? liftY : k * RING_H}
               z={z}
               liftY={liftY}
             >

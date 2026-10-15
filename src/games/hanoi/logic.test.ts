@@ -7,18 +7,7 @@ import {
   isHanoiSolved,
   minMoves,
   moveDisk,
-  nextHanoiMove,
 } from './logic';
-
-function solveWithHints(state: HanoiState, disks: number) {
-  let moves = 0;
-  for (let move = nextHanoiMove(state, disks); move; move = nextHanoiMove(state, disks)) {
-    expect(canMoveDisk(state, ...move)).toBe(true);
-    state = moveDisk(state, ...move);
-    moves++;
-  }
-  return { state, moves };
-}
 
 function allStates(disks: number): HanoiState[] {
   const states: HanoiState[] = [];
@@ -85,26 +74,18 @@ describe('hanoi logic', () => {
     expect(isHanoiSolved([[], [3, 2], [1]], 3)).toBe(false);
   });
 
-  it.each([1, 3, 6, 10])('solves %i disks in the minimum moves by following hints', (disks) => {
-    const { state, moves } = solveWithHints(createHanoi(disks), disks);
-    expect(isHanoiSolved(state, disks)).toBe(true);
-    expect(moves).toBe(minMoves(disks));
-  });
-
-  it('finishes from a scrambled mid-game state', () => {
-    const { state } = solveWithHints([[5], [4, 1], [3, 2]], 5);
-    expect(isHanoiSolved(state, 5)).toBe(true);
-  });
-
   describe.each([1, 2, 3, 4, 5])('every position with %i disks', (disks) => {
     const states = allStates(disks);
     const tower = Array.from({ length: disks }, (_, i) => disks - i);
-    const toMiddle = distancesTo([[], tower, []]);
     const toRight = distancesTo([[], [], tower]);
 
     it('is reachable, so the search covers the whole game', () => {
       expect(toRight.size).toBe(3 ** disks);
       expect(states.every(isWellStacked)).toBe(true);
+    });
+
+    it('needs exactly the minimum move count to move the starting tower', () => {
+      expect(toRight.get(key(createHanoi(disks)))).toBe(minMoves(disks));
     });
 
     it('only ever allows moves that keep every peg well stacked', () => {
@@ -113,21 +94,5 @@ describe('hanoi logic', () => {
           for (let to = 0; to < 3; to++)
             if (canMoveDisk(state, from, to)) expect(isWellStacked(moveDisk(state, from, to))).toBe(true);
     });
-
-    it('is solved by following hints in exactly the fewest moves to the hinted tower', () => {
-      for (const start of states) {
-        const largestOn = start.findIndex((peg) => peg[0] === disks);
-        const target = largestOn === 1 ? toMiddle : toRight;
-        const { state, moves } = solveWithHints(start, disks);
-        expect(isHanoiSolved(state, disks)).toBe(true);
-        expect(state[largestOn === 1 ? 1 : 2]).toEqual(tower);
-        expect(moves).toBe(target.get(key(start)));
-        expect(moves).toBeLessThanOrEqual(minMoves(disks));
-      }
-    });
-  });
-
-  it('gives no hint once solved', () => {
-    expect(nextHanoiMove([[], [], [3, 2, 1]], 3)).toBeNull();
   });
 });

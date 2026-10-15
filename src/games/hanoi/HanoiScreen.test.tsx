@@ -36,15 +36,11 @@ async function start(level?: number) {
   await screen.findByText(`Level ${level ?? 1}`);
 }
 
-async function solveWithHints() {
-  while (!screen.queryByText('Solved!')) {
-    await fireEvent.press(screen.getByText('Hint'));
-    const hint = screen.getByText(/Move the top disk/).props.children as string;
-    const names = ['left', 'middle', 'right'];
-    const [, from, to] = hint.match(/from the (\w+) peg to the (\w+) peg/)!;
-    await move(names.indexOf(from), names.indexOf(to));
-    await act(() => jest.advanceTimersByTime(650));
-  }
+const SOLVE_THREE: [number, number][] = [[0, 2], [0, 1], [2, 1], [0, 2], [1, 0], [1, 2], [0, 2]];
+
+async function play(moves: [number, number][]) {
+  for (const [from, to] of moves) await move(from, to);
+  await act(() => jest.advanceTimersByTime(650));
 }
 
 beforeEach(() => AsyncStorage.clear());
@@ -106,19 +102,6 @@ describe('HanoiScreen', () => {
     expect(drop).toHaveBeenCalledTimes(1);
   });
 
-  it('clears the hint once a move is made', async () => {
-    await start();
-    await fireEvent.press(screen.getByText('Hint'));
-    await move(0, 1);
-    expect(screen.getByText('Move all 3 disks to another peg · best 7')).toBeOnTheScreen();
-  });
-
-  it('names the hinted pegs by position', async () => {
-    await start();
-    await fireEvent.press(screen.getByText('Hint'));
-    expect(screen.getByText('Move the top disk from the left peg to the right peg')).toBeOnTheScreen();
-  });
-
   describe('with a screen reader', () => {
     beforeEach(() => (mockScreenReader = true));
     afterEach(() => (mockScreenReader = false));
@@ -134,16 +117,6 @@ describe('HanoiScreen', () => {
       expect(screen.getByRole('button', { name: 'right peg, disks 1 from the bottom' })).toBeOnTheScreen();
       expect(AccessibilityInfo.announceForAccessibility).toHaveBeenCalledWith('Moved disk 1 to the right peg');
     });
-
-    it('announces the hint and marks the pegs', async () => {
-      await start();
-      await fireEvent.press(screen.getByText('Hint'));
-      expect(AccessibilityInfo.announceForAccessibility).toHaveBeenCalledWith(
-        'Hint: move the top disk from the left peg to the right peg',
-      );
-      expect(await screen.findByRole('button', { name: /^left peg.*hint: move from here$/ })).toBeOnTheScreen();
-      expect(screen.getByRole('button', { name: 'right peg, empty, hint: move here' })).toBeOnTheScreen();
-    });
   });
 
   describe('winning', () => {
@@ -152,7 +125,7 @@ describe('HanoiScreen', () => {
 
     it('praises a perfect solve and saves the next level', async () => {
       await start();
-      await solveWithHints();
+      await play(SOLVE_THREE);
       expect(screen.getByText(`Perfect! ${minMoves(3)} moves, the minimum possible.`)).toBeOnTheScreen();
       await fireEvent.press(screen.getByText('Next level'));
       expect(await screen.findByText('Level 2')).toBeOnTheScreen();
@@ -170,9 +143,7 @@ describe('HanoiScreen', () => {
 
     it('reports extra moves', async () => {
       await start();
-      await move(0, 1);
-      await move(1, 2);
-      await solveWithHints();
+      await play([[0, 1], [1, 2], ...SOLVE_THREE.slice(1)]);
       expect(screen.getByText(`${minMoves(3) + 1} moves. The minimum is ${minMoves(3)}.`)).toBeOnTheScreen();
     });
 

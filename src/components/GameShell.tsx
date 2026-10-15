@@ -14,7 +14,6 @@ type Props = {
   onUndo: () => void;
   canUndo: boolean;
   onRestart: () => void;
-  onHint: () => void;
   won: boolean;
   winText: string;
   nextLabel: string;
@@ -72,7 +71,6 @@ export function GameShell(props: Props) {
       <View style={styles.controls}>
         <Button label="Undo" onPress={props.onUndo} disabled={!props.canUndo || props.won} />
         <Button label="Restart" onPress={props.onRestart} />
-        <Button label="Hint" onPress={props.onHint} disabled={props.won} />
       </View>
 
       {showWin && (

@@ -10,11 +10,10 @@ type Props = {
   hitRadius: number;
   hitHeight: number;
   poleColor?: string;
-  padColor?: string;
   onPress: () => void;
 };
 
-export function Rod({ x, z, height, padRadius, hitRadius, hitHeight, poleColor = theme.pole, padColor = theme.pad, onPress }: Props) {
+export function Rod({ x, z, height, padRadius, hitRadius, hitHeight, poleColor = theme.pole, onPress }: Props) {
   const press = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();
     onPress();
@@ -26,7 +25,7 @@ export function Rod({ x, z, height, padRadius, hitRadius, hitHeight, poleColor =
       <mesh geometry={geometries.poleCap} material={standardMaterial(poleColor, 0.6)} position-y={height} castShadow />
       <mesh
         geometry={geometries.pad}
-        material={standardMaterial(padColor, 0.8)}
+        material={standardMaterial(theme.pad, 0.8)}
         rotation-x={-Math.PI / 2}
         position-y={0.005}
         scale={[padRadius, padRadius, 1]}

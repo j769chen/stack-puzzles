@@ -5,7 +5,7 @@ import { RodButtons } from '../../components/RodButtons';
 import { feedback } from '../../feedback';
 import { theme } from '../../theme';
 import { usePersistentNumber } from '../../usePersistentNumber';
-import { type Move, useHistory } from '../useHistory';
+import { useHistory } from '../useHistory';
 import {
   type Rods,
   canPour,
@@ -15,7 +15,6 @@ import {
   isRodComplete,
   levelSpec,
   pour,
-  solveHoops,
   topRun,
 } from './logic';
 import { HoopBoard } from './HoopBoard';
@@ -25,7 +24,7 @@ type Snapshot = { rods: Rods; ids: number[][] };
 
 const colorName = (color: number) => theme.ringNames[color];
 
-function rodLabel(rods: Rods, rod: number, capacity: number, hint: Move | null) {
+function rodLabel(rods: Rods, rod: number, capacity: number) {
   const rings = rods[rod];
   let contents = 'empty';
   if (isRodComplete(rings, capacity)) contents = `complete, ${colorName(rings[0])}`;
@@ -33,8 +32,7 @@ function rodLabel(rods: Rods, rod: number, capacity: number, hint: Move | null) 
     const top = `${topRun(rings)} ${colorName(rings[rings.length - 1])}`;
     contents = `${rings.map(colorName).join(', ')} from the bottom, top ${top}`;
   }
-  const hinted = hint?.[0] === rod ? ', hint: move from here' : hint?.[1] === rod ? ', hint: move here' : '';
-  return `Rod ${rod + 1}, ${contents}${hinted}`;
+  return `Rod ${rod + 1}, ${contents}`;
 }
 
 export function HoopScreen({ onBack }: { onBack: () => void }) {
@@ -62,9 +60,6 @@ function HoopGame({ level, onBack, onNext }: GameProps) {
   const history = useHistory(() => createSnapshot(deal.rods));
   const optimal = deal.solution.length;
   const [selected, setSelected] = useState<number | null>(null);
-  const [hint, setHint] = useState<Move | null>(null);
-  const [hintMessage, setHintMessage] = useState<string | null>(null);
-  const [plan, setPlan] = useState<Move[] | null>(deal.solution);
 
   const current = history.current;
   const { rods } = current;
@@ -72,12 +67,6 @@ function HoopGame({ level, onBack, onNext }: GameProps) {
   const solved = isHoopsSolved(rods, capacity);
   const stuck = !solved && !hasAnyMove(rods, capacity);
   const selectable = (rod: number) => rods[rod].length > 0 && !isRodComplete(rods[rod], capacity);
-
-  const clearSelection = () => {
-    setSelected(null);
-    setHint(null);
-    setHintMessage(null);
-  };
 
   const press = (rod: number) => {
     if (solved) return;
@@ -97,9 +86,7 @@ function HoopGame({ level, onBack, onNext }: GameProps) {
       }
       const color = colorName(rods[selected][rods[selected].length - 1]);
       AccessibilityInfo.announceForAccessibility(`Moved ${color} to rod ${rod + 1}`);
-      const [next, ...rest] = plan ?? [];
-      setPlan(next?.[0] === selected && next[1] === rod ? rest : null);
-      clearSelection();
+      setSelected(null);
     } else if (selectable(rod)) {
       setSelected(rod);
       feedback.pick();
@@ -108,19 +95,7 @@ function HoopGame({ level, onBack, onNext }: GameProps) {
     }
   };
 
-  const showHint = () => {
-    setSelected(null);
-    const path = plan?.length ? plan : solveHoops(rods, capacity);
-    setPlan(path);
-    setHint(path?.[0] ?? null);
-    setHintMessage(path ? null : 'No solution from here. Try undo.');
-    AccessibilityInfo.announceForAccessibility(
-      path ? `Hint: move from rod ${path[0][0] + 1} to rod ${path[0][1] + 1}` : 'No solution from here. Try undo.',
-    );
-  };
-
-  const message =
-    hintMessage ?? (stuck ? 'No moves left. Undo or restart.' : `Sort each color onto its own rod · best ${optimal}`);
+  const message = stuck ? 'No moves left. Undo or restart.' : `Sort each color onto its own rod · best ${optimal}`;
 
   return (
     <GameShell
@@ -131,16 +106,13 @@ function HoopGame({ level, onBack, onNext }: GameProps) {
       onBack={onBack}
       onUndo={() => {
         history.undo();
-        setPlan(null);
-        clearSelection();
+        setSelected(null);
       }}
       canUndo={moves > 0}
       onRestart={() => {
         history.restart();
-        setPlan(deal.solution);
-        clearSelection();
+        setSelected(null);
       }}
-      onHint={showHint}
       won={solved}
       winText={
         moves === optimal
@@ -150,9 +122,9 @@ function HoopGame({ level, onBack, onNext }: GameProps) {
       nextLabel="Next level"
       onNext={onNext}
     >
-      <HoopBoard rods={rods} capacity={capacity} ids={current.ids} selected={selected} hint={hint} onPress={press} />
+      <HoopBoard rods={rods} capacity={capacity} ids={current.ids} selected={selected} onPress={press} />
       <RodButtons
-        labels={rods.map((_, rod) => rodLabel(rods, rod, capacity, hint))}
+        labels={rods.map((_, rod) => rodLabel(rods, rod, capacity))}
         rowSizes={rodRows(rods.length)}
         selected={selected}
         onPress={press}

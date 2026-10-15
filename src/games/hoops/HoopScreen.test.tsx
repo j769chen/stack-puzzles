@@ -5,7 +5,7 @@ import { feedback } from '../../feedback';
 import { HoopScreen } from './HoopScreen';
 import * as logic from './logic';
 
-type MockBoardProps = { rods: number[][]; selected: number | null; hint: [number, number] | null; onPress: (rod: number) => void };
+type MockBoardProps = { rods: number[][]; selected: number | null; onPress: (rod: number) => void };
 
 let mockScreenReader = false;
 jest.mock('../../useScreenReader', () => ({ useScreenReader: () => mockScreenReader }));
@@ -13,21 +13,16 @@ jest.mock('../../useScreenReader', () => ({ useScreenReader: () => mockScreenRea
 jest.mock('./HoopBoard', () => {
   const { Pressable, Text } = jest.requireActual<typeof import('react-native')>('react-native');
   return {
-    HoopBoard: ({ rods, selected, hint, onPress }: MockBoardProps) => (
-      <>
-        <Text testID="hint">{hint ? hint.join('>') : ''}</Text>
-        {rods.map((rod, i) => (
-          <Pressable key={i} testID={`rod-${i}`} onPress={() => onPress(i)}>
-            <Text testID={`rod-${i}-rings`}>{`${selected === i ? '*' : ''}${rod.join(',')}`}</Text>
-          </Pressable>
-        ))}
-      </>
-    ),
+    HoopBoard: ({ rods, selected, onPress }: MockBoardProps) =>
+      rods.map((rod, i) => (
+        <Pressable key={i} testID={`rod-${i}`} onPress={() => onPress(i)}>
+          <Text testID={`rod-${i}-rings`}>{`${selected === i ? '*' : ''}${rod.join(',')}`}</Text>
+        </Pressable>
+      )),
   };
 });
 
 const rodText = (i: number) => screen.getByTestId(`rod-${i}-rings`).props.children as string;
-const hintText = () => screen.getByTestId('hint').props.children as string;
 
 async function pour(from: number, to: number) {
   await fireEvent.press(screen.getByTestId(`rod-${from}`));
@@ -118,18 +113,6 @@ describe('HoopScreen', () => {
     expect(rodText(0)).toBe('0,0,0,0');
   });
 
-  it('goes back to the level solution for hints after a restart', async () => {
-    await start([[0, 1], [1], [0, 0, 0, 1], [], [1]]);
-    const solve = jest.spyOn(logic, 'solveHoops');
-    await fireEvent.press(screen.getByText('Hint'));
-    const first = hintText();
-    await pour(4, 3);
-    await fireEvent.press(screen.getByText('Restart'));
-    await fireEvent.press(screen.getByText('Hint'));
-    expect(hintText()).toBe(first);
-    expect(solve).not.toHaveBeenCalled();
-  });
-
   it('undoes and restarts', async () => {
     await start([[0, 1], [1], [0, 0, 0, 1], [], [1]]);
     await pour(0, 1);
@@ -142,33 +125,10 @@ describe('HoopScreen', () => {
     expect(screen.getByText('Moves 0')).toBeOnTheScreen();
   });
 
-  it('hints from the solution found while dealing, without solving again', async () => {
-    await start();
-    const solve = jest.spyOn(logic, 'solveHoops');
-    await fireEvent.press(screen.getByText('Hint'));
-    const [from, to] = hintText().split('>').map(Number);
-    await pour(from, to);
-    await fireEvent.press(screen.getByText('Hint'));
-    expect(solve).not.toHaveBeenCalled();
-    expect(hintText()).not.toBe('');
-  });
-
-  it('replans after the player leaves the hint plan', async () => {
-    await start([[0, 1], [1], [0, 0, 0, 1], [], [1]]);
-    const solve = jest.spyOn(logic, 'solveHoops');
-    await fireEvent.press(screen.getByText('Hint'));
-    expect(hintText()).not.toBe('4>3');
-    await pour(4, 3);
-    await fireEvent.press(screen.getByText('Hint'));
-    expect(solve).toHaveBeenCalledTimes(1);
-  });
-
   it('reports a dead end', async () => {
     await start([[1, 0, 1, 0], [2, 0, 2, 0], [1, 2, 1, 2], []]);
     await pour(2, 3);
     expect(screen.getByText('No moves left. Undo or restart.')).toBeOnTheScreen();
-    await fireEvent.press(screen.getByText('Hint'));
-    expect(screen.getByText('No solution from here. Try undo.')).toBeOnTheScreen();
   });
 
   describe('with a screen reader', () => {
@@ -187,34 +147,16 @@ describe('HoopScreen', () => {
       expect(screen.getByRole('button', { name: 'Rod 2, orange from the bottom, top 1 orange' })).toBeOnTheScreen();
       expect(screen.getByRole('button', { name: 'Rod 4, orange from the bottom, top 1 orange' })).toBeOnTheScreen();
     });
-
-    it('announces the hint with rod numbers', async () => {
-      await start([[0, 1], [1], [0, 0, 0, 1], [], [1]]);
-      await fireEvent.press(screen.getByText('Hint'));
-      expect(AccessibilityInfo.announceForAccessibility).toHaveBeenCalledWith('Hint: move from rod 1 to rod 2');
-      expect(await screen.findByRole('button', { name: /^Rod 1,.*hint: move from here$/ })).toBeOnTheScreen();
-    });
-
-    it('announces when there is no way forward', async () => {
-      await start([[1, 0, 1, 0], [2, 0, 2, 0], [1, 2, 1, 2], []]);
-      await pour(2, 3);
-      await fireEvent.press(screen.getByText('Hint'));
-      expect(AccessibilityInfo.announceForAccessibility).toHaveBeenCalledWith('No solution from here. Try undo.');
-    });
   });
 
   describe('winning', () => {
     beforeEach(() => jest.useFakeTimers());
     afterEach(() => jest.useRealTimers());
 
-    it('solves by following hints and saves the next level', async () => {
+    it('praises a perfect solve and saves the next level', async () => {
       await start();
-      while (!screen.queryByText('Solved!')) {
-        await fireEvent.press(screen.getByText('Hint'));
-        const [from, to] = hintText().split('>').map(Number);
-        await pour(from, to);
-        await act(() => jest.advanceTimersByTime(650));
-      }
+      for (const [from, to] of logic.generateLevel(1).solution) await pour(from, to);
+      await act(() => jest.advanceTimersByTime(650));
       expect(screen.getByText(/^Perfect! \d+ moves, the minimum possible\.$/)).toBeOnTheScreen();
       await fireEvent.press(screen.getByText('Next level'));
       expect(await screen.findByText('Level 2')).toBeOnTheScreen();

@@ -16,13 +16,11 @@ describe('Rod', () => {
     expect(colorOf(pad).equals(new Color(theme.pad))).toBe(true);
   });
 
-  it('uses the given highlight colors', async () => {
-    const renderer = await create(
-      <Rod {...props} poleColor={theme.done} padColor={theme.hintTo} onPress={jest.fn()} />,
-    );
+  it('uses the given pole color', async () => {
+    const renderer = await create(<Rod {...props} poleColor={theme.done} onPress={jest.fn()} />);
     const [pole, , pad] = renderer.scene.children[0].children.map((c) => c.instance as Mesh);
     expect(colorOf(pole).equals(new Color(theme.done))).toBe(true);
-    expect(colorOf(pad).equals(new Color(theme.hintTo))).toBe(true);
+    expect(colorOf(pad).equals(new Color(theme.pad))).toBe(true);
   });
 
   it('presses through its invisible hit area without bubbling', async () => {

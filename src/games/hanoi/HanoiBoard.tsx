@@ -5,23 +5,20 @@ import { Piece } from '../../three/Piece';
 import { Plank, Rod } from '../../three/Rod';
 import { standardMaterial } from '../../three/shared';
 import { theme } from '../../theme';
-import type { Move } from '../useHistory';
 import type { HanoiState } from './logic';
 
 const SPACING = 3.3;
 const DISK_H = 0.44;
 const HOLE = 0.17;
-const HINT_NUDGE = 0.35;
 
 type Props = {
   state: HanoiState;
   disks: number;
   selected: number | null;
-  hint: Move | null;
   onPress: (peg: number) => void;
 };
 
-export function HanoiBoard({ state, disks, selected, hint, onPress }: Props) {
+export function HanoiBoard({ state, disks, selected, onPress }: Props) {
   const maxR = SPACING * 0.45;
   const minR = 0.5;
   const radius = (size: number) => minR + ((maxR - minR) * (size - 1)) / Math.max(disks - 1, 1);
@@ -35,7 +32,6 @@ export function HanoiBoard({ state, disks, selected, hint, onPress }: Props) {
       <Plank width={width} depth={depth} />
       {state.flatMap((peg, i) => {
         const x = (i - 1) * SPACING;
-        const hintColor = hint?.[0] === i ? theme.hintFrom : hint?.[1] === i ? theme.hintTo : undefined;
         return [
           <Rod
             key={`rod${i}`}
@@ -45,16 +41,12 @@ export function HanoiBoard({ state, disks, selected, hint, onPress }: Props) {
             padRadius={maxR + 0.08}
             hitRadius={SPACING / 2}
             hitHeight={liftY + DISK_H * 2}
-            poleColor={hintColor}
-            padColor={hintColor}
             onPress={() => onPress(i)}
           />,
           ...peg.map((size, k) => {
-            const top = k === peg.length - 1;
-            const lifted = selected === i && top;
-            const nudge = hint?.[0] === i && top ? HINT_NUDGE : 0;
+            const lifted = selected === i && k === peg.length - 1;
             return (
-              <Piece key={size} x={x} y={lifted ? liftY : k * DISK_H + nudge} z={0} liftY={liftY}>
+              <Piece key={size} x={x} y={lifted ? liftY : k * DISK_H} z={0} liftY={liftY}>
                 <Disk radius={radius(size)} color={theme.disks[(size - 1) % theme.disks.length]} />
               </Piece>
             );

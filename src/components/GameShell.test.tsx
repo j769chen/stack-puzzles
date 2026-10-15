@@ -13,7 +13,6 @@ async function renderShell(overrides: Partial<Parameters<typeof GameShell>[0]> =
     onUndo: jest.fn(),
     canUndo: true,
     onRestart: jest.fn(),
-    onHint: jest.fn(),
     won: false,
     winText: 'Well done',
     nextLabel: 'Next level',
@@ -45,18 +44,16 @@ describe('GameShell', () => {
     await fireEvent.press(screen.getByText('‹ Back'));
     await fireEvent.press(screen.getByText('Undo'));
     await fireEvent.press(screen.getByText('Restart'));
-    await fireEvent.press(screen.getByText('Hint'));
     expect(props.onBack).toHaveBeenCalledTimes(1);
     expect(props.onUndo).toHaveBeenCalledTimes(1);
     expect(props.onRestart).toHaveBeenCalledTimes(1);
-    expect(props.onHint).toHaveBeenCalledTimes(1);
   });
 
   it('labels the back button and reports disabled controls', async () => {
     await renderShell({ canUndo: false });
     expect(screen.getByRole('button', { name: 'Back' })).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: 'Undo' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Hint' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Restart' })).toBeEnabled();
     expect(screen.getByRole('header', { name: 'Test Game' })).toBeOnTheScreen();
   });
 
@@ -104,12 +101,10 @@ describe('GameShell', () => {
       win.mockRestore();
     });
 
-    it('locks undo and hint', async () => {
+    it('locks undo', async () => {
       const props = await renderShell({ won: true });
       await fireEvent.press(screen.getByText('Undo'));
-      await fireEvent.press(screen.getByText('Hint'));
       expect(props.onUndo).not.toHaveBeenCalled();
-      expect(props.onHint).not.toHaveBeenCalled();
     });
   });
 });
