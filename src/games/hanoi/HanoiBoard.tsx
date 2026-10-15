@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { memo, useMemo } from 'react';
 import { Vector2 } from 'three';
 import { Board } from '../../three/Board';
 import { Piece } from '../../three/Piece';
@@ -46,9 +46,14 @@ export function HanoiBoard({ state, disks, selected, onPress }: Props) {
           ...peg.map((size, k) => {
             const lifted = selected === i && k === peg.length - 1;
             return (
-              <Piece key={size} x={x} y={lifted ? liftY : k * DISK_H} z={0} liftY={liftY}>
-                <Disk radius={radius(size)} color={theme.disks[(size - 1) % theme.disks.length]} />
-              </Piece>
+              <Disk
+                key={size}
+                x={x}
+                y={lifted ? liftY : k * DISK_H}
+                liftY={liftY}
+                radius={radius(size)}
+                color={theme.disks[(size - 1) % theme.disks.length]}
+              />
             );
           }),
         ];
@@ -57,14 +62,18 @@ export function HanoiBoard({ state, disks, selected, onPress }: Props) {
   );
 }
 
-function Disk({ radius, color }: { radius: number; color: string }) {
+type DiskProps = { x: number; y: number; liftY: number; radius: number; color: string };
+
+const Disk = memo(function Disk({ x, y, liftY, radius, color }: DiskProps) {
   const profile = useMemo(() => ringProfile(HOLE, radius, DISK_H - 0.03, 0.1), [radius]);
   return (
-    <mesh material={standardMaterial(color, 0.35)} position-y={0.015} castShadow receiveShadow>
-      <latheGeometry args={[profile, 56]} />
-    </mesh>
+    <Piece x={x} y={y} z={0} liftY={liftY}>
+      <mesh material={standardMaterial(color, 0.35)} position-y={0.015} castShadow receiveShadow>
+        <latheGeometry args={[profile, 40]} />
+      </mesh>
+    </Piece>
   );
-}
+});
 
 function ringProfile(inner: number, outer: number, height: number, round: number): Vector2[] {
   const corners: [number, number, number][] = [
@@ -75,8 +84,8 @@ function ringProfile(inner: number, outer: number, height: number, round: number
   ];
   const points: Vector2[] = [];
   for (const [cx, cy, start] of corners) {
-    for (let s = 0; s <= 6; s++) {
-      const a = start + (s / 6) * (Math.PI / 2);
+    for (let s = 0; s <= 4; s++) {
+      const a = start + (s / 4) * (Math.PI / 2);
       points.push(new Vector2(cx + Math.cos(a) * round, cy + Math.sin(a) * round));
     }
   }

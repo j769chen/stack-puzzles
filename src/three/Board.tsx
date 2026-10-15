@@ -9,7 +9,7 @@ type Props = BoardSize & { tilt?: number; children: ReactNode };
 
 export function Board({ tilt = 0.55, ...props }: Props) {
   return (
-    <Canvas style={styles.canvas} frameloop="demand" shadows="percentage" camera={{ fov: 32 }}>
+    <Canvas style={styles.canvas} frameloop="demand" gl={{ antialias: false }} shadows="percentage" camera={{ fov: 32 }}>
       <Scene tilt={tilt} {...props} />
     </Canvas>
   );
