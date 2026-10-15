@@ -124,6 +124,16 @@ describe('GameShell', () => {
       expect(getStars('hanoi')).toEqual({});
     });
 
+    it('keeps the header out from under the win card so Back still works', async () => {
+      const props = await renderShell({ won: true });
+      await act(() => jest.advanceTimersByTime(650));
+      const overlay = screen.getByText('Solved!').parent!.parent!;
+      const back = screen.getByRole('button', { name: 'Back' });
+      expect(overlay.parent!.findAll((node) => node === back)).toHaveLength(0);
+      await fireEvent.press(back);
+      expect(props.onBack).toHaveBeenCalledTimes(1);
+    });
+
     it('does not show the win card if it unmounts before the delay', async () => {
       const errors = jest.spyOn(console, 'error').mockImplementation(() => {});
       await renderShell({ won: true });
