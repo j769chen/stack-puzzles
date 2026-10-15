@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
 import { AccessibilityInfo, Text } from 'react-native';
 import { feedback } from '../feedback';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -122,6 +122,15 @@ describe('GameShell', () => {
     it('records nothing before the game is won', async () => {
       await renderShell();
       expect(getStars('hanoi')).toEqual({});
+    });
+
+    it('keeps the header out from under the win card so Back still works', async () => {
+      const props = await renderShell({ won: true });
+      await act(() => jest.advanceTimersByTime(650));
+      const overlay = screen.getByText('Solved!').parent!.parent!;
+      expect(within(overlay.parent!).queryByRole('button', { name: 'Back' })).toBeNull();
+      await fireEvent.press(screen.getByRole('button', { name: 'Back' }));
+      expect(props.onBack).toHaveBeenCalledTimes(1);
     });
 
     it('does not show the win card if it unmounts before the delay', async () => {

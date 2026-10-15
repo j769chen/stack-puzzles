@@ -86,34 +86,36 @@ export function GameShell(props: Props) {
         </Pressable>
       </View>
 
-      <View style={styles.stats}>
-        <Text style={styles.stat}>Level {props.level}</Text>
-        <Text style={styles.stat}>Moves {props.moves}</Text>
-      </View>
-
-      <View style={styles.board}>{props.children}</View>
-
-      <Text style={styles.message} accessibilityLiveRegion="polite">
-        {props.message ?? ' '}
-      </Text>
-
-      <View style={styles.controls}>
-        <Button label="Undo" onPress={props.onUndo} disabled={!props.canUndo || props.won} />
-        <Button label="Restart" onPress={props.onRestart} />
-      </View>
-
-      {showWin && (
-        <View style={styles.overlay} accessibilityViewIsModal>
-          <View style={styles.winCard}>
-            <Text style={styles.winTitle} accessibilityRole="header">
-              Solved!
-            </Text>
-            <Stars count={stars} />
-            <Text style={styles.winText}>{winText}</Text>
-            <Button label={props.nextLabel} onPress={props.onNext} primary />
-          </View>
+      <View style={styles.body}>
+        <View style={styles.stats}>
+          <Text style={styles.stat}>Level {props.level}</Text>
+          <Text style={styles.stat}>Moves {props.moves}</Text>
         </View>
-      )}
+
+        <View style={styles.board}>{props.children}</View>
+
+        <Text style={styles.message} accessibilityLiveRegion="polite">
+          {props.message ?? ' '}
+        </Text>
+
+        <View style={styles.controls}>
+          <Button label="Undo" onPress={props.onUndo} disabled={!props.canUndo || props.won} />
+          <Button label="Restart" onPress={props.onRestart} />
+        </View>
+
+        {showWin && (
+          <View style={styles.overlay} accessibilityViewIsModal>
+            <View style={styles.winCard}>
+              <Text style={styles.winTitle} accessibilityRole="header">
+                Solved!
+              </Text>
+              <Stars count={stars} />
+              <Text style={styles.winText}>{winText}</Text>
+              <Button label={props.nextLabel} onPress={props.onNext} primary />
+            </View>
+          </View>
+        )}
+      </View>
     </SafeAreaView>
   );
 }
@@ -121,6 +123,7 @@ export function GameShell(props: Props) {
 const useStyles = themedStyles((colors) =>
   StyleSheet.create({
     root: { flex: 1, backgroundColor: colors.bg },
+    body: { flex: 1 },
     header: {
       flexDirection: 'row',
       alignItems: 'center',
