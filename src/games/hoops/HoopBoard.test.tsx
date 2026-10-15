@@ -1,21 +1,20 @@
 import { create } from '@react-three/test-renderer';
 import { Color, type Mesh, type MeshStandardMaterial, type Object3D } from 'three';
 import { theme } from '../../theme';
-import type { Move } from '../useHistory';
 import { HoopBoard } from './HoopBoard';
 import type { Rods } from './logic';
 
 jest.mock('../../three/Board', () => ({ Board: ({ children }: { children: unknown }) => children }));
 
-type Props = { rods: Rods; capacity?: number; ids?: number[][]; selected?: number | null; hint?: Move | null; onPress?: (rod: number) => void };
+type Props = { rods: Rods; capacity?: number; ids?: number[][]; selected?: number | null; onPress?: (rod: number) => void };
 
 function idsFor(rods: Rods) {
   let next = 0;
   return rods.map((rod) => rod.map(() => next++));
 }
 
-const board = ({ rods, capacity = 4, ids = idsFor(rods), selected = null, hint = null, onPress = jest.fn() }: Props) => (
-  <HoopBoard rods={rods} capacity={capacity} ids={ids} selected={selected} hint={hint} onPress={onPress} />
+const board = ({ rods, capacity = 4, ids = idsFor(rods), selected = null, onPress = jest.fn() }: Props) => (
+  <HoopBoard rods={rods} capacity={capacity} ids={ids} selected={selected} onPress={onPress} />
 );
 
 const renderBoard = (props: Props) => create(board(props));
@@ -80,19 +79,11 @@ describe('HoopBoard', () => {
     expect(ys(selected)[2]).toBeGreaterThan(ys(plain)[2] + 1);
   });
 
-  it('colors complete rods and hinted rods', async () => {
-    const r = await renderBoard({ rods: [[2, 2, 2, 2], [0, 1], [1]], hint: [1, 2] });
+  it('colors complete rods', async () => {
+    const r = await renderBoard({ rods: [[2, 2, 2, 2], [0, 1], [1]] });
     expect(poleColor(r, 0).equals(new Color(theme.done))).toBe(true);
-    expect(poleColor(r, 1).equals(new Color(theme.hintFrom))).toBe(true);
-    expect(poleColor(r, 2).equals(new Color(theme.hintTo))).toBe(true);
-  });
-
-  it('nudges only the ring the hint says to move', async () => {
-    const plain = await renderBoard({ rods: [[0, 1, 1], []] });
-    const hinted = await renderBoard({ rods: [[0, 1, 1], []], hint: [0, 1] });
-    const ys = (r: Renderer) => rings(r).map((o) => o.position.y);
-    expect(ys(hinted).slice(0, 2)).toEqual(ys(plain).slice(0, 2));
-    expect(ys(hinted)[2]).toBeGreaterThan(ys(plain)[2]);
+    expect(poleColor(r, 1).equals(new Color(theme.pole))).toBe(true);
+    expect(poleColor(r, 2).equals(new Color(theme.pole))).toBe(true);
   });
 
   it('grows the poles and marks completion for taller rods', async () => {

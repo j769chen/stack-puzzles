@@ -1,5 +1,3 @@
-import type { Move } from '../useHistory';
-
 export type HanoiState = number[][];
 
 export const HANOI_MAX_LEVEL = 8;
@@ -32,19 +30,4 @@ export function isHanoiSolved(state: HanoiState, disks: number): boolean {
 
 export function minMoves(disks: number): number {
   return 2 ** disks - 1;
-}
-
-export function nextHanoiMove(state: HanoiState, disks: number): Move | null {
-  const pos: number[] = [];
-  state.forEach((peg, i) => peg.forEach((d) => (pos[d] = i)));
-  const target = pos[disks] === 0 ? 2 : pos[disks];
-
-  const solve = (n: number, to: number): Move | null => {
-    if (n === 0) return null;
-    if (pos[n] === to) return solve(n - 1, to);
-    const aux = 3 - pos[n] - to;
-    return solve(n - 1, aux) ?? [pos[n], to];
-  };
-
-  return solve(disks, target);
 }

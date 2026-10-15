@@ -8,8 +8,6 @@ export const theme = {
   base: '#5C4A38',
   done: '#E9B44C',
   pad: '#6B5641',
-  hintFrom: '#F3A712',
-  hintTo: '#2A9D8F',
   overlay: 'rgba(20, 16, 12, 0.55)',
   border: '#E3DACB',
   onAccent: '#FFFFFF',
