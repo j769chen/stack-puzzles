@@ -31,7 +31,7 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <StatusBar style="dark" />
+      <StatusBar style="auto" />
       {screen === 'home' && <HomeScreen onOpen={setScreen} />}
       {screen === 'hanoi' && <HanoiScreen onBack={goHome} />}
       {screen === 'hoops' && <HoopScreen onBack={goHome} />}

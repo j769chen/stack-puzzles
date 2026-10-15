@@ -1,11 +1,15 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fireEvent, render, screen } from '@testing-library/react-native';
-import { type StyleProp, StyleSheet, type ViewStyle } from 'react-native';
+import { type ColorSchemeName, type StyleProp, StyleSheet, type ViewStyle } from 'react-native';
 import { HomeScreen } from './HomeScreen';
 import { getSettings, loadSettings } from './settings';
 import { loadStars, recordStars } from './stars';
 
+let mockScheme: ColorSchemeName = 'light';
+jest.mock('react-native/Libraries/Utilities/useColorScheme', () => ({ __esModule: true, default: () => mockScheme }));
+
 beforeEach(async () => {
+  mockScheme = 'light';
   await AsyncStorage.clear();
   await loadSettings();
   await loadStars();
@@ -86,6 +90,18 @@ describe('HomeScreen', () => {
 
     await fireEvent(screen.getByRole('switch', { name: 'Sound' }), 'valueChange', true);
     expect(getSettings()).toEqual({ sound: true, haptics: false });
+  });
+
+  it('follows the system dark mode', async () => {
+    const root = () => screen.getByRole('header', { name: 'Stack Puzzles' }).parent?.parent;
+    const background = () => StyleSheet.flatten(root()?.props.style)?.backgroundColor;
+    await render(<HomeScreen onOpen={jest.fn()} />);
+    await screen.findAllByText('Level 1 ›');
+    expect(background()).toBe('#F4EFE6');
+    mockScheme = 'dark';
+    await screen.rerender(<HomeScreen onOpen={jest.fn()} />);
+    expect(background()).toBe('#1C1916');
+    expect(StyleSheet.flatten(screen.getByText('Tower Stack').props.style).color).toBe('#F2EDE4');
   });
 
   it('opens the chosen game', async () => {
