@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { TorusGeometry } from 'three';
 import { Board } from '../../three/Board';
 import { Piece } from '../../three/Piece';
@@ -13,7 +14,7 @@ const TUBE = 0.27;
 const RING_R = 0.62;
 const RING_H = TUBE * 2;
 const PLANK_DEPTH = 2.2;
-const RING_GEOMETRY = new TorusGeometry(RING_R, TUBE, 20, 48);
+const RING_GEOMETRY = new TorusGeometry(RING_R, TUBE, 14, 36);
 
 type Props = {
   rods: Rods;
@@ -66,25 +67,34 @@ export function HoopBoard({ rods, capacity, ids, selected, onPress }: Props) {
             onPress={() => onPress(i)}
           />,
           ...rod.map((color, k) => (
-            <Piece
+            <Ring
               key={ids[i][k]}
               x={x}
               y={k === top && selected === i ? liftY : k * RING_H}
               z={z}
               liftY={liftY}
-            >
-              <mesh
-                geometry={RING_GEOMETRY}
-                material={standardMaterial(theme.rings[color], 0.3)}
-                position-y={TUBE}
-                rotation-x={Math.PI / 2}
-                castShadow
-                receiveShadow
-              />
-            </Piece>
+              color={color}
+            />
           )),
         ];
       })}
     </Board>
   );
 }
+
+type RingProps = { x: number; y: number; z: number; liftY: number; color: number };
+
+const Ring = memo(function Ring({ x, y, z, liftY, color }: RingProps) {
+  return (
+    <Piece x={x} y={y} z={z} liftY={liftY}>
+      <mesh
+        geometry={RING_GEOMETRY}
+        material={standardMaterial(theme.rings[color], 0.3)}
+        position-y={TUBE}
+        rotation-x={Math.PI / 2}
+        castShadow
+        receiveShadow
+      />
+    </Piece>
+  );
+});

@@ -105,6 +105,17 @@ describe('Piece', () => {
     expect(group.position.toArray()).toEqual([-2, 1, 0]);
   });
 
+  it.each([60, 10])('finishes a long move within the same time budget at %ifps', async (fps) => {
+    const { renderer, group, moveTo } = await renderPiece(0, 0);
+    await moveTo(6, 2);
+    let seconds = 0;
+    while (group.position.x !== 6 || group.position.y !== 2) {
+      await renderer.advanceFrames(1, 1 / fps);
+      seconds += 1 / fps;
+    }
+    expect(seconds).toBeLessThanOrEqual(0.4 + 2 / fps);
+  });
+
   it('requests frames on demand only while it is moving', async () => {
     jest.useFakeTimers();
     const piece = (nx: number) => (
