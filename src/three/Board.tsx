@@ -46,8 +46,7 @@ function CameraRig({ width, height, depth, tilt }: BoardSize & { tilt: number })
   const aspect = useThree((s) => s.size.width / s.size.height);
 
   useLayoutEffect(() => {
-    camera.aspect = aspect;
-    fitCamera(camera, { width, height, depth }, tilt);
+    fitCamera(camera, { width, height, depth }, tilt, aspect);
   }, [camera, aspect, width, height, depth, tilt]);
 
   return null;

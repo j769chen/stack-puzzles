@@ -40,7 +40,7 @@ export function RodButtons({ labels, rowSizes, selected, onPress }: Props) {
 }
 
 const styles = StyleSheet.create({
-  overlay: { ...StyleSheet.absoluteFillObject },
+  overlay: { ...StyleSheet.absoluteFill },
   row: { flex: 1, flexDirection: 'row' },
   rod: { flex: 1 },
 });

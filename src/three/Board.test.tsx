@@ -1,5 +1,6 @@
 import { useThree } from '@react-three/fiber/native';
 import { create } from '@react-three/test-renderer';
+import { useEffect } from 'react';
 import { Color, type DirectionalLight, type Mesh, type PerspectiveCamera, type Scene as ThreeScene, Vector3 } from 'three';
 import { theme } from '../theme';
 import { Scene } from './Board';
@@ -7,9 +8,15 @@ import { Scene } from './Board';
 type Size = { width: number; height: number; depth: number };
 
 let camera: PerspectiveCamera;
+const captureCamera = (found: PerspectiveCamera) => {
+  camera = found;
+};
 
 function CameraProbe() {
-  camera = useThree((state) => state.camera) as PerspectiveCamera;
+  const found = useThree((state) => state.camera) as PerspectiveCamera;
+  useEffect(() => {
+    captureCamera(found);
+  }, [found]);
   return null;
 }
 

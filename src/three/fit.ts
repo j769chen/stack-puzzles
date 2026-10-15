@@ -4,7 +4,7 @@ export type BoardSize = { width: number; height: number; depth: number };
 
 const MARGIN = 0.94;
 
-export function fitCamera(camera: PerspectiveCamera, { width, height, depth }: BoardSize, tilt: number) {
+export function fitCamera(camera: PerspectiveCamera, { width, height, depth }: BoardSize, tilt: number, aspect: number) {
   const center = new Vector3(0, height / 2, 0);
   const dir = new Vector3(0, Math.sin(tilt), Math.cos(tilt));
   const corners: Vector3[] = [];
@@ -23,6 +23,7 @@ export function fitCamera(camera: PerspectiveCamera, { width, height, depth }: B
       return Math.abs(p.x) <= MARGIN && Math.abs(p.y) <= MARGIN && p.z < 1;
     });
 
+  camera.aspect = aspect;
   camera.updateProjectionMatrix();
   let lo = 1;
   let hi = 300;
