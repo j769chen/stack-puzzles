@@ -1,7 +1,7 @@
 import { type ReactNode, useEffect, useState } from 'react';
 import { AccessibilityInfo, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { theme } from '../theme';
+import { themedStyles } from '../theme';
 import { feedback } from '../feedback';
 import { type Game, recordStars, starsFor } from '../stars';
 import { Button } from './Button';
@@ -27,6 +27,7 @@ type Props = {
 };
 
 export function GameShell(props: Props) {
+  const styles = useStyles();
   const [winDelayPassed, setWinDelayPassed] = useState(false);
   const showWin = props.won && winDelayPassed;
   const stars = starsFor(props.moves, props.optimal);
@@ -118,39 +119,41 @@ export function GameShell(props: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: theme.bg },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 8,
-  },
-  back: { width: 70 },
-  backText: { fontSize: 17, fontWeight: '600', color: theme.accent },
-  levelsText: { textAlign: 'right' },
-  title: { fontSize: 20, fontWeight: '800', color: theme.ink },
-  stats: { flexDirection: 'row', justifyContent: 'center', gap: 24, marginTop: 12 },
-  stat: { fontSize: 16, fontWeight: '600', color: theme.muted },
-  board: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16 },
-  message: { textAlign: 'center', fontSize: 15, color: theme.muted, marginBottom: 12, minHeight: 20 },
-  controls: { flexDirection: 'row', justifyContent: 'center', gap: 12, paddingBottom: 16 },
-  overlay: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: theme.overlay,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  winCard: {
-    backgroundColor: theme.card,
-    borderRadius: 24,
-    padding: 28,
-    width: '80%',
-    maxWidth: 360,
-    alignItems: 'center',
-    gap: 14,
-  },
-  winTitle: { fontSize: 30, fontWeight: '900', color: theme.ink },
-  winText: { fontSize: 16, color: theme.muted, textAlign: 'center' },
-});
+const useStyles = themedStyles((colors) =>
+  StyleSheet.create({
+    root: { flex: 1, backgroundColor: colors.bg },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 16,
+      paddingTop: 8,
+    },
+    back: { width: 70 },
+    backText: { fontSize: 17, fontWeight: '600', color: colors.accent },
+    levelsText: { textAlign: 'right' },
+    title: { fontSize: 20, fontWeight: '800', color: colors.ink },
+    stats: { flexDirection: 'row', justifyContent: 'center', gap: 24, marginTop: 12 },
+    stat: { fontSize: 16, fontWeight: '600', color: colors.muted },
+    board: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16 },
+    message: { textAlign: 'center', fontSize: 15, color: colors.muted, marginBottom: 12, minHeight: 20 },
+    controls: { flexDirection: 'row', justifyContent: 'center', gap: 12, paddingBottom: 16 },
+    overlay: {
+      ...StyleSheet.absoluteFill,
+      backgroundColor: colors.overlay,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    winCard: {
+      backgroundColor: colors.card,
+      borderRadius: 24,
+      padding: 28,
+      width: '80%',
+      maxWidth: 360,
+      alignItems: 'center',
+      gap: 14,
+    },
+    winTitle: { fontSize: 30, fontWeight: '900', color: colors.ink },
+    winText: { fontSize: 16, color: colors.muted, textAlign: 'center' },
+  }),
+);

@@ -2,7 +2,7 @@ import { Canvas, useThree } from '@react-three/fiber/native';
 import { type ReactNode, useLayoutEffect } from 'react';
 import { StyleSheet } from 'react-native';
 import type { PerspectiveCamera } from 'three';
-import { theme } from '../theme';
+import { useColors } from '../theme';
 import { type BoardSize, fitCamera } from './fit';
 
 type Props = BoardSize & { tilt?: number; children: ReactNode };
@@ -16,9 +16,10 @@ export function Board({ tilt = 0.55, ...props }: Props) {
 }
 
 export function Scene({ children, tilt, ...size }: BoardSize & { tilt: number; children: ReactNode }) {
+  const colors = useColors();
   return (
     <>
-      <color attach="background" args={[theme.bg]} />
+      <color attach="background" args={[colors.bg]} />
       <CameraRig {...size} tilt={tilt} />
       <hemisphereLight args={['#FFF8EE', '#B9A58C', 1.6]} />
       <directionalLight

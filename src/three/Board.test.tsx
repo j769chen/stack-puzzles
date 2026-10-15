@@ -1,9 +1,13 @@
 import { useThree } from '@react-three/fiber/native';
 import { create } from '@react-three/test-renderer';
 import { useEffect } from 'react';
+import type { ColorSchemeName } from 'react-native';
 import { Color, type DirectionalLight, type Mesh, type PerspectiveCamera, type Scene as ThreeScene, Vector3 } from 'three';
-import { theme } from '../theme';
 import { Scene } from './Board';
+
+let mockScheme: ColorSchemeName = 'light';
+jest.mock('react-native/Libraries/Utilities/useColorScheme', () => ({ __esModule: true, default: () => mockScheme }));
+beforeEach(() => (mockScheme = 'light'));
 
 type Size = { width: number; height: number; depth: number };
 
@@ -59,10 +63,17 @@ describe('Scene', () => {
     expect(cornersInView(large)).toBeLessThanOrEqual(0.94);
   });
 
+  it('uses the dark background in dark mode', async () => {
+    mockScheme = 'dark';
+    const renderer = await create(scene({ width: 6, height: 3, depth: 2 }));
+    const root = renderer.scene.instance as ThreeScene;
+    expect((root.background as Color).equals(new Color('#1C1916'))).toBe(true);
+  });
+
   it('lights the board with a shadow-casting sun over a shadow-catching floor', async () => {
     const renderer = await create(scene({ width: 6, height: 3, depth: 2 }));
     const root = renderer.scene.instance as ThreeScene;
-    expect((root.background as Color).equals(new Color(theme.bg))).toBe(true);
+    expect((root.background as Color).equals(new Color('#F4EFE6'))).toBe(true);
 
     const sun = renderer.scene.findByType('DirectionalLight').instance as DirectionalLight;
     expect(sun.castShadow).toBe(true);

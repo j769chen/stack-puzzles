@@ -1,8 +1,9 @@
 import { StyleSheet, Text } from 'react-native';
 import { MAX_STARS } from '../stars';
-import { theme } from '../theme';
+import { theme, themedStyles } from '../theme';
 
 export function Stars({ count, size = 40 }: { count: number; size?: number }) {
+  const styles = useStyles();
   return (
     <Text style={{ fontSize: size, letterSpacing: size * 0.15 }} accessibilityLabel={`${count} of ${MAX_STARS} stars`}>
       {Array.from({ length: MAX_STARS }, (_, i) => (
@@ -14,7 +15,9 @@ export function Stars({ count, size = 40 }: { count: number; size?: number }) {
   );
 }
 
-const styles = StyleSheet.create({
-  filled: { color: theme.done },
-  empty: { color: theme.border },
-});
+const useStyles = themedStyles((colors) =>
+  StyleSheet.create({
+    filled: { color: theme.done },
+    empty: { color: colors.border },
+  }),
+);

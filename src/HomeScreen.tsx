@@ -2,12 +2,13 @@ import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { updateSettings, useSettings } from './settings';
 import { totalStars, useStars } from './stars';
-import { theme } from './theme';
+import { theme, themedStyles, useColors } from './theme';
 import { usePersistentNumber } from './usePersistentNumber';
 
 type Props = { onOpen: (game: 'hanoi' | 'hoops') => void };
 
 export function HomeScreen({ onOpen }: Props) {
+  const styles = useStyles();
   const [hanoiLevel, , hanoiLoaded] = usePersistentNumber('hanoi.level', 1);
   const [hoopLevel, , hoopLoaded] = usePersistentNumber('hoops.level', 1);
   const hanoiStars = totalStars(useStars('hanoi'));
@@ -53,6 +54,8 @@ export function HomeScreen({ onOpen }: Props) {
 type SettingProps = { label: string; value: boolean; onChange: (value: boolean) => void };
 
 function SettingRow({ label, value, onChange }: SettingProps) {
+  const styles = useStyles();
+  const colors = useColors();
   return (
     <View style={styles.settingRow}>
       <Text style={styles.settingLabel}>{label}</Text>
@@ -60,7 +63,7 @@ function SettingRow({ label, value, onChange }: SettingProps) {
         value={value}
         onValueChange={onChange}
         accessibilityLabel={label}
-        trackColor={{ true: theme.accent, false: theme.border }}
+        trackColor={{ true: colors.accent, false: colors.border }}
       />
     </View>
   );
@@ -78,6 +81,7 @@ type CardProps = {
 };
 
 function GameCard({ title, description, level, stars, chips, onPress }: CardProps) {
+  const styles = useStyles();
   let label = title;
   if (level !== null) label += `, level ${level}`;
   if (stars > 0) label += `, ${stars} ${stars === 1 ? 'star' : 'stars'}`;
@@ -106,33 +110,41 @@ function GameCard({ title, description, level, stars, chips, onPress }: CardProp
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: theme.bg, paddingHorizontal: 20, gap: 16 },
-  title: { fontSize: 34, fontWeight: '900', color: theme.ink, marginTop: 24 },
-  subtitle: { fontSize: 16, color: theme.muted, marginBottom: 8 },
-  card: {
-    flexDirection: 'row',
-    backgroundColor: theme.card,
-    borderRadius: 20,
-    padding: 18,
-    gap: 16,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
-  },
-  pressed: { transform: [{ scale: 0.98 }] },
-  preview: { width: 70, alignItems: 'center', gap: 4 },
-  chip: { height: 14, borderRadius: 7 },
-  cardBody: { flex: 1, gap: 4 },
-  cardTitle: { fontSize: 20, fontWeight: '800', color: theme.ink },
-  cardText: { fontSize: 14, color: theme.muted, lineHeight: 19 },
-  cardFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 },
-  cardLevel: { fontSize: 15, fontWeight: '700', color: theme.accent },
-  cardStars: { fontSize: 15, fontWeight: '700', color: theme.muted },
-  settings: { backgroundColor: theme.card, borderRadius: 20, paddingHorizontal: 18, paddingVertical: 6, marginTop: 8 },
-  settingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8 },
-  settingLabel: { fontSize: 16, fontWeight: '600', color: theme.ink },
-});
+const useStyles = themedStyles((colors) =>
+  StyleSheet.create({
+    root: { flex: 1, backgroundColor: colors.bg, paddingHorizontal: 20, gap: 16 },
+    title: { fontSize: 34, fontWeight: '900', color: colors.ink, marginTop: 24 },
+    subtitle: { fontSize: 16, color: colors.muted, marginBottom: 8 },
+    card: {
+      flexDirection: 'row',
+      backgroundColor: colors.card,
+      borderRadius: 20,
+      padding: 18,
+      gap: 16,
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOpacity: 0.08,
+      shadowRadius: 10,
+      shadowOffset: { width: 0, height: 4 },
+      elevation: 3,
+    },
+    pressed: { transform: [{ scale: 0.98 }] },
+    preview: { width: 70, alignItems: 'center', gap: 4 },
+    chip: { height: 14, borderRadius: 7 },
+    cardBody: { flex: 1, gap: 4 },
+    cardTitle: { fontSize: 20, fontWeight: '800', color: colors.ink },
+    cardText: { fontSize: 14, color: colors.muted, lineHeight: 19 },
+    cardFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 },
+    cardLevel: { fontSize: 15, fontWeight: '700', color: colors.accent },
+    cardStars: { fontSize: 15, fontWeight: '700', color: colors.muted },
+    settings: {
+      backgroundColor: colors.card,
+      borderRadius: 20,
+      paddingHorizontal: 18,
+      paddingVertical: 6,
+      marginTop: 8,
+    },
+    settingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8 },
+    settingLabel: { fontSize: 16, fontWeight: '600', color: colors.ink },
+  }),
+);

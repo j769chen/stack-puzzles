@@ -4,7 +4,7 @@
     "slug": "stack-puzzles",
     "version": "1.0.0",
     "orientation": "portrait",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "icon": "./assets/icon.png",
     "ios": {
       "bundleIdentifier": "com.j769chen.stackpuzzles",
@@ -40,7 +40,10 @@
         {
           "image": "./assets/splash-icon.png",
           "imageWidth": 200,
-          "backgroundColor": "#F4EFE6"
+          "backgroundColor": "#F4EFE6",
+          "dark": {
+            "backgroundColor": "#1C1916"
+          }
         }
       ]
     ]
