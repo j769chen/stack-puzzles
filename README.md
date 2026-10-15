@@ -17,6 +17,16 @@ npx expo start
 
 Scan the QR code with Expo Go, or press `i` / `a` for a simulator.
 
+Expo Go is fine for gameplay, but on iOS it runs the stock expo-gl, which can drop or repeat frames when it presents the 3D view. `patches/expo-gl+57.0.2.patch` (applied by `patch-package` on install) presents each frame as soon as it is drawn, and only takes effect in a development build:
+
+```
+npx expo run:ios --device                          # local build, needs Xcode
+eas build --profile development --platform ios     # cloud build, installs on registered devices
+npx expo start                                     # then open the project in the development build
+```
+
+`expo-gl` is pinned to the exact version the patch was made against. After upgrading it, reapply the change and regenerate the patch with `npx patch-package expo-gl`.
+
 ## Develop
 
 Use the Node version in `.nvmrc`.
