@@ -111,7 +111,6 @@ export function GameShell(props: Props) {
             <Stars count={stars} />
             <Text style={styles.winText}>{winText}</Text>
             <Button label={props.nextLabel} onPress={props.onNext} primary />
-            <Button label="Menu" onPress={props.onBack} />
           </View>
         </View>
       )}

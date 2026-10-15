@@ -90,10 +90,9 @@ describe('GameShell', () => {
       expect(AccessibilityInfo.announceForAccessibility).toHaveBeenCalledWith(
         'Solved! 3 of 3 stars. Perfect! 5 moves, the minimum possible.',
       );
+      expect(screen.queryByText('Menu')).toBeNull();
       await fireEvent.press(screen.getByText('Next level'));
-      await fireEvent.press(screen.getByText('Menu'));
       expect(props.onNext).toHaveBeenCalledTimes(1);
-      expect(props.onBack).toHaveBeenCalledTimes(1);
     });
 
     it.each([
