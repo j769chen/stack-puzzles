@@ -110,6 +110,7 @@ function HoopGame({ level, deal, onBack, onNext, onWinShown }: GameProps) {
 
   return (
     <GameShell
+      game="hoops"
       title="Ring Sort"
       level={level}
       moves={moves}
@@ -125,11 +126,7 @@ function HoopGame({ level, deal, onBack, onNext, onWinShown }: GameProps) {
         setSelected(null);
       }}
       won={solved}
-      winText={
-        moves === optimal
-          ? `Perfect! ${moves} moves, the minimum possible.`
-          : `${moves} moves. The minimum is ${optimal}.`
-      }
+      optimal={optimal}
       nextLabel="Next level"
       onNext={onNext}
       onWinShown={onWinShown}

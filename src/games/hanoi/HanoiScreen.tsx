@@ -73,6 +73,7 @@ function HanoiGame({ level, onBack, onNext }: GameProps) {
 
   return (
     <GameShell
+      game="hanoi"
       title="Tower Stack"
       level={level}
       moves={moves}
@@ -88,11 +89,7 @@ function HanoiGame({ level, onBack, onNext }: GameProps) {
         setSelected(null);
       }}
       won={solved}
-      winText={
-        moves === optimal
-          ? `Perfect! ${moves} moves, the minimum possible.`
-          : `${moves} moves. The minimum is ${optimal}.`
-      }
+      optimal={optimal}
       nextLabel={level >= HANOI_MAX_LEVEL ? 'Play again from level 1' : 'Next level'}
       onNext={onNext}
     >
