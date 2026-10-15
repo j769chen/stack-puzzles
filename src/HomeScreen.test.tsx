@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fireEvent, render, screen } from '@testing-library/react-native';
+import { type StyleProp, StyleSheet, type ViewStyle } from 'react-native';
 import { HomeScreen } from './HomeScreen';
 import { getSettings, loadSettings } from './settings';
 
@@ -8,7 +9,21 @@ beforeEach(async () => {
   await loadSettings();
 });
 
+type Node = { type: unknown; props: { style?: StyleProp<ViewStyle> } };
+
+const chipWidths = (game: RegExp) =>
+  screen
+    .getByRole('button', { name: game })
+    .findAll((node: Node) => typeof node.type === 'string' && StyleSheet.flatten(node.props.style)?.height === 14)
+    .map((chip: Node) => StyleSheet.flatten(chip.props.style)?.width);
+
 describe('HomeScreen', () => {
+  it('tapers the tower icon and keeps every ring in the ring icon the same size', async () => {
+    await render(<HomeScreen onOpen={jest.fn()} />);
+    expect(chipWidths(/^Tower Stack/)).toEqual([30, 44, 58]);
+    expect(chipWidths(/^Ring Sort/)).toEqual([44, 44, 44]);
+  });
+
   it('shows each game at its saved level', async () => {
     await AsyncStorage.multiSet([
       ['hanoi.level', '4'],

@@ -22,14 +22,18 @@ export function HomeScreen({ onOpen }: Props) {
         title="Tower Stack"
         description="Move the whole tower to another peg. A disk can never sit on a smaller one."
         level={hanoiLoaded ? hanoiLevel : null}
-        colors={[theme.disks[0], theme.disks[1], theme.disks[3]]}
+        chips={[
+          { color: theme.disks[0], width: 30 },
+          { color: theme.disks[1], width: 44 },
+          { color: theme.disks[3], width: 58 },
+        ]}
         onPress={() => onOpen('hanoi')}
       />
       <GameCard
         title="Ring Sort"
         description="Sort the colored rings so every rod holds a single color."
         level={hoopLoaded ? hoopLevel : null}
-        colors={[theme.rings[0], theme.rings[5], theme.rings[2]]}
+        chips={[theme.rings[0], theme.rings[5], theme.rings[2]].map((color) => ({ color, width: 44 }))}
         onPress={() => onOpen('hoops')}
       />
 
@@ -57,9 +61,11 @@ function SettingRow({ label, value, onChange }: SettingProps) {
   );
 }
 
-type CardProps = { title: string; description: string; level: number | null; colors: string[]; onPress: () => void };
+type Chip = { color: string; width: number };
 
-function GameCard({ title, description, level, colors, onPress }: CardProps) {
+type CardProps = { title: string; description: string; level: number | null; chips: Chip[]; onPress: () => void };
+
+function GameCard({ title, description, level, chips, onPress }: CardProps) {
   return (
     <Pressable
       onPress={onPress}
@@ -69,8 +75,8 @@ function GameCard({ title, description, level, colors, onPress }: CardProps) {
       accessibilityHint={description}
     >
       <View style={styles.preview}>
-        {colors.map((c, i) => (
-          <View key={c} style={[styles.chip, { backgroundColor: c, width: 30 + i * 14 }]} />
+        {chips.map(({ color, width }) => (
+          <View key={color} style={[styles.chip, { backgroundColor: color, width }]} />
         ))}
       </View>
       <View style={styles.cardBody}>
