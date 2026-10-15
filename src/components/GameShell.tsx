@@ -3,9 +3,12 @@ import { AccessibilityInfo, Pressable, StyleSheet, Text, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { theme } from '../theme';
 import { feedback } from '../feedback';
+import { type Game, recordStars, starsFor } from '../stars';
 import { Button } from './Button';
+import { Stars } from './Stars';
 
 type Props = {
+  game: Game;
   title: string;
   level: number;
   moves: number;
@@ -15,7 +18,7 @@ type Props = {
   canUndo: boolean;
   onRestart: () => void;
   won: boolean;
-  winText: string;
+  optimal: number;
   nextLabel: string;
   onNext: () => void;
   onWinShown?: () => void;
@@ -25,6 +28,11 @@ type Props = {
 export function GameShell(props: Props) {
   const [winDelayPassed, setWinDelayPassed] = useState(false);
   const showWin = props.won && winDelayPassed;
+  const stars = starsFor(props.moves, props.optimal);
+  const winText =
+    stars === 3
+      ? `Perfect! ${props.moves} moves, the minimum possible.`
+      : `${props.moves} moves. Solve it in ${props.optimal} for three stars.`;
 
   useEffect(() => {
     if (!props.won) return;
@@ -36,9 +44,14 @@ export function GameShell(props: Props) {
     };
   }, [props.won]);
 
+  const { game, level, won } = props;
   useEffect(() => {
-    if (showWin) AccessibilityInfo.announceForAccessibility(`Solved! ${props.winText}`);
-  }, [showWin, props.winText]);
+    if (won) recordStars(game, level, stars);
+  }, [won, game, level, stars]);
+
+  useEffect(() => {
+    if (showWin) AccessibilityInfo.announceForAccessibility(`Solved! ${stars} of 3 stars. ${winText}`);
+  }, [showWin, stars, winText]);
 
   const { onWinShown } = props;
   useEffect(() => {
@@ -85,7 +98,8 @@ export function GameShell(props: Props) {
             <Text style={styles.winTitle} accessibilityRole="header">
               Solved!
             </Text>
-            <Text style={styles.winText}>{props.winText}</Text>
+            <Stars count={stars} />
+            <Text style={styles.winText}>{winText}</Text>
             <Button label={props.nextLabel} onPress={props.onNext} primary />
             <Button label="Menu" onPress={props.onBack} />
           </View>

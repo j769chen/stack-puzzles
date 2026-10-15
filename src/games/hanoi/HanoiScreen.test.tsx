@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, fireEvent, renderAsync, screen } from '@testing-library/react-native';
 import { AccessibilityInfo } from 'react-native';
 import { feedback } from '../../feedback';
+import { getStars, loadStars } from '../../stars';
 import { HanoiScreen } from './HanoiScreen';
 import * as logic from './logic';
 
@@ -43,7 +44,10 @@ async function play(moves: [number, number][]) {
   await act(() => jest.advanceTimersByTime(650));
 }
 
-beforeEach(() => AsyncStorage.clear());
+beforeEach(async () => {
+  await AsyncStorage.clear();
+  await loadStars();
+});
 afterEach(() => jest.restoreAllMocks());
 
 describe('HanoiScreen', () => {
@@ -127,6 +131,7 @@ describe('HanoiScreen', () => {
       await start();
       await play(SOLVE_THREE);
       expect(screen.getByText(`Perfect! ${minMoves(3)} moves, the minimum possible.`)).toBeOnTheScreen();
+      expect(getStars('hanoi')).toEqual({ 1: 3 });
       await fireEvent.press(screen.getByText('Next level'));
       expect(await screen.findByText('Level 2')).toBeOnTheScreen();
       expect(await AsyncStorage.getItem('hanoi.level')).toBe('2');
@@ -144,7 +149,8 @@ describe('HanoiScreen', () => {
     it('reports extra moves', async () => {
       await start();
       await play([[0, 1], [1, 2], ...SOLVE_THREE.slice(1)]);
-      expect(screen.getByText(`${minMoves(3) + 1} moves. The minimum is ${minMoves(3)}.`)).toBeOnTheScreen();
+      expect(screen.getByText(`${minMoves(3) + 1} moves. Solve it in ${minMoves(3)} for three stars.`)).toBeOnTheScreen();
+      expect(screen.getByLabelText('2 of 3 stars')).toBeOnTheScreen();
     });
 
     it('wraps to level 1 after the last level', async () => {

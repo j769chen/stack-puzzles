@@ -6,6 +6,7 @@ import { HomeScreen } from './src/HomeScreen';
 import { HanoiScreen } from './src/games/hanoi/HanoiScreen';
 import { HoopScreen } from './src/games/hoops/HoopScreen';
 import { loadSettings } from './src/settings';
+import { loadStars } from './src/stars';
 
 type Screen = 'home' | 'hanoi' | 'hoops';
 
@@ -14,6 +15,7 @@ export default function App() {
 
   useEffect(() => {
     loadSettings();
+    loadStars();
   }, []);
 
   useEffect(() => {

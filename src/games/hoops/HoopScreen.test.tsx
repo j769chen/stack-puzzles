@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, fireEvent, renderAsync, screen, waitFor } from '@testing-library/react-native';
 import { AccessibilityInfo } from 'react-native';
 import { feedback } from '../../feedback';
+import { getStars, loadStars } from '../../stars';
 import { HoopScreen } from './HoopScreen';
 import * as logic from './logic';
 
@@ -35,7 +36,10 @@ async function start(rods?: logic.Rods) {
   await screen.findByText('Level 1');
 }
 
-beforeEach(() => AsyncStorage.clear());
+beforeEach(async () => {
+  await AsyncStorage.clear();
+  await loadStars();
+});
 afterEach(() => jest.restoreAllMocks());
 
 describe('HoopScreen', () => {
@@ -174,6 +178,7 @@ describe('HoopScreen', () => {
       for (const [from, to] of logic.generateLevel(1).solution) await pour(from, to);
       await act(() => jest.advanceTimersByTime(650));
       expect(screen.getByText(/^Perfect! \d+ moves, the minimum possible\.$/)).toBeOnTheScreen();
+      expect(getStars('hoops')).toEqual({ 1: 3 });
       await fireEvent.press(screen.getByText('Next level'));
       expect(await screen.findByText('Level 2')).toBeOnTheScreen();
       expect(await AsyncStorage.getItem('hoops.level')).toBe('2');
@@ -209,7 +214,7 @@ describe('HoopScreen', () => {
       await pour(4, 3);
       for (const [from, to] of logic.solveHoops([[0, 1], [1], [0, 0, 0, 1], [1], []], 4)!) await pour(from, to);
       await act(() => jest.advanceTimersByTime(650));
-      expect(screen.getByText(/^\d+ moves\. The minimum is 4\.$/)).toBeOnTheScreen();
+      expect(screen.getByText(/^\d+ moves\. Solve it in 4 for three stars\.$/)).toBeOnTheScreen();
     });
   });
 });

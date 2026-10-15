@@ -3,10 +3,12 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 import { type StyleProp, StyleSheet, type ViewStyle } from 'react-native';
 import { HomeScreen } from './HomeScreen';
 import { getSettings, loadSettings } from './settings';
+import { loadStars, recordStars } from './stars';
 
 beforeEach(async () => {
   await AsyncStorage.clear();
   await loadSettings();
+  await loadStars();
 });
 
 type Node = { type: unknown; props: { style?: StyleProp<ViewStyle> } };
@@ -46,6 +48,23 @@ describe('HomeScreen', () => {
     await render(<HomeScreen onOpen={jest.fn()} />);
     expect(await screen.findByRole('button', { name: 'Tower Stack, level 4' })).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: 'Ring Sort, level 1' })).toBeOnTheScreen();
+  });
+
+  it('shows the stars earned in each game', async () => {
+    recordStars('hanoi', 1, 3);
+    recordStars('hanoi', 2, 2);
+    recordStars('hoops', 1, 1);
+    await render(<HomeScreen onOpen={jest.fn()} />);
+    expect(await screen.findByRole('button', { name: 'Tower Stack, level 1, 5 stars' })).toBeOnTheScreen();
+    expect(screen.getByText('★ 5')).toBeOnTheScreen();
+    expect(screen.getByText('★ 1')).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Ring Sort, level 1, 1 star' })).toBeOnTheScreen();
+  });
+
+  it('hides the star count until a game has stars', async () => {
+    await render(<HomeScreen onOpen={jest.fn()} />);
+    await screen.findAllByText('Level 1 ›');
+    expect(screen.queryByText(/★/)).toBeNull();
   });
 
   it('shows sound and haptics switches that reflect saved settings', async () => {
