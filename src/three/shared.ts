@@ -10,7 +10,7 @@ export const geometries = {
   plank: new BoxGeometry(1, 0.3, 1),
 };
 
-export const hitAreaMaterial = new MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false });
+export const hitAreaMaterial = new MeshBasicMaterial({ visible: false });
 
 const materials = new Map<string, MeshStandardMaterial>();
 

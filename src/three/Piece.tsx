@@ -1,4 +1,4 @@
-import { useFrame } from '@react-three/fiber/native';
+import { useFrame, useThree } from '@react-three/fiber/native';
 import { type ReactNode, useLayoutEffect, useRef } from 'react';
 import { type Group, Vector3 } from 'three';
 
@@ -12,6 +12,7 @@ export function Piece({ x, y, z, liftY, children }: Props) {
   const ref = useRef<Group>(null);
   const path = useRef<Vector3[]>([]);
   const placed = useRef(false);
+  const invalidate = useThree((s) => s.invalidate);
 
   useLayoutEffect(() => {
     const pos = ref.current!.position;
@@ -19,15 +20,14 @@ export function Piece({ x, y, z, liftY, children }: Props) {
     if (!placed.current) {
       placed.current = true;
       pos.copy(goal);
-      return;
-    }
-    if (Math.hypot(pos.x - x, pos.z - z) < 1e-3) {
+    } else if (Math.hypot(pos.x - x, pos.z - z) < 1e-3) {
       path.current = [goal];
-      return;
+    } else {
+      const top = Math.max(pos.y, liftY);
+      path.current = [new Vector3(pos.x, top, pos.z), new Vector3(x, top, z), goal];
     }
-    const top = Math.max(pos.y, liftY);
-    path.current = [new Vector3(pos.x, top, pos.z), new Vector3(x, top, z), goal];
-  }, [x, y, z, liftY]);
+    invalidate();
+  }, [x, y, z, liftY, invalidate]);
 
   useFrame((_, dt) => {
     const pos = ref.current?.position;
@@ -47,6 +47,7 @@ export function Piece({ x, y, z, liftY, children }: Props) {
         step = 0;
       }
     }
+    if (path.current.length) invalidate();
   });
 
   return <group ref={ref}>{children}</group>;

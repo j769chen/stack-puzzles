@@ -9,7 +9,7 @@ type Props = BoardSize & { tilt?: number; children: ReactNode };
 
 export function Board({ tilt = 0.55, ...props }: Props) {
   return (
-    <Canvas style={styles.canvas} shadows="percentage" camera={{ fov: 32 }}>
+    <Canvas style={styles.canvas} frameloop="demand" shadows="percentage" camera={{ fov: 32 }}>
       <Scene tilt={tilt} {...props} />
     </Canvas>
   );
@@ -44,10 +44,12 @@ export function Scene({ children, tilt, ...size }: BoardSize & { tilt: number; c
 function CameraRig({ width, height, depth, tilt }: BoardSize & { tilt: number }) {
   const camera = useThree((s) => s.camera) as PerspectiveCamera;
   const aspect = useThree((s) => s.size.width / s.size.height);
+  const invalidate = useThree((s) => s.invalidate);
 
   useLayoutEffect(() => {
     fitCamera(camera, { width, height, depth }, tilt, aspect);
-  }, [camera, aspect, width, height, depth, tilt]);
+    invalidate();
+  }, [camera, aspect, width, height, depth, tilt, invalidate]);
 
   return null;
 }
