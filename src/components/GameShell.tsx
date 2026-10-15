@@ -23,13 +23,17 @@ type Props = {
 };
 
 export function GameShell(props: Props) {
-  const [showWin, setShowWin] = useState(false);
+  const [winDelayPassed, setWinDelayPassed] = useState(false);
+  const showWin = props.won && winDelayPassed;
 
   useEffect(() => {
-    if (!props.won) return setShowWin(false);
+    if (!props.won) return;
     feedback.win();
-    const timer = setTimeout(() => setShowWin(true), 650);
-    return () => clearTimeout(timer);
+    const timer = setTimeout(() => setWinDelayPassed(true), 650);
+    return () => {
+      clearTimeout(timer);
+      setWinDelayPassed(false);
+    };
   }, [props.won]);
 
   useEffect(() => {
@@ -105,7 +109,7 @@ const styles = StyleSheet.create({
   message: { textAlign: 'center', fontSize: 15, color: theme.muted, marginBottom: 12, minHeight: 20 },
   controls: { flexDirection: 'row', justifyContent: 'center', gap: 12, paddingBottom: 16 },
   overlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: theme.overlay,
     justifyContent: 'center',
     alignItems: 'center',

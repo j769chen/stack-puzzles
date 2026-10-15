@@ -6,7 +6,10 @@ import { getSettings, loadSettings } from './src/settings';
 
 jest.mock('./src/three/Board', () => ({ Board: () => null }));
 
-let backPress: () => boolean | null | undefined = () => false;
+type BackPressHandler = Parameters<typeof BackHandler.addEventListener>[1];
+
+const backEvent = { type: 'hardwareBackPress', timeStamp: 0 };
+let backPress: BackPressHandler = () => false;
 
 beforeEach(async () => {
   await AsyncStorage.clear();
@@ -61,11 +64,11 @@ describe('App', () => {
 
   it('returns home on the Android back button, and lets the OS handle it at home', async () => {
     await renderApp();
-    expect(backPress()).toBe(false);
+    expect(backPress(backEvent)).toBe(false);
     await open('Tower Stack');
-    let handled: boolean | null | undefined;
+    let handled: ReturnType<BackPressHandler>;
     await act(() => {
-      handled = backPress();
+      handled = backPress(backEvent);
     });
     expect(handled).toBe(true);
     expect(await screen.findAllByText('Level 1 ›')).toHaveLength(2);

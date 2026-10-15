@@ -22,14 +22,14 @@ const maxExtent = (camera: PerspectiveCamera) =>
 describe('fitCamera', () => {
   it.each([0.5, 1, 2])('frames the whole board tightly at aspect %p', (aspect) => {
     const camera = new PerspectiveCamera(32, aspect);
-    fitCamera(camera, size, 0.55);
+    fitCamera(camera, size, 0.55, aspect);
     expect(maxExtent(camera)).toBeLessThanOrEqual(0.94);
     expect(maxExtent(camera)).toBeGreaterThan(0.93);
   });
 
   it('looks down at the board from the tilt angle', () => {
     const camera = new PerspectiveCamera(32, 1);
-    fitCamera(camera, size, 0.85);
+    fitCamera(camera, size, 0.85, 1);
     const offset = camera.position.clone().sub(new Vector3(0, size.height / 2, 0));
     expect(offset.x).toBeCloseTo(0);
     expect(Math.atan2(offset.y, offset.z)).toBeCloseTo(0.85);
