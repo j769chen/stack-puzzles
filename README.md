@@ -41,7 +41,32 @@ npm run check           # typecheck, lint and tests
 
 Sound effects in `assets/sounds` are synthesized by `node scripts/generate-sounds.mjs`; tweak the tones there and rerun it.
 
+The app icon, Android adaptive icon and splash image in `assets` are drawn by `node scripts/generate-icons.mjs`, which needs ImageMagick (`brew install imagemagick`).
+
 Tests live next to the code they cover. Game rules and solvers are plain unit tests, screens use React Native Testing Library with the 3D board swapped for tappable stand-ins, and the 3D pieces, rods and boards render through `@react-three/test-renderer`.
+
+## Release
+
+Store copy, the age rating and privacy answers, and the screenshot list are in `store/listing.md`. The privacy policy is `store/privacy-policy.md`, linked from both store listings.
+
+One-time setup links the project to EAS and creates the store records:
+
+```
+npm install -g eas-cli
+eas login
+eas init                                           # adds the EAS project ID to app.json
+```
+
+Then create the app in App Store Connect and the Google Play Console with the bundle ID `com.j769chen.stackpuzzles`. Build numbers are kept by EAS and go up on every production build.
+
+```
+eas build --profile preview --platform all         # installable test builds
+eas build --profile production --platform all      # store builds
+eas submit --profile production --platform ios     # upload to TestFlight
+eas submit --profile production --platform android # upload to Play internal testing
+```
+
+The first Android upload has to be done by hand in the Play Console. After that, `eas submit` needs a Google service account key.
 
 ## CI
 
