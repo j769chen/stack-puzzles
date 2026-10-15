@@ -1,11 +1,12 @@
 import { useCallback, useState } from 'react';
-import { AccessibilityInfo } from 'react-native';
+import { AccessibilityInfo, StyleSheet, View } from 'react-native';
 import { GameShell } from '../../components/GameShell';
+import { LevelSelect } from '../../components/LevelSelect';
 import { RodButtons } from '../../components/RodButtons';
 import { feedback } from '../../feedback';
 import { theme } from '../../theme';
-import { usePersistentNumber } from '../../usePersistentNumber';
 import { useHistory } from '../useHistory';
+import { useProgress } from '../useProgress';
 import {
   type Deal,
   type Rods,
@@ -37,19 +38,37 @@ function rodLabel(rods: Rods, rod: number, capacity: number) {
 }
 
 export function HoopScreen({ onBack }: { onBack: () => void }) {
-  const [level, setLevel, loaded] = usePersistentNumber('hoops.level', 1);
+  const { level, unlocked, stars, goTo, loaded } = useProgress('hoops');
+  const [picking, setPicking] = useState(false);
   const deal = useDeal(loaded ? level : null);
   const prepareNext = useCallback(() => loadDeal(level + 1), [level]);
   if (!deal) return null;
   return (
-    <HoopGame
-      key={level}
-      level={level}
-      deal={deal}
-      onBack={onBack}
-      onNext={() => setLevel(level + 1)}
-      onWinShown={prepareNext}
-    />
+    <View style={styles.root}>
+      <HoopGame
+        key={level}
+        level={level}
+        deal={deal}
+        onBack={onBack}
+        onLevels={() => setPicking(true)}
+        onNext={() => goTo(level + 1)}
+        onWinShown={prepareNext}
+      />
+      {picking && (
+        <LevelSelect
+          title="Ring Sort"
+          count={unlocked}
+          unlocked={unlocked}
+          current={level}
+          stars={stars}
+          onPick={(picked) => {
+            goTo(picked);
+            setPicking(false);
+          }}
+          onBack={() => setPicking(false)}
+        />
+      )}
+    </View>
   );
 }
 
@@ -64,9 +83,16 @@ function pourSnapshot({ rods, ids }: Snapshot, from: number, to: number): Snapsh
   return { rods: pour(rods, from, to), ids: nextIds };
 }
 
-type GameProps = { level: number; deal: Deal; onBack: () => void; onNext: () => void; onWinShown: () => void };
+type GameProps = {
+  level: number;
+  deal: Deal;
+  onBack: () => void;
+  onLevels: () => void;
+  onNext: () => void;
+  onWinShown: () => void;
+};
 
-function HoopGame({ level, deal, onBack, onNext, onWinShown }: GameProps) {
+function HoopGame({ level, deal, onBack, onLevels, onNext, onWinShown }: GameProps) {
   const { capacity } = levelSpec(level);
   const history = useHistory(() => createSnapshot(deal.rods));
   const optimal = deal.solution.length;
@@ -116,6 +142,7 @@ function HoopGame({ level, deal, onBack, onNext, onWinShown }: GameProps) {
       moves={moves}
       message={message}
       onBack={onBack}
+      onLevels={onLevels}
       onUndo={() => {
         history.undo();
         setSelected(null);
@@ -141,3 +168,5 @@ function HoopGame({ level, deal, onBack, onNext, onWinShown }: GameProps) {
     </GameShell>
   );
 }
+
+const styles = StyleSheet.create({ root: { flex: 1 } });

@@ -13,6 +13,7 @@ async function renderShell(overrides: Partial<Parameters<typeof GameShell>[0]> =
     moves: 5,
     message: 'Do the thing',
     onBack: jest.fn(),
+    onLevels: jest.fn(),
     onUndo: jest.fn(),
     canUndo: true,
     onRestart: jest.fn(),
@@ -50,9 +51,11 @@ describe('GameShell', () => {
   it('wires the header and control buttons', async () => {
     const props = await renderShell();
     await fireEvent.press(screen.getByText('‹ Back'));
+    await fireEvent.press(screen.getByRole('button', { name: 'Levels' }));
     await fireEvent.press(screen.getByText('Undo'));
     await fireEvent.press(screen.getByText('Restart'));
     expect(props.onBack).toHaveBeenCalledTimes(1);
+    expect(props.onLevels).toHaveBeenCalledTimes(1);
     expect(props.onUndo).toHaveBeenCalledTimes(1);
     expect(props.onRestart).toHaveBeenCalledTimes(1);
   });

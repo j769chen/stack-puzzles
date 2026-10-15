@@ -14,6 +14,7 @@ type Props = {
   moves: number;
   message?: string | null;
   onBack: () => void;
+  onLevels: () => void;
   onUndo: () => void;
   canUndo: boolean;
   onRestart: () => void;
@@ -73,7 +74,15 @@ export function GameShell(props: Props) {
         <Text style={styles.title} accessibilityRole="header">
           {props.title}
         </Text>
-        <View style={styles.back} />
+        <Pressable
+          onPress={props.onLevels}
+          hitSlop={12}
+          style={styles.back}
+          accessibilityRole="button"
+          accessibilityLabel="Levels"
+        >
+          <Text style={[styles.backText, styles.levelsText]}>Levels</Text>
+        </Pressable>
       </View>
 
       <View style={styles.stats}>
@@ -120,6 +129,7 @@ const styles = StyleSheet.create({
   },
   back: { width: 70 },
   backText: { fontSize: 17, fontWeight: '600', color: theme.accent },
+  levelsText: { textAlign: 'right' },
   title: { fontSize: 20, fontWeight: '800', color: theme.ink },
   stats: { flexDirection: 'row', justifyContent: 'center', gap: 24, marginTop: 12 },
   stat: { fontSize: 16, fontWeight: '600', color: theme.muted },
