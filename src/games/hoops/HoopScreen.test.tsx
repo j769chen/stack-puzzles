@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { act, fireEvent, renderAsync, screen } from '@testing-library/react-native';
+import { act, fireEvent, renderAsync, screen, waitFor } from '@testing-library/react-native';
 import { AccessibilityInfo } from 'react-native';
 import { feedback } from '../../feedback';
 import { HoopScreen } from './HoopScreen';
@@ -47,6 +47,22 @@ describe('HoopScreen', () => {
   it('shows the fewest moves the level needs', async () => {
     await start([[0, 1], [1], [0, 0, 0, 1], [], [1]]);
     expect(screen.getByText('Sort each color onto its own rod · best 4')).toBeOnTheScreen();
+  });
+
+  it('reuses the stored deal instead of generating it again', async () => {
+    await start();
+    await screen.unmountAsync();
+    const generate = jest.spyOn(logic, 'generateLevel');
+    await renderAsync(<HoopScreen onBack={jest.fn()} />);
+    await screen.findByText('Level 1');
+    expect(generate).not.toHaveBeenCalled();
+    logic.generateLevel(1).rods.forEach((rod, i) => expect(rodText(i)).toBe(rod.join(',')));
+  });
+
+  it('regenerates when the stored deal does not fit the level', async () => {
+    await AsyncStorage.setItem('hoops.deal.1', JSON.stringify({ rods: [[0, 0, 0, 0], []], solution: [[0, 1]] }));
+    await start();
+    logic.generateLevel(1).rods.forEach((rod, i) => expect(rodText(i)).toBe(rod.join(',')));
   });
 
   it('deals taller rods on later levels', async () => {
@@ -161,6 +177,23 @@ describe('HoopScreen', () => {
       await fireEvent.press(screen.getByText('Next level'));
       expect(await screen.findByText('Level 2')).toBeOnTheScreen();
       expect(await AsyncStorage.getItem('hoops.level')).toBe('2');
+    });
+
+    it('prepares the next level while the win card shows and drops the finished one', async () => {
+      await start([[0, 0, 0, 0], [1, 1, 1], [1], []]);
+      expect(await AsyncStorage.getItem('hoops.deal.1')).not.toBeNull();
+      await pour(2, 1);
+      expect(await AsyncStorage.getItem('hoops.deal.2')).toBeNull();
+      await act(() => jest.advanceTimersByTime(650));
+      await waitFor(async () => expect(await AsyncStorage.getItem('hoops.deal.2')).not.toBeNull());
+
+      const generate = jest.spyOn(logic, 'generateLevel');
+      generate.mockClear();
+      await fireEvent.press(screen.getByText('Next level'));
+      expect(await screen.findByText('Level 2')).toBeOnTheScreen();
+      expect(generate).not.toHaveBeenCalled();
+      logic.generateLevel(2).rods.forEach((rod, i) => expect(rodText(i)).toBe(rod.join(',')));
+      await waitFor(async () => expect(await AsyncStorage.getItem('hoops.deal.1')).toBeNull());
     });
 
     it('ignores taps between the winning pour and the win card', async () => {

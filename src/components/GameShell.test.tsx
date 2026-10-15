@@ -91,6 +91,16 @@ describe('GameShell', () => {
       errors.mockRestore();
     });
 
+    it('reports when the win card is on screen', async () => {
+      const onWinShown = jest.fn();
+      await renderShell({ won: true, onWinShown });
+      await act(() => jest.advanceTimersByTime(649));
+      expect(onWinShown).not.toHaveBeenCalled();
+      await act(() => jest.advanceTimersByTime(1));
+      expect(screen.getByText('Solved!')).toBeOnTheScreen();
+      expect(onWinShown).toHaveBeenCalledTimes(1);
+    });
+
     it('plays the win feedback once, the moment the game is won', async () => {
       const win = jest.spyOn(feedback, 'win');
       const props = await renderShell();

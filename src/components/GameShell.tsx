@@ -18,6 +18,7 @@ type Props = {
   winText: string;
   nextLabel: string;
   onNext: () => void;
+  onWinShown?: () => void;
   children: ReactNode;
 };
 
@@ -38,6 +39,11 @@ export function GameShell(props: Props) {
   useEffect(() => {
     if (showWin) AccessibilityInfo.announceForAccessibility(`Solved! ${props.winText}`);
   }, [showWin, props.winText]);
+
+  const { onWinShown } = props;
+  useEffect(() => {
+    if (showWin) onWinShown?.();
+  }, [showWin, onWinShown]);
 
   return (
     <SafeAreaView style={styles.root}>

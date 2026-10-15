@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { AccessibilityInfo } from 'react-native';
 import { GameShell } from '../../components/GameShell';
 import { RodButtons } from '../../components/RodButtons';
@@ -7,9 +7,9 @@ import { theme } from '../../theme';
 import { usePersistentNumber } from '../../usePersistentNumber';
 import { useHistory } from '../useHistory';
 import {
+  type Deal,
   type Rods,
   canPour,
-  generateLevel,
   hasAnyMove,
   isHoopsSolved,
   isRodComplete,
@@ -17,6 +17,7 @@ import {
   pour,
   topRun,
 } from './logic';
+import { loadDeal, useDeal } from './deals';
 import { HoopBoard } from './HoopBoard';
 import { rodRows } from './layout';
 
@@ -37,8 +38,19 @@ function rodLabel(rods: Rods, rod: number, capacity: number) {
 
 export function HoopScreen({ onBack }: { onBack: () => void }) {
   const [level, setLevel, loaded] = usePersistentNumber('hoops.level', 1);
-  if (!loaded) return null;
-  return <HoopGame key={level} level={level} onBack={onBack} onNext={() => setLevel(level + 1)} />;
+  const deal = useDeal(loaded ? level : null);
+  const prepareNext = useCallback(() => loadDeal(level + 1), [level]);
+  if (!deal) return null;
+  return (
+    <HoopGame
+      key={level}
+      level={level}
+      deal={deal}
+      onBack={onBack}
+      onNext={() => setLevel(level + 1)}
+      onWinShown={prepareNext}
+    />
+  );
 }
 
 function createSnapshot(rods: Rods): Snapshot {
@@ -52,11 +64,10 @@ function pourSnapshot({ rods, ids }: Snapshot, from: number, to: number): Snapsh
   return { rods: pour(rods, from, to), ids: nextIds };
 }
 
-type GameProps = { level: number; onBack: () => void; onNext: () => void };
+type GameProps = { level: number; deal: Deal; onBack: () => void; onNext: () => void; onWinShown: () => void };
 
-function HoopGame({ level, onBack, onNext }: GameProps) {
+function HoopGame({ level, deal, onBack, onNext, onWinShown }: GameProps) {
   const { capacity } = levelSpec(level);
-  const [deal] = useState(() => generateLevel(level));
   const history = useHistory(() => createSnapshot(deal.rods));
   const optimal = deal.solution.length;
   const [selected, setSelected] = useState<number | null>(null);
@@ -121,6 +132,7 @@ function HoopGame({ level, onBack, onNext }: GameProps) {
       }
       nextLabel="Next level"
       onNext={onNext}
+      onWinShown={onWinShown}
     >
       <HoopBoard rods={rods} capacity={capacity} ids={current.ids} selected={selected} onPress={press} />
       <RodButtons
