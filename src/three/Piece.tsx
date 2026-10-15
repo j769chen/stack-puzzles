@@ -6,9 +6,9 @@ type Props = { x: number; y: number; z: number; liftY: number; children: ReactNo
 
 type Tween = { points: Vector3[]; length: number; duration: number; elapsed: number };
 
-const MIN_DURATION = 0.12;
-const MAX_DURATION = 0.4;
-const SPEED = 40;
+const MIN_DURATION = 0.2;
+const MAX_DURATION = 0.5;
+const SPEED = 30;
 const FIRST_STEP = 1 / 60;
 const MAX_STEP = 0.1;
 
@@ -30,7 +30,7 @@ function placeAlong({ points }: Tween, distance: number, out: Vector3) {
   out.copy(points[points.length - 1]);
 }
 
-const easeOut = (u: number) => 1 - (1 - u) ** 3;
+const easeInOut = (u: number) => (1 - Math.cos(Math.PI * u)) / 2;
 
 export function Piece({ x, y, z, liftY, children }: Props) {
   const ref = useRef<Group>(null);
@@ -60,7 +60,7 @@ export function Piece({ x, y, z, liftY, children }: Props) {
     t.elapsed += Math.min(dt, t.elapsed === 0 ? FIRST_STEP : MAX_STEP);
     const u = t.elapsed / t.duration;
     if (u < 1) {
-      placeAlong(t, t.length * easeOut(u), pos);
+      placeAlong(t, t.length * easeInOut(u), pos);
       invalidate();
     } else {
       pos.copy(t.points[t.points.length - 1]);

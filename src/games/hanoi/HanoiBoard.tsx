@@ -3,6 +3,7 @@ import { Vector2 } from 'three';
 import { Board } from '../../three/Board';
 import { Piece } from '../../three/Piece';
 import { Plank, Rod } from '../../three/Rod';
+import { RodPicker } from '../../three/RodPicker';
 import { standardMaterial } from '../../three/shared';
 import { theme } from '../../theme';
 import type { HanoiState } from './logic';
@@ -10,6 +11,7 @@ import type { HanoiState } from './logic';
 const SPACING = 3.3;
 const DISK_H = 0.44;
 const HOLE = 0.17;
+const PEGS = [-SPACING, 0, SPACING].map((x) => ({ x, z: 0 }));
 
 type Props = {
   state: HanoiState;
@@ -30,8 +32,9 @@ export function HanoiBoard({ state, disks, selected, onPress }: Props) {
   return (
     <Board width={width} height={liftY + DISK_H} depth={depth}>
       <Plank width={width} depth={depth} />
+      <RodPicker rods={PEGS} height={liftY + DISK_H} reach={SPACING / 2} onPick={onPress} />
       {state.flatMap((peg, i) => {
-        const x = (i - 1) * SPACING;
+        const { x } = PEGS[i];
         return [
           <Rod
             key={`rod${i}`}
@@ -39,9 +42,6 @@ export function HanoiBoard({ state, disks, selected, onPress }: Props) {
             z={0}
             height={poleH}
             padRadius={maxR + 0.08}
-            hitRadius={SPACING / 2}
-            hitHeight={liftY + DISK_H * 2}
-            onPress={() => onPress(i)}
           />,
           ...peg.map((size, k) => {
             const lifted = selected === i && k === peg.length - 1;

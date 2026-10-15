@@ -113,7 +113,7 @@ describe('Piece', () => {
       await renderer.advanceFrames(1, 1 / fps);
       seconds += 1 / fps;
     }
-    expect(seconds).toBeLessThanOrEqual(0.4 + 2 / fps);
+    expect(seconds).toBeLessThanOrEqual(0.5 + 2 / fps);
   });
 
   it('requests frames on demand only while it is moving', async () => {

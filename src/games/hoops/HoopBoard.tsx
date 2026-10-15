@@ -3,13 +3,14 @@ import { TorusGeometry } from 'three';
 import { Board } from '../../three/Board';
 import { Piece } from '../../three/Piece';
 import { Plank, Rod } from '../../three/Rod';
+import { RodPicker } from '../../three/RodPicker';
 import { standardMaterial } from '../../three/shared';
 import { theme } from '../../theme';
 import { rodRows } from './layout';
 import { type Rods, isRodComplete } from './logic';
 
 const SPACING = 2.1;
-const ROW_GAP = 3.2;
+const ROW_GAP = 4;
 const TUBE = 0.27;
 const RING_R = 0.62;
 const RING_H = TUBE * 2;
@@ -40,7 +41,7 @@ function boardLayout(count: number, capacity: number) {
     height: liftY + capacity * RING_H,
     depth: (rows - 1) * ROW_GAP + PLANK_DEPTH,
   };
-  return { poleHeight, liftY, rowSizes, rowZ, positions, size, tilt: rows === 1 ? 0.55 : 0.85 };
+  return { poleHeight, liftY, rowSizes, rowZ, positions, size, tilt: rows === 1 ? 0.55 : 1 };
 }
 
 export function HoopBoard({ rods, capacity, ids, selected, onPress }: Props) {
@@ -51,6 +52,7 @@ export function HoopBoard({ rods, capacity, ids, selected, onPress }: Props) {
       {rowZ.map((z, r) => (
         <Plank key={`plank${r}`} width={rowSizes[r] * SPACING + 0.3} depth={PLANK_DEPTH} z={z} />
       ))}
+      <RodPicker rods={positions} height={liftY + RING_H} reach={SPACING / 2} onPick={onPress} />
       {rods.flatMap((rod, i) => {
         const { x, z } = positions[i];
         const top = rod.length - 1;
@@ -61,10 +63,7 @@ export function HoopBoard({ rods, capacity, ids, selected, onPress }: Props) {
             z={z}
             height={poleHeight}
             padRadius={SPACING / 2 - 0.04}
-            hitRadius={SPACING / 2}
-            hitHeight={poleHeight + 0.3}
             poleColor={isRodComplete(rod, capacity) ? theme.done : undefined}
-            onPress={() => onPress(i)}
           />,
           ...rod.map((color, k) => (
             <Ring

@@ -1,24 +1,15 @@
-import type { ThreeEvent } from '@react-three/fiber/native';
 import { theme } from '../theme';
-import { geometries, hitAreaMaterial, standardMaterial } from './shared';
+import { geometries, standardMaterial } from './shared';
 
 type Props = {
   x: number;
   z: number;
   height: number;
   padRadius: number;
-  hitRadius: number;
-  hitHeight: number;
   poleColor?: string;
-  onPress: () => void;
 };
 
-export function Rod({ x, z, height, padRadius, hitRadius, hitHeight, poleColor = theme.pole, onPress }: Props) {
-  const press = (e: ThreeEvent<MouseEvent>) => {
-    e.stopPropagation();
-    onPress();
-  };
-
+export function Rod({ x, z, height, padRadius, poleColor = theme.pole }: Props) {
   return (
     <group position={[x, 0, z]}>
       <mesh geometry={geometries.pole} material={standardMaterial(poleColor, 0.6)} scale-y={height} castShadow />
@@ -31,7 +22,6 @@ export function Rod({ x, z, height, padRadius, hitRadius, hitHeight, poleColor =
         scale={[padRadius, padRadius, 1]}
         receiveShadow
       />
-      <mesh geometry={geometries.hitArea} material={hitAreaMaterial} scale={[hitRadius, hitHeight, hitRadius]} onClick={press} />
     </group>
   );
 }
