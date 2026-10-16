@@ -1,5 +1,6 @@
 import { Color, DataTexture, MeshStandardMaterial, RGBAFormat, SRGBColorSpace } from 'three';
 import { theme } from '../theme';
+import { shared } from './shared';
 
 const WIDTH = 128;
 const HEIGHT = 32;
@@ -46,10 +47,10 @@ const materials = new Map<number, MeshStandardMaterial>();
 export function patternMaterial(colorIndex: number): MeshStandardMaterial {
   let material = materials.get(colorIndex);
   if (!material) {
-    const map = new DataTexture(patternPixels(colorIndex), WIDTH, HEIGHT, RGBAFormat);
+    const map = shared(new DataTexture(patternPixels(colorIndex), WIDTH, HEIGHT, RGBAFormat));
     map.colorSpace = SRGBColorSpace;
     map.needsUpdate = true;
-    material = new MeshStandardMaterial({ map, roughness: 0.3 });
+    material = shared(new MeshStandardMaterial({ map, roughness: 0.3 }));
     materials.set(colorIndex, material);
   }
   return material;

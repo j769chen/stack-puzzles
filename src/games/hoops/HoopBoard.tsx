@@ -5,7 +5,7 @@ import { Piece } from '../../three/Piece';
 import { Plank, Rod } from '../../three/Rod';
 import { RodPicker } from '../../three/RodPicker';
 import { patternMaterial } from '../../three/patterns';
-import { standardMaterial } from '../../three/shared';
+import { shared, standardMaterial } from '../../three/shared';
 import { useSettings } from '../../settings';
 import { theme } from '../../theme';
 import { rodRows } from './layout';
@@ -19,14 +19,14 @@ const RING_H = TUBE * 2;
 const PLANK_DEPTH = 2.2;
 const SMALLEST_R = 0.4;
 const LARGEST_R = 0.74;
-const RING_GEOMETRY = new TorusGeometry(RING_R, TUBE, 14, 36);
+const RING_GEOMETRY = shared(new TorusGeometry(RING_R, TUBE, 14, 36));
 const sizedGeometries = new Map<string, TorusGeometry>();
 
 function ringGeometry(size: number, sizes: number) {
   const key = `${size}/${sizes}`;
   let geometry = sizedGeometries.get(key);
   if (!geometry) {
-    geometry = new TorusGeometry(SMALLEST_R + ((LARGEST_R - SMALLEST_R) * size) / (sizes - 1), TUBE, 14, 36);
+    geometry = shared(new TorusGeometry(SMALLEST_R + ((LARGEST_R - SMALLEST_R) * size) / (sizes - 1), TUBE, 14, 36));
     sizedGeometries.set(key, geometry);
   }
   return geometry;

@@ -1,9 +1,10 @@
 import { Canvas, useThree } from '@react-three/fiber/native';
-import { type ReactNode, useLayoutEffect } from 'react';
+import { type ReactNode, useEffect, useLayoutEffect } from 'react';
 import { StyleSheet } from 'react-native';
 import type { PerspectiveCamera } from 'three';
 import { useColors } from '../theme';
 import { type BoardSize, fitCamera } from './fit';
+import { disposeShared } from './shared';
 import { TouchCancelled, useTouchCancelled } from './touch';
 
 type Props = BoardSize & { tilt?: number; children: ReactNode };
@@ -29,6 +30,7 @@ export function Board({ tilt = 0.55, ...props }: Props) {
 
 export function Scene({ children, tilt, ...size }: BoardSize & { tilt: number; children: ReactNode }) {
   const colors = useColors();
+  useEffect(() => disposeShared, []);
   return (
     <>
       <color attach="background" args={[colors.bg]} />
