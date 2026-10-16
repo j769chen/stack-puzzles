@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useEffectEvent, useState } from 'react';
+import { type ReactNode, useEffect, useEffectEvent, useRef, useState } from 'react';
 import { AccessibilityInfo, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { themedStyles } from '../theme';
@@ -53,6 +53,14 @@ export function GameShell(props: GameShellProps) {
     };
   }, [props.won]);
 
+  const { message } = props;
+  const announcedMessage = useRef(message);
+  useEffect(() => {
+    if (message === announcedMessage.current) return;
+    announcedMessage.current = message;
+    if (message) AccessibilityInfo.announceForAccessibilityWithOptions(message, { queue: true });
+  }, [message]);
+
   const { won } = props;
   const handleWin = useEffectEvent(() => props.onWin?.());
   useEffect(() => {
@@ -99,9 +107,7 @@ export function GameShell(props: GameShellProps) {
 
         <View style={styles.board}>{props.children}</View>
 
-        <Text style={styles.message} accessibilityLiveRegion="polite">
-          {props.message ?? ' '}
-        </Text>
+        <Text style={styles.message}>{props.message ?? ' '}</Text>
 
         <View style={styles.controls}>
           <Button label="Undo" onPress={props.onUndo} disabled={!props.canUndo || props.won} />

@@ -53,6 +53,18 @@ describe('GameShell', () => {
     expect(screen.getByLabelText('1 of 3 stars')).toBeOnTheScreen();
   });
 
+  it('reads out a changed message after whatever is being spoken', async () => {
+    const announce = jest.mocked(AccessibilityInfo.announceForAccessibilityWithOptions);
+    announce.mockClear();
+    const props = await renderShell();
+    await screen.rerender(<GameShell {...props} moves={6} />);
+    expect(announce).not.toHaveBeenCalled();
+    await screen.rerender(<GameShell {...props} message="Stuck" />);
+    expect(announce).toHaveBeenCalledWith('Stuck', { queue: true });
+    await screen.rerender(<GameShell {...props} message={null} />);
+    expect(announce).toHaveBeenCalledTimes(1);
+  });
+
   it('keeps the message line in place when there is no message', async () => {
     await renderShell({ message: null });
     expect(screen.getByText(' ')).toBeOnTheScreen();

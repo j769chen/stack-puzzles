@@ -11,7 +11,9 @@ function screenReader(on: boolean) {
 afterEach(() => jest.restoreAllMocks());
 
 async function renderButtons(props: Partial<Parameters<typeof RodButtons>[0]> = {}) {
-  await renderAsync(<RodButtons labels={labels} rowSizes={[3, 2]} selected={null} onPress={jest.fn()} {...props} />);
+  await renderAsync(
+    <RodButtons labels={labels} rowSizes={[3, 2]} selected={null} canMoveTo={() => true} onPress={jest.fn()} {...props} />,
+  );
   await act(async () => {});
 }
 
@@ -37,6 +39,13 @@ describe('RodButtons', () => {
     expect(selected).toBeSelected();
     expect(selected.props.accessibilityHint).toBe('Puts it back');
     expect(screen.getByRole('button', { name: 'Rod 4' }).props.accessibilityHint).toBe('Moves here');
+  });
+
+  it("warns which rods the selected piece can't move to", async () => {
+    screenReader(true);
+    await renderButtons({ rowSizes: [5], selected: 1, canMoveTo: (rod) => rod !== 3 });
+    expect(screen.getByRole('button', { name: 'Rod 3' }).props.accessibilityHint).toBe('Moves here');
+    expect(screen.getByRole('button', { name: 'Rod 4' }).props.accessibilityHint).toBe("Can't move here");
   });
 
   it('maps buttons in uneven rows to the right rods', async () => {

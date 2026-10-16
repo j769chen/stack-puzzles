@@ -72,23 +72,30 @@ function HanoiGame({ level, onBack, onLevels, onNext, onWin }: GameProps) {
   const { moves } = history;
   const solved = isHanoiSolved(state, disks);
 
+  const topDisk = (peg: number) => `disk ${state[peg].at(-1)}`;
+
   const press = (peg: number) => {
     if (solved) return;
     if (selected === null) {
       if (!state[peg].length) return;
       setSelected(peg);
       feedback.pick();
+      AccessibilityInfo.announceForAccessibility(`Picked up ${topDisk(peg)} from the ${PEG_NAMES[peg]} peg`);
     } else if (selected === peg) {
       setSelected(null);
+      AccessibilityInfo.announceForAccessibility(`Put ${topDisk(peg)} back`);
     } else if (canMoveDisk(state, selected, peg)) {
       const after = moveDisk(state, selected, peg);
       history.push(after);
       if (!isHanoiSolved(after, disks)) feedback.drop();
-      AccessibilityInfo.announceForAccessibility(`Moved disk ${state[selected].at(-1)} to the ${PEG_NAMES[peg]} peg`);
+      AccessibilityInfo.announceForAccessibility(`Moved ${topDisk(selected)} to the ${PEG_NAMES[peg]} peg`);
       setSelected(null);
     } else {
       setSelected(peg);
       feedback.pick();
+      AccessibilityInfo.announceForAccessibility(
+        `Can't put ${topDisk(selected)} on the ${PEG_NAMES[peg]} peg. Picked up ${topDisk(peg)} instead`,
+      );
     }
   };
 
@@ -127,6 +134,7 @@ function HanoiGame({ level, onBack, onLevels, onNext, onWin }: GameProps) {
         labels={state.map((_, peg) => pegLabel(state, peg))}
         rowSizes={[state.length]}
         selected={selected}
+        canMoveTo={(peg) => selected !== null && canMoveDisk(state, selected, peg)}
         onPress={press}
       />
     </GameShell>
