@@ -46,6 +46,15 @@ beforeEach(async () => {
 afterEach(() => jest.restoreAllMocks());
 
 describe('DailyScreen', () => {
+  it('opens and closes the history from the header', async () => {
+    await start();
+    jest.mocked(logic.dailyKey).mockRestore();
+    await fireEvent.press(screen.getByRole('button', { name: 'History' }));
+    expect(screen.getByRole('header', { name: 'History' })).toBeOnTheScreen();
+    await fireEvent.press(screen.getAllByRole('button', { name: 'Back' }).at(-1)!);
+    expect(screen.queryByRole('header', { name: 'History' })).toBeNull();
+  });
+
   it("deals today's puzzle with the date, best count and no level select", async () => {
     await start();
     expect(logic.generateDaily).toHaveBeenCalledWith(TODAY);
