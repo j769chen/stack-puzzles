@@ -27,6 +27,7 @@ const chipWidths = (game: RegExp) =>
 describe('HomeScreen', () => {
   it('tapers the tower icon and keeps every ring in the ring icon the same size', async () => {
     await render(<HomeScreen onOpen={jest.fn()} />);
+    await screen.findAllByText('Level 1 ›');
     expect(chipWidths(/^Tower Stack/)).toEqual([30, 44, 58]);
     expect(chipWidths(/^Ring Sort/)).toEqual([44, 44, 44]);
   });
@@ -43,7 +44,7 @@ describe('HomeScreen', () => {
 
   it('hides levels until storage loads', async () => {
     const pending = new Promise<null>(() => {});
-    jest.mocked(AsyncStorage.getItem).mockReturnValueOnce(pending).mockReturnValueOnce(pending);
+    jest.mocked(AsyncStorage.getItem).mockReturnValueOnce(pending).mockReturnValueOnce(pending).mockReturnValueOnce(pending);
     await render(<HomeScreen onOpen={jest.fn()} />);
     expect(screen.queryByText(/Level/)).toBeNull();
   });

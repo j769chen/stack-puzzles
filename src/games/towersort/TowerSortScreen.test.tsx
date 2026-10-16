@@ -74,6 +74,21 @@ describe('TowerSortScreen', () => {
     expect(screen.getByRole('button', { name: 'Rod 5, empty' })).toBeOnTheScreen();
   });
 
+  it('picks an earlier level from level select, without stars', async () => {
+    await AsyncStorage.setItem('towersort.level', '3');
+    jest.spyOn(logic, 'towerLevel').mockReturnValue(START);
+    await renderAsync(<TowerSortScreen onBack={jest.fn()} />);
+    await screen.findByText('Level 3');
+    await fireEvent.press(screen.getByRole('button', { name: 'Levels' }));
+    expect(screen.queryByLabelText(/of 3 stars/)).toBeNull();
+    await fireEvent.press(screen.getByRole('button', { name: 'Level 2' }));
+    expect(await screen.findByText('Level 2')).toBeOnTheScreen();
+    expect(logic.towerLevel).toHaveBeenLastCalledWith(2);
+    await fireEvent.press(screen.getByRole('button', { name: 'Levels' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Back' }));
+    expect(screen.queryByRole('button', { name: 'Level 1' })).toBeNull();
+  });
+
   it('wins a sorted board and moves on to the next level', async () => {
     jest.useFakeTimers();
     await start([[2, 1], [5, 4, 3], [8, 7, 6], [0], []]);
