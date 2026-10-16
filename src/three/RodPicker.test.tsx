@@ -1,5 +1,5 @@
 import { create } from '@react-three/test-renderer';
-import { PerspectiveCamera, Vector2, Vector3 } from 'three';
+import { type Object3D, PerspectiveCamera, Raycaster, Vector2, Vector3 } from 'three';
 import { RodPicker } from './RodPicker';
 
 const camera = new PerspectiveCamera(32, 1);
@@ -40,6 +40,15 @@ describe('RodPicker', () => {
   it('is invisible', async () => {
     const { picker } = await renderPicker();
     expect(picker.instance.visible).toBe(false);
+  });
+
+  it('catches every ray, so touches reach it without any geometry to hit', async () => {
+    const { picker } = await renderPicker();
+    const raycaster = new Raycaster();
+    raycaster.setFromCamera(at(6, 1), camera);
+    expect(raycaster.intersectObject(picker.instance as Object3D)).toEqual([
+      expect.objectContaining({ object: picker.instance }),
+    ]);
   });
 
   it('picks the nearest rod as soon as the finger touches down', async () => {

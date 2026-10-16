@@ -45,7 +45,10 @@ beforeEach(async () => {
     return DEAL;
   });
 });
-afterEach(() => jest.restoreAllMocks());
+afterEach(() => {
+  jest.useRealTimers();
+  jest.restoreAllMocks();
+});
 
 describe('DailyScreen', () => {
   it('opens and closes the history from the header', async () => {
@@ -76,6 +79,19 @@ describe('DailyScreen', () => {
     await start();
     expect(logic.dailyTask).toHaveBeenLastCalledWith(TODAY + 1);
     expect(JSON.parse((await AsyncStorage.getItem('daily.deal'))!).key).toBe(TODAY + 1);
+  });
+
+  it("plays today's real deal on its own rod height through to a win", async () => {
+    jest.mocked(logic.dailySpec).mockRestore();
+    jest.mocked(logic.dailyTask).mockRestore();
+    expect(logic.dailySpec(TODAY).capacity).toBe(5);
+    const { solution } = logic.generateDaily(TODAY);
+    await renderAsync(<DailyScreen onBack={jest.fn()} />);
+    await screen.findByText(`Moves 0/${solution.length}`);
+    jest.useFakeTimers();
+    for (const [from, to] of solution) await pour(from, to);
+    await act(() => jest.advanceTimersByTime(650));
+    expect(screen.getByText(`Perfect! ${solution.length} moves, the minimum possible.`)).toBeOnTheScreen();
   });
 
   it("records today's stars and closes with Done", async () => {
