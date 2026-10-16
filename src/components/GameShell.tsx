@@ -16,6 +16,7 @@ export type GameShellProps = {
   message?: string | null;
   onBack: () => void;
   onLevels?: () => void;
+  levelsLabel?: string;
   onUndo: () => void;
   canUndo: boolean;
   onRestart: () => void;
@@ -87,9 +88,9 @@ export function GameShell(props: GameShellProps) {
             hitSlop={12}
             style={styles.back}
             accessibilityRole="button"
-            accessibilityLabel="Levels"
+            accessibilityLabel={props.levelsLabel ?? 'Levels'}
           >
-            <Text style={[styles.backText, styles.levelsText]}>Levels</Text>
+            <Text style={[styles.backText, styles.levelsText]}>{props.levelsLabel ?? 'Levels'}</Text>
           </Pressable>
         ) : (
           <View style={styles.back} />

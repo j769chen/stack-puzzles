@@ -1,4 +1,4 @@
-import { dailyLabel, dailyStreak, shareText } from './daily';
+import { bestStreak, dailyLabel, dailyStreak, monthCells, shareText } from './daily';
 
 describe('dailyStreak', () => {
   it('counts consecutive solved days ending today', () => {
@@ -13,6 +13,24 @@ describe('dailyStreak', () => {
     expect(dailyStreak({ 20261028: 3, 20261030: 3, 20261031: 1, 20261101: 2 }, 20261101)).toBe(3);
     expect(dailyStreak({ 20261014: 3 }, 20261016)).toBe(0);
     expect(dailyStreak({}, 20261016)).toBe(0);
+  });
+});
+
+describe('bestStreak', () => {
+  it('finds the longest run of solved days, across month ends', () => {
+    expect(bestStreak({ 20261029: 1, 20261030: 2, 20261031: 3, 20261101: 3, 20261105: 1, 20261106: 1 })).toBe(4);
+    expect(bestStreak({ 20261016: 2 })).toBe(1);
+    expect(bestStreak({})).toBe(0);
+  });
+});
+
+describe('monthCells', () => {
+  it('lays out a month from Monday, with blanks before the first day', () => {
+    const october = monthCells(2026, 9);
+    expect(october.slice(0, 4)).toEqual([null, null, null, 20261001]);
+    expect(october.filter((key) => key !== null)).toHaveLength(31);
+    expect(october.at(-1)).toBe(20261031);
+    expect(monthCells(2028, 1).filter((key) => key !== null)).toHaveLength(29);
   });
 });
 

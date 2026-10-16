@@ -1,4 +1,4 @@
-import { dailyDate, previousDay } from './games/hoops/logic';
+import { dailyDate, dailyKey, previousDay } from './games/hoops/logic';
 import { type LevelStars, MAX_STARS } from './stars';
 
 export function dailyStreak(solved: LevelStars, today: number): number {
@@ -6,6 +6,32 @@ export function dailyStreak(solved: LevelStars, today: number): number {
   let streak = 0;
   for (; day in solved; day = previousDay(day)) streak++;
   return streak;
+}
+
+function nextDay(key: number): number {
+  const date = dailyDate(key);
+  date.setDate(date.getDate() + 1);
+  return dailyKey(date);
+}
+
+export function bestStreak(solved: LevelStars): number {
+  let best = 0;
+  for (const start of Object.keys(solved).map(Number)) {
+    if (previousDay(start) in solved) continue;
+    let run = 0;
+    for (let day = start; day in solved; day = nextDay(day)) run++;
+    best = Math.max(best, run);
+  }
+  return best;
+}
+
+export function monthCells(year: number, month: number): (number | null)[] {
+  const lead = (new Date(year, month, 1).getDay() + 6) % 7;
+  const days = new Date(year, month + 1, 0).getDate();
+  return [
+    ...Array.from({ length: lead }, () => null),
+    ...Array.from({ length: days }, (_, i) => dailyKey(new Date(year, month, i + 1))),
+  ];
 }
 
 export function dailyLabel(key: number): string {
