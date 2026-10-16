@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { AccessibilityInfo } from 'react-native';
 import { GameShell, type GameShellProps } from '../../components/GameShell';
 import { RodButtons } from '../../components/RodButtons';
 import { feedback } from '../../feedback';
+import { isDeadEnd } from '../deadEnd';
 import { useHistory } from '../useHistory';
 import { HoopBoard } from './HoopBoard';
 import { rodRows } from './layout';
@@ -19,6 +20,8 @@ export type SortRules = {
 };
 
 type Snapshot = { rods: Rods; ids: number[][] };
+
+const isSolved = (rods: Rods, rules: SortRules) => rods.every((rod) => rod.length === 0 || rules.isRodComplete(rod));
 
 function createSnapshot(rods: Rods): Snapshot {
   let next = 0;
@@ -56,9 +59,8 @@ export function RodSortGame({ start, rules, ...shell }: Props) {
   const current = history.current;
   const { rods } = current;
   const { moves } = history;
-  const isSolved = (state: Rods) => state.every((rod) => rod.length === 0 || rules.isRodComplete(rod));
-  const solved = isSolved(rods);
-  const stuck = !solved && !rods.some((_, from) => rods.some((_, to) => rules.canPour(rods, from, to)));
+  const solved = isSolved(rods, rules);
+  const stuck = useMemo(() => isDeadEnd(rods, rules.canPour, (state) => isSolved(state, rules)), [rods, rules]);
   const selectable = (rod: number) => rods[rod].length > 0 && !rules.isRodComplete(rods[rod]);
 
   const press = (rod: number) => {
@@ -73,7 +75,7 @@ export function RodSortGame({ start, rules, ...shell }: Props) {
       const after = pourSnapshot(current, selected, rod);
       history.push(after);
       if (rules.isRodComplete(after.rods[rod])) {
-        if (!isSolved(after.rods)) feedback.complete();
+        if (!isSolved(after.rods, rules)) feedback.complete();
       } else {
         feedback.drop();
       }
@@ -97,7 +99,7 @@ export function RodSortGame({ start, rules, ...shell }: Props) {
     <GameShell
       {...shell}
       moves={moves}
-      message={stuck ? 'No moves left. Undo or restart.' : rules.goal}
+      message={stuck ? 'No way to finish from here. Undo or restart.' : rules.goal}
       onUndo={() => {
         history.undo();
         setSelected(null);

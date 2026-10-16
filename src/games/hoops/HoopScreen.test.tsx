@@ -165,7 +165,16 @@ describe('HoopScreen', () => {
   it('reports a dead end', async () => {
     await start([[1, 0, 1, 0], [2, 0, 2, 0], [1, 2, 1, 2], []]);
     await pour(2, 3);
-    expect(screen.getByText('No moves left. Undo or restart.')).toBeOnTheScreen();
+    expect(screen.getByText('No way to finish from here. Undo or restart.')).toBeOnTheScreen();
+  });
+
+  it('reports a dead end even when a pointless move is still left', async () => {
+    await start([[1, 2, 1], [2, 0, 0, 0], [2, 1, 0, 2], [1]]);
+    expect(screen.queryByText('No way to finish from here. Undo or restart.')).toBeNull();
+    await pour(0, 3);
+    expect(screen.getByText('No way to finish from here. Undo or restart.')).toBeOnTheScreen();
+    await fireEvent.press(screen.getByText('Undo'));
+    expect(screen.queryByText('No way to finish from here. Undo or restart.')).toBeNull();
   });
 
   describe('with a screen reader', () => {
