@@ -7,9 +7,8 @@ import { GameShell } from './GameShell';
 
 async function renderShell(overrides: Partial<Parameters<typeof GameShell>[0]> = {}) {
   const props = {
-    game: 'hanoi' as const,
     title: 'Test Game',
-    level: 3,
+    label: 'Level 3',
     moves: 5,
     message: 'Do the thing',
     onBack: jest.fn(),
@@ -18,7 +17,7 @@ async function renderShell(overrides: Partial<Parameters<typeof GameShell>[0]> =
     canUndo: true,
     onRestart: jest.fn(),
     won: false,
-    optimal: 5,
+    scoring: { game: 'hanoi' as const, key: 3, optimal: 5 },
     nextLabel: 'Next level',
     onNext: jest.fn(),
     children: <Text>board</Text>,
@@ -44,13 +43,13 @@ describe('GameShell', () => {
   });
 
   it('shows the stars the current move count would earn', async () => {
-    await renderShell({ moves: 4, optimal: 4 });
+    await renderShell({ moves: 4, scoring: { game: 'hanoi', key: 3, optimal: 4 } });
     expect(screen.getByLabelText('3 of 3 stars')).toBeOnTheScreen();
     expect(screen.getByText('Moves 4/4')).not.toHaveStyle({ color: '#C62828' });
-    await renderShell({ moves: 5, optimal: 4 });
+    await renderShell({ moves: 5, scoring: { game: 'hanoi', key: 3, optimal: 4 } });
     expect(screen.getByLabelText('2 of 3 stars')).toBeOnTheScreen();
     expect(screen.getByText('Moves 5/4')).toHaveStyle({ color: '#C62828' });
-    await renderShell({ moves: 7, optimal: 4 });
+    await renderShell({ moves: 7, scoring: { game: 'hanoi', key: 3, optimal: 4 } });
     expect(screen.getByLabelText('1 of 3 stars')).toBeOnTheScreen();
   });
 
@@ -120,7 +119,7 @@ describe('GameShell', () => {
     it('records the stars for the level as soon as it is won', async () => {
       await renderShell({ won: true, moves: 7 });
       expect(getStars('hanoi')).toEqual({ 3: 2 });
-      expect(getStars('hoops')).toEqual({});
+      expect(getStars('daily')).toEqual({});
     });
 
     it('keeps the best stars when a level is replayed worse', async () => {
@@ -128,6 +127,16 @@ describe('GameShell', () => {
       screen.unmount();
       await renderShell({ won: true, moves: 9 });
       expect(getStars('hanoi')).toEqual({ 3: 3 });
+    });
+
+    it('shows a plain move count and no stars without scoring', async () => {
+      await renderShell({ won: true, moves: 9, scoring: undefined, onLevels: undefined });
+      expect(screen.getByText('Moves 9')).toBeOnTheScreen();
+      expect(screen.queryByRole('button', { name: 'Levels' })).toBeNull();
+      await act(() => jest.advanceTimersByTime(650));
+      expect(screen.getByText('Sorted in 9 moves.')).toBeOnTheScreen();
+      expect(screen.queryByLabelText(/of 3 stars/)).toBeNull();
+      expect(getStars('hanoi')).toEqual({});
     });
 
     it('records nothing before the game is won', async () => {

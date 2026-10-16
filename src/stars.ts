@@ -1,14 +1,14 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSyncExternalStore } from 'react';
 
-export type Game = 'hanoi' | 'hoops';
+export type Game = 'hanoi' | 'daily';
 export type LevelStars = Record<number, number>;
 type AllStars = Record<Game, LevelStars>;
 
 export const MAX_STARS = 3;
 
 const STORAGE_KEY = 'stars';
-const EMPTY: AllStars = { hanoi: {}, hoops: {} };
+const EMPTY: AllStars = { hanoi: {}, daily: {} };
 
 let current = EMPTY;
 const listeners = new Set<() => void>();
@@ -36,7 +36,7 @@ function parse(stored: string | null): AllStars {
     const value: unknown = JSON.parse(stored ?? '{}');
     if (typeof value !== 'object' || value === null) return EMPTY;
     const games = value as Partial<Record<Game, unknown>>;
-    return { hanoi: parseLevels(games.hanoi), hoops: parseLevels(games.hoops) };
+    return { hanoi: parseLevels(games.hanoi), daily: parseLevels(games.daily) };
   } catch {
     return EMPTY;
   }

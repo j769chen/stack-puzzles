@@ -1,12 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, renderHook, waitFor } from '@testing-library/react-native';
-import { loadStars, recordStars } from '../stars';
+import { getStars, loadStars, recordStars } from '../stars';
 import { useProgress } from './useProgress';
 
 const flushStorage = () => new Promise((resolve) => setImmediate(resolve));
 
 async function load(maxLevel?: number) {
-  const hook = await renderHook(() => useProgress('hanoi', maxLevel));
+  const hook = await renderHook(() => useProgress('hanoi', maxLevel, getStars('hanoi')));
   await waitFor(() => expect(hook.result.current.loaded).toBe(true));
   return hook;
 }
@@ -33,7 +33,6 @@ describe('useProgress', () => {
     recordStars('hanoi', 4, 1);
     const { result } = await load();
     expect(result.current.unlocked).toBe(5);
-    expect(result.current.stars).toEqual({ 4: 1 });
   });
 
   it('never unlocks past the last level', async () => {
