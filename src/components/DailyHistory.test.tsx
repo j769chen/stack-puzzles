@@ -36,6 +36,17 @@ describe('DailyHistory', () => {
     expect(screen.getByLabelText(`${dailyLabel(20261017)}, upcoming`)).toBeOnTheScreen();
   });
 
+  it('puts every day of the month in its weekday column, in rows of seven', async () => {
+    await render(<DailyHistory today={TODAY} onBack={jest.fn()} />);
+    for (let day = 1; day <= 31; day++) {
+      const key = 20261000 + day;
+      const cell = screen.getByLabelText(new RegExp(`^${dailyLabel(key)},`)).parent!;
+      const week = cell.parent!;
+      expect(week.children).toHaveLength(7);
+      expect(week.children.indexOf(cell)).toBe((new Date(2026, 9, day).getDay() + 6) % 7);
+    }
+  });
+
   it('pages back as far as the first solved month and no further than this one', async () => {
     recordStars('daily', 20260830, 1);
     await render(<DailyHistory today={TODAY} onBack={jest.fn()} />);
