@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { fireEvent, render, screen } from '@testing-library/react-native';
-import { type ColorSchemeName, type StyleProp, StyleSheet, type ViewStyle } from 'react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { AppState, type AppStateStatus, type ColorSchemeName, type StyleProp, StyleSheet, type ViewStyle } from 'react-native';
 import { dailyKey, previousDay } from './games/hoops/logic';
 import { HomeScreen } from './HomeScreen';
 import { getSettings, loadSettings } from './settings';
@@ -73,6 +73,18 @@ describe('HomeScreen', () => {
     await render(<HomeScreen onOpen={jest.fn()} />);
     expect(await screen.findByRole('button', { name: 'Daily Puzzle, solved today, 2 stars' })).toBeOnTheScreen();
     expect(screen.getByText('Solved today ›')).toBeOnTheScreen();
+  });
+
+  it('notices a new day when the app comes back to the foreground', async () => {
+    jest.useFakeTimers({ now: new Date(2026, 9, 16, 22, 0) });
+    recordStars('daily', 20261016, 3);
+    await render(<HomeScreen onOpen={jest.fn()} />);
+    expect(screen.getByText('Solved today ›')).toBeOnTheScreen();
+    jest.setSystemTime(new Date(2026, 9, 17, 8, 0));
+    const [, listener] = jest.mocked(AppState.addEventListener).mock.calls.at(-1)!;
+    await act(() => (listener as (state: AppStateStatus) => void)('active'));
+    expect(screen.getByText('Play today ›')).toBeOnTheScreen();
+    jest.useRealTimers();
   });
 
   it('shows the daily streak, still alive before today is played', async () => {

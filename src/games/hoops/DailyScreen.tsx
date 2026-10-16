@@ -4,12 +4,13 @@ import { DailyHistory } from '../../components/DailyHistory';
 import { LoadingScreen } from '../../components/LoadingScreen';
 import { dailyLabel, dailyStreak, shareText } from '../../daily';
 import { starsFor, useStars } from '../../stars';
+import { useToday } from '../../useToday';
 import { useDailyDeal } from './deals';
 import { RingSortGame } from './HoopScreen';
-import { dailyKey, dailySpec } from './logic';
+import { dailySpec } from './logic';
 
 export function DailyScreen({ onBack }: { onBack: () => void }) {
-  const [key] = useState(() => dailyKey(new Date()));
+  const key = useToday();
   const [showingHistory, setShowingHistory] = useState(false);
   const deal = useDailyDeal(key);
   const streak = dailyStreak(useStars('daily'), key);
