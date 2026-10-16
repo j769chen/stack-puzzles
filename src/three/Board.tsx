@@ -4,14 +4,26 @@ import { StyleSheet } from 'react-native';
 import type { PerspectiveCamera } from 'three';
 import { useColors } from '../theme';
 import { type BoardSize, fitCamera } from './fit';
+import { TouchCancelled, useTouchCancelled } from './touch';
 
 type Props = BoardSize & { tilt?: number; children: ReactNode };
 
 export function Board({ tilt = 0.55, ...props }: Props) {
+  const { cancelled, onTouchStart, onTouchCancel } = useTouchCancelled();
   return (
-    <Canvas style={styles.canvas} frameloop="demand" gl={{ antialias: false }} shadows="percentage" camera={{ fov: 32 }}>
-      <Scene tilt={tilt} {...props} />
-    </Canvas>
+    <TouchCancelled value={cancelled}>
+      <Canvas
+        style={styles.canvas}
+        frameloop="demand"
+        gl={{ antialias: false }}
+        shadows="percentage"
+        camera={{ fov: 32 }}
+        onTouchStart={onTouchStart}
+        onTouchCancel={onTouchCancel}
+      >
+        <Scene tilt={tilt} {...props} />
+      </Canvas>
+    </TouchCancelled>
   );
 }
 

@@ -1,4 +1,4 @@
-import { create } from '@react-three/test-renderer';
+import { act, create } from '@react-three/test-renderer';
 import { Color, type Mesh, type MeshStandardMaterial, type Object3D, PerspectiveCamera, Vector2, Vector3 } from 'three';
 import { theme } from '../../theme';
 import { HanoiBoard } from './HanoiBoard';
@@ -88,6 +88,7 @@ describe('HanoiBoard', () => {
     await renderer.advanceFrames(200, 0.016);
     expect(disk(renderer.scene.instance, 1).position.x).toBe(rods[2].instance.position.x);
     await renderer.fireEvent(picker, 'pointerUp', tapAt(rods[2].instance.position));
+    await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
     expect(onDrop).toHaveBeenCalledWith(2);
   });
 });

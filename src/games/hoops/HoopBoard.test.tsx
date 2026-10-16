@@ -187,6 +187,7 @@ describe('HoopBoard', () => {
     const top = rings(r)[1];
     expect(top.position.x).toBe(spot(2).x);
     await r.fireEvent(picker, 'pointerUp', tapAt(spot(2)));
+    await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
     expect(onDrop).toHaveBeenCalledWith(2);
     await r.advanceFrames(200, 0.016);
     expect(top.position.x).toBe(spot(0).x);
