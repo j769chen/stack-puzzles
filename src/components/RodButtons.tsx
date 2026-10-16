@@ -5,15 +5,20 @@ type Props = {
   labels: string[];
   rowSizes: number[];
   selected: number | null;
+  canMoveTo: (rod: number) => boolean;
   onPress: (rod: number) => void;
 };
 
-export function RodButtons({ labels, rowSizes, selected, onPress }: Props) {
+export function RodButtons({ labels, rowSizes, selected, canMoveTo, onPress }: Props) {
   const screenReader = useScreenReader();
   if (!screenReader) return null;
 
   const rowStarts = rowSizes.map((_, r) => rowSizes.slice(0, r).reduce((a, b) => a + b, 0));
-  const hint = (i: number) => (selected === null ? 'Picks up the top' : selected === i ? 'Puts it back' : 'Moves here');
+  const hint = (i: number) => {
+    if (selected === null) return 'Picks up the top';
+    if (selected === i) return 'Puts it back';
+    return canMoveTo(i) ? 'Moves here' : "Can't move here";
+  };
 
   return (
     <View style={styles.overlay}>

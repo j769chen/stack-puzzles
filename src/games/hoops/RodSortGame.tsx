@@ -62,6 +62,7 @@ export function RodSortGame({ start, rules, ...shell }: Props) {
   const solved = isSolved(rods, rules);
   const stuck = useMemo(() => isDeadEnd(rods, rules.canPour, (state) => isSolved(state, rules)), [rods, rules]);
   const selectable = (rod: number) => rods[rod].length > 0 && !rules.isRodComplete(rods[rod]);
+  const topRing = (rod: number) => rules.ringName(rods[rod][rods[rod].length - 1]);
 
   const press = (rod: number) => {
     if (solved) return;
@@ -69,8 +70,10 @@ export function RodSortGame({ start, rules, ...shell }: Props) {
       if (!selectable(rod)) return;
       setSelected(rod);
       feedback.pick();
+      AccessibilityInfo.announceForAccessibility(`Picked up ${topRing(rod)} from rod ${rod + 1}`);
     } else if (selected === rod) {
       setSelected(null);
+      AccessibilityInfo.announceForAccessibility(`Put ${topRing(rod)} back`);
     } else if (rules.canPour(rods, selected, rod)) {
       const after = pourSnapshot(current, selected, rod);
       history.push(after);
@@ -79,14 +82,17 @@ export function RodSortGame({ start, rules, ...shell }: Props) {
       } else {
         feedback.drop();
       }
-      const ring = rules.ringName(rods[selected][rods[selected].length - 1]);
-      AccessibilityInfo.announceForAccessibility(`Moved ${ring} to rod ${rod + 1}`);
+      AccessibilityInfo.announceForAccessibility(`Moved ${topRing(selected)} to rod ${rod + 1}`);
       setSelected(null);
     } else if (selectable(rod)) {
       setSelected(rod);
       feedback.pick();
+      AccessibilityInfo.announceForAccessibility(
+        `Can't move ${topRing(selected)} to rod ${rod + 1}. Picked up ${topRing(rod)} instead`,
+      );
     } else {
       setSelected(null);
+      AccessibilityInfo.announceForAccessibility(`Can't move ${topRing(selected)} to rod ${rod + 1}`);
     }
   };
 
@@ -125,6 +131,7 @@ export function RodSortGame({ start, rules, ...shell }: Props) {
         labels={rods.map((_, rod) => rules.rodLabel(rods, rod))}
         rowSizes={rodRows(rods.length)}
         selected={selected}
+        canMoveTo={(rod) => selected !== null && rules.canPour(rods, selected, rod)}
         onPress={press}
       />
     </GameShell>

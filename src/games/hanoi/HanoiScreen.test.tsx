@@ -148,6 +148,23 @@ describe('HanoiScreen', () => {
       expect(screen.getByRole('button', { name: 'right peg, disks 1 from the bottom' })).toBeOnTheScreen();
       expect(AccessibilityInfo.announceForAccessibility).toHaveBeenCalledWith('Moved disk 1 to the right peg');
     });
+
+    it('tells which pegs a picked-up disk cannot go on, and what tapping them does', async () => {
+      await start();
+      await move(0, 2);
+      await fireEvent.press(peg(0));
+      expect(AccessibilityInfo.announceForAccessibility).toHaveBeenLastCalledWith('Picked up disk 2 from the left peg');
+      expect(screen.getByRole('button', { name: 'right peg, disks 1 from the bottom' }).props.accessibilityHint).toBe(
+        "Can't move here",
+      );
+      expect(screen.getByRole('button', { name: 'middle peg, empty' }).props.accessibilityHint).toBe('Moves here');
+      await fireEvent.press(peg(2));
+      expect(AccessibilityInfo.announceForAccessibility).toHaveBeenLastCalledWith(
+        "Can't put disk 2 on the right peg. Picked up disk 1 instead",
+      );
+      await fireEvent.press(peg(2));
+      expect(AccessibilityInfo.announceForAccessibility).toHaveBeenLastCalledWith('Put disk 1 back');
+    });
   });
 
   describe('level select', () => {

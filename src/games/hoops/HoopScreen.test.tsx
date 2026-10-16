@@ -141,6 +141,34 @@ describe('HoopScreen', () => {
     expect(rodText(1)).toBe('1,1,0');
   });
 
+  it('tells screen reader users about picking up, putting back and taps that cannot move', async () => {
+    await start([[0, 0, 1], [1, 1], [0], []]);
+    const announce = jest.mocked(AccessibilityInfo.announceForAccessibility);
+    await fireEvent.press(screen.getByTestId('rod-0'));
+    expect(announce).toHaveBeenLastCalledWith('Picked up orange from rod 1');
+    await fireEvent.press(screen.getByTestId('rod-0'));
+    expect(announce).toHaveBeenLastCalledWith('Put orange back');
+    await fireEvent.press(screen.getByTestId('rod-0'));
+    await fireEvent.press(screen.getByTestId('rod-2'));
+    expect(announce).toHaveBeenLastCalledWith("Can't move orange to rod 3. Picked up red instead");
+  });
+
+  it('says so when a tap on a full rod drops the selection', async () => {
+    await start([[0, 0, 0, 0], [1, 1], [1, 1], []]);
+    await fireEvent.press(screen.getByTestId('rod-1'));
+    await fireEvent.press(screen.getByTestId('rod-0'));
+    expect(AccessibilityInfo.announceForAccessibility).toHaveBeenLastCalledWith("Can't move orange to rod 1");
+  });
+
+  it('announces a dead end after the move that caused it', async () => {
+    await start([[1, 2, 1], [2, 0, 0, 0], [2, 1, 0, 2], [1]]);
+    await pour(0, 3);
+    expect(AccessibilityInfo.announceForAccessibilityWithOptions).toHaveBeenLastCalledWith(
+      'No way to finish from here. Undo or restart.',
+      { queue: true },
+    );
+  });
+
   it('drops the selection when a full rod is tapped instead of a target', async () => {
     await start([[0, 0, 0, 0], [1, 1], [1, 1], []]);
     await fireEvent.press(screen.getByTestId('rod-1'));
