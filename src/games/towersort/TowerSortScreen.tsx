@@ -30,7 +30,7 @@ function towerRules(sizes: number): SortRules {
 }
 
 export function TowerSortScreen({ onBack }: { onBack: () => void }) {
-  const { level, unlocked, goTo, loaded } = useProgress('towersort');
+  const { level, unlocked, goTo, complete, loaded } = useProgress('towersort');
   const [picking, setPicking] = useState(false);
   const start = useTowerLevel(loaded ? level : null);
   const rules = useMemo(() => towerRules(towerSpec(level).sizes), [level]);
@@ -48,6 +48,7 @@ export function TowerSortScreen({ onBack }: { onBack: () => void }) {
         onLevels={() => setPicking(true)}
         nextLabel="Next level"
         onNext={() => goTo(level + 1)}
+        onWin={() => complete(level + 1)}
         onWinShown={prepareNext}
       />
       {picking && (

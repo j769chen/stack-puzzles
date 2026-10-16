@@ -215,6 +215,20 @@ describe('HoopScreen', () => {
       expect(await AsyncStorage.getItem('hoops.level')).toBe('2');
     });
 
+    it('saves the next level as soon as the level is won, even when leaving without Next', async () => {
+      await start([[0, 0, 0, 0], [1, 1, 1], [1], []]);
+      await pour(2, 1);
+      await act(() => jest.advanceTimersByTime(650));
+      expect(screen.getByText('Sorted in 1 moves.')).toBeOnTheScreen();
+      await fireEvent.press(screen.getByRole('button', { name: 'Levels' }));
+      expect(screen.getByRole('button', { name: 'Level 2' })).toBeOnTheScreen();
+      expect(await AsyncStorage.getItem('hoops.level')).toBe('2');
+      expect(await AsyncStorage.getItem('hoops.furthest')).toBe('2');
+      await screen.unmountAsync();
+      await renderAsync(<HoopScreen onBack={jest.fn()} />);
+      expect(await screen.findByText('Level 2')).toBeOnTheScreen();
+    });
+
     it('prepares the next level while the win card shows and drops the finished one', async () => {
       await start([[0, 0, 0, 0], [1, 1, 1], [1], []]);
       expect(await AsyncStorage.getItem('hoops.deal.1')).not.toBeNull();

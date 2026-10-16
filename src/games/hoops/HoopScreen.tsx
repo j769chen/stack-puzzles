@@ -22,7 +22,7 @@ function rodLabel(rods: Rods, rod: number, capacity: number) {
 }
 
 export function HoopScreen({ onBack }: { onBack: () => void }) {
-  const { level, unlocked, goTo, loaded } = useProgress('hoops');
+  const { level, unlocked, goTo, complete, loaded } = useProgress('hoops');
   const [picking, setPicking] = useState(false);
   const deal = useDeal(loaded ? level : null);
   const prepareNext = useCallback(() => loadDeal(level + 1), [level]);
@@ -39,6 +39,7 @@ export function HoopScreen({ onBack }: { onBack: () => void }) {
         onLevels={() => setPicking(true)}
         nextLabel="Next level"
         onNext={() => goTo(level + 1)}
+        onWin={() => complete(level + 1)}
         onWinShown={prepareNext}
       />
       {picking && (

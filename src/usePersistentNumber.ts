@@ -22,13 +22,20 @@ export function usePersistentNumber(key: string, initial: number) {
     };
   }, [key]);
 
-  const update = useCallback(
+  const save = useCallback(
     (n: number) => {
-      setValue(n);
       if (readKey.current === key) AsyncStorage.setItem(key, String(n)).catch(() => {});
     },
     [key],
   );
 
-  return [value, update, loaded] as const;
+  const update = useCallback(
+    (n: number) => {
+      setValue(n);
+      save(n);
+    },
+    [save],
+  );
+
+  return [value, update, loaded, save] as const;
 }

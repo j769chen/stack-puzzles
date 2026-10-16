@@ -33,7 +33,18 @@ function pourSnapshot({ rods, ids }: Snapshot, from: number, to: number): Snapsh
 
 export type ShellProps = Pick<
   GameShellProps,
-  'title' | 'label' | 'onBack' | 'onLevels' | 'levelsLabel' | 'scoring' | 'winNote' | 'onShare' | 'nextLabel' | 'onNext' | 'onWinShown'
+  | 'title'
+  | 'label'
+  | 'onBack'
+  | 'onLevels'
+  | 'levelsLabel'
+  | 'scoring'
+  | 'winNote'
+  | 'onShare'
+  | 'nextLabel'
+  | 'onNext'
+  | 'onWin'
+  | 'onWinShown'
 >;
 
 type Props = ShellProps & { start: Rods; rules: SortRules };
