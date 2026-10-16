@@ -171,6 +171,19 @@ describe('GameShell', () => {
       expect(getStars('hanoi')).toEqual({});
     });
 
+    it('hides the board and controls from screen readers behind the win card, but not Back', async () => {
+      await renderShell({ won: true });
+      await act(() => jest.advanceTimersByTime(650));
+      expect(screen.queryByRole('button', { name: 'Undo' })).toBeNull();
+      const undo = screen.getByText('Undo', { includeHiddenElements: true });
+      let hidden = false;
+      for (let node: typeof undo | null = undo; node; node = node.parent) {
+        if (node.props.importantForAccessibility === 'no-hide-descendants') hidden = true;
+      }
+      expect(hidden).toBe(true);
+      expect(screen.getByRole('button', { name: 'Back' })).toBeOnTheScreen();
+    });
+
     it('keeps the header out from under the win card so Back still works', async () => {
       const props = await renderShell({ won: true });
       await act(() => jest.advanceTimersByTime(650));

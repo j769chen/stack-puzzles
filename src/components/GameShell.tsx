@@ -7,6 +7,7 @@ import { type Game, recordStars, starsFor } from '../stars';
 import { Button } from './Button';
 import { Header } from './Header';
 import { Stars } from './Stars';
+import { WithOverlay } from './WithOverlay';
 
 type Scoring = { game: Game; key: number; optimal: number };
 
@@ -82,6 +83,21 @@ export function GameShell(props: GameShellProps) {
     if (showWin) onWinShown?.();
   }, [showWin, onWinShown]);
 
+  const winCard = showWin && (
+    <View style={styles.overlay} accessibilityViewIsModal>
+      <View style={styles.winCard}>
+        <Text style={styles.winTitle} accessibilityRole="header">
+          Solved!
+        </Text>
+        {stars !== null && <Stars count={stars} />}
+        <Text style={styles.winText}>{winText}</Text>
+        {props.winNote && <Text style={styles.winNote}>{props.winNote}</Text>}
+        {props.onShare && <Button label="Share" onPress={() => props.onShare?.(moves)} />}
+        <Button label={props.nextLabel} onPress={props.onNext} primary />
+      </View>
+    </View>
+  );
+
   return (
     <SafeAreaView style={styles.root}>
       <Header
@@ -90,7 +106,7 @@ export function GameShell(props: GameShellProps) {
         action={props.onLevels && { label: props.levelsLabel ?? 'Levels', onPress: props.onLevels }}
       />
 
-      <View style={styles.body}>
+      <WithOverlay overlay={winCard}>
         <View style={styles.stats}>
           <Text style={styles.stat}>{props.label}</Text>
           {scoring ? (
@@ -113,22 +129,7 @@ export function GameShell(props: GameShellProps) {
           <Button label="Undo" onPress={props.onUndo} disabled={!props.canUndo || props.won} />
           <Button label="Restart" onPress={props.onRestart} />
         </View>
-
-        {showWin && (
-          <View style={styles.overlay} accessibilityViewIsModal>
-            <View style={styles.winCard}>
-              <Text style={styles.winTitle} accessibilityRole="header">
-                Solved!
-              </Text>
-              {stars !== null && <Stars count={stars} />}
-              <Text style={styles.winText}>{winText}</Text>
-              {props.winNote && <Text style={styles.winNote}>{props.winNote}</Text>}
-              {props.onShare && <Button label="Share" onPress={() => props.onShare?.(moves)} />}
-              <Button label={props.nextLabel} onPress={props.onNext} primary />
-            </View>
-          </View>
-        )}
-      </View>
+      </WithOverlay>
     </SafeAreaView>
   );
 }
@@ -136,7 +137,6 @@ export function GameShell(props: GameShellProps) {
 const useStyles = themedStyles((colors) =>
   StyleSheet.create({
     root: { flex: 1, backgroundColor: colors.bg },
-    body: { flex: 1 },
     stats: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 24, marginTop: 12 },
     stat: { fontSize: 16, fontWeight: '600', color: colors.muted },
     over: { color: colors.danger },
