@@ -1,5 +1,7 @@
-import { create } from '@react-three/test-renderer';
+import { act, create } from '@react-three/test-renderer';
 import { Color, type Mesh, type MeshStandardMaterial, type Object3D, PerspectiveCamera, Vector2, Vector3 } from 'three';
+import { updateSettings } from '../../settings';
+import { patternMaterial } from '../../three/patterns';
 import { theme } from '../../theme';
 import { HoopBoard } from './HoopBoard';
 import type { Rods } from './logic';
@@ -62,6 +64,16 @@ describe('HoopBoard', () => {
     expect(radii[1]).toBeGreaterThan(radii[2]);
     const colors = meshes.map((mesh) => (mesh.material as MeshStandardMaterial).color);
     expect(colors).toEqual([new Color(theme.rings[1]), new Color(theme.rings[0]), new Color(theme.rings[2])]);
+  });
+
+  it('gives each ring its color pattern when color-blind patterns are on', async () => {
+    await act(async () => updateSettings({ patterns: true }));
+    const r = await renderBoard({ rods: [[0, 5], [9]] });
+    const materials = rings(r).map((ring) => (ring.children[0] as Mesh).material);
+    expect(materials).toEqual([patternMaterial(0), patternMaterial(5), patternMaterial(9)]);
+    await act(async () => updateSettings({ patterns: false }));
+    const plain = await renderBoard({ rods: [[0]] });
+    expect(((rings(plain)[0].children[0] as Mesh).material as MeshStandardMaterial).map).toBeNull();
   });
 
   it('marks a rod done by the given rule', async () => {

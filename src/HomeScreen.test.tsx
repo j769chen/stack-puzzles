@@ -104,11 +104,21 @@ describe('HomeScreen', () => {
     await screen.findAllByText('Level 1 ›');
     await fireEvent(screen.getByRole('switch', { name: 'Sound' }), 'valueChange', false);
     await fireEvent(screen.getByRole('switch', { name: 'Haptics' }), 'valueChange', false);
-    expect(getSettings()).toEqual({ sound: false, haptics: false });
+    expect(getSettings()).toEqual({ sound: false, haptics: false, patterns: false });
     expect(screen.getByRole('switch', { name: 'Sound' })).toHaveProp('value', false);
 
     await fireEvent(screen.getByRole('switch', { name: 'Sound' }), 'valueChange', true);
-    expect(getSettings()).toEqual({ sound: true, haptics: false });
+    expect(getSettings()).toEqual({ sound: true, haptics: false, patterns: false });
+  });
+
+  it('turns color-blind patterns on and off', async () => {
+    await render(<HomeScreen onOpen={jest.fn()} />);
+    await screen.findAllByText('Level 1 ›');
+    expect(screen.getByRole('switch', { name: 'Color-blind patterns' })).toHaveProp('value', false);
+    await fireEvent(screen.getByRole('switch', { name: 'Color-blind patterns' }), 'valueChange', true);
+    expect(getSettings().patterns).toBe(true);
+    await fireEvent(screen.getByRole('switch', { name: 'Color-blind patterns' }), 'valueChange', false);
+    expect(getSettings().patterns).toBe(false);
   });
 
   it('follows the system dark mode', async () => {

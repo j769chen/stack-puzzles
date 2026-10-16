@@ -4,7 +4,9 @@ import { Board } from '../../three/Board';
 import { Piece } from '../../three/Piece';
 import { Plank, Rod } from '../../three/Rod';
 import { RodPicker } from '../../three/RodPicker';
+import { patternMaterial } from '../../three/patterns';
 import { standardMaterial } from '../../three/shared';
+import { useSettings } from '../../settings';
 import { theme } from '../../theme';
 import { rodRows } from './layout';
 import { type Rods, isRodComplete } from './logic';
@@ -61,6 +63,7 @@ function boardLayout(count: number, capacity: number) {
 
 export function HoopBoard({ rods, capacity, sizes, isRodComplete: complete, ids, selected, onPress }: Props) {
   const done = complete ?? ((rod: number[]) => isRodComplete(rod, capacity));
+  const { patterns } = useSettings();
   const { poleHeight, liftY, rowSizes, rowZ, positions, size, tilt } = boardLayout(rods.length, capacity);
 
   return (
@@ -89,6 +92,7 @@ export function HoopBoard({ rods, capacity, sizes, isRodComplete: complete, ids,
               z={z}
               liftY={liftY}
               color={sizes ? Math.floor(ring / sizes) : ring}
+              patterned={patterns}
               geometry={sizes ? ringGeometry(ring % sizes, sizes) : RING_GEOMETRY}
             />
           )),
@@ -98,14 +102,22 @@ export function HoopBoard({ rods, capacity, sizes, isRodComplete: complete, ids,
   );
 }
 
-type RingProps = { x: number; y: number; z: number; liftY: number; color: number; geometry: TorusGeometry };
+type RingProps = {
+  x: number;
+  y: number;
+  z: number;
+  liftY: number;
+  color: number;
+  patterned: boolean;
+  geometry: TorusGeometry;
+};
 
-const Ring = memo(function Ring({ x, y, z, liftY, color, geometry }: RingProps) {
+const Ring = memo(function Ring({ x, y, z, liftY, color, patterned, geometry }: RingProps) {
   return (
     <Piece x={x} y={y} z={z} liftY={liftY}>
       <mesh
         geometry={geometry}
-        material={standardMaterial(theme.rings[color], 0.3)}
+        material={patterned ? patternMaterial(color) : standardMaterial(theme.rings[color], 0.3)}
         position-y={TUBE}
         rotation-x={Math.PI / 2}
         castShadow

@@ -18,23 +18,23 @@ describe('settings', () => {
   it('has sound and haptics on before anything loads', () => {
     jest.isolateModules(() => {
       const fresh = jest.requireActual<typeof import('./settings')>('./settings');
-      expect(fresh.getSettings()).toEqual({ sound: true, haptics: true });
+      expect(fresh.getSettings()).toEqual({ sound: true, haptics: true, patterns: false });
     });
   });
 
   it('keeps sound and haptics on when nothing was saved', async () => {
     await loadFrom();
-    expect(getSettings()).toEqual({ sound: true, haptics: true });
+    expect(getSettings()).toEqual({ sound: true, haptics: true, patterns: false });
   });
 
   it('loads saved choices', async () => {
     await loadFrom(JSON.stringify({ sound: false, haptics: true }));
-    expect(getSettings()).toEqual({ sound: false, haptics: true });
+    expect(getSettings()).toEqual({ sound: false, haptics: true, patterns: false });
   });
 
   it('keeps defaults for anything missing from what was saved', async () => {
     await loadFrom(JSON.stringify({ haptics: false }));
-    expect(getSettings()).toEqual({ sound: true, haptics: false });
+    expect(getSettings()).toEqual({ sound: true, haptics: false, patterns: false });
   });
 
   it.each([
@@ -44,29 +44,29 @@ describe('settings', () => {
     ['wrong types', JSON.stringify({ sound: 'off', haptics: 0 })],
   ])('falls back to defaults for %s', async (_, stored) => {
     await loadFrom(stored);
-    expect(getSettings()).toEqual({ sound: true, haptics: true });
+    expect(getSettings()).toEqual({ sound: true, haptics: true, patterns: false });
   });
 
   it('ignores keys it does not know', async () => {
     await loadFrom(JSON.stringify({ sound: false, volume: 3 }));
-    expect(getSettings()).toEqual({ sound: false, haptics: true });
+    expect(getSettings()).toEqual({ sound: false, haptics: true, patterns: false });
   });
 
   it('falls back to defaults when storage cannot be read', async () => {
     updateSettings({ sound: false });
     jest.mocked(AsyncStorage.getItem).mockRejectedValueOnce(new Error('disk'));
     await loadSettings();
-    expect(getSettings()).toEqual({ sound: true, haptics: true });
+    expect(getSettings()).toEqual({ sound: true, haptics: true, patterns: false });
   });
 
   it('saves changes so they survive a reload', async () => {
     updateSettings({ sound: false });
-    expect(getSettings()).toEqual({ sound: false, haptics: true });
+    expect(getSettings()).toEqual({ sound: false, haptics: true, patterns: false });
     await flushStorage();
-    expect(JSON.parse((await AsyncStorage.getItem('settings'))!)).toEqual({ sound: false, haptics: true });
+    expect(JSON.parse((await AsyncStorage.getItem('settings'))!)).toEqual({ sound: false, haptics: true, patterns: false });
 
     await loadSettings();
-    expect(getSettings()).toEqual({ sound: false, haptics: true });
+    expect(getSettings()).toEqual({ sound: false, haptics: true, patterns: false });
   });
 
   it('re-renders subscribers after loading and on change', async () => {
