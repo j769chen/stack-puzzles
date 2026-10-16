@@ -6,5 +6,9 @@ module.exports = defineConfig([
   expoConfig,
   {
     ignores: ["dist/*"],
-  }
+  },
+  {
+    files: ["src/three/**/*.tsx", "src/games/**/*Board.tsx"],
+    rules: { "react/no-unknown-property": "off" },
+  },
 ]);
