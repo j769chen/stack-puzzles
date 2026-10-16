@@ -206,14 +206,16 @@ function mulberry32(seed: number): () => number {
 
 export type Deal = { rods: Rods; solution: Move[] };
 
-const DAILY_SPECS: LevelSpec[] = [
-  { colors: 9, capacity: 5 },
-  { colors: 5, capacity: 4 },
-  { colors: 6, capacity: 4 },
-  { colors: 7, capacity: 4 },
-  { colors: 8, capacity: 4 },
-  { colors: 7, capacity: 5 },
-  { colors: 8, capacity: 5 },
+export type DailySpec = LevelSpec & { moves: [number, number] };
+
+const DAILY_SPECS: DailySpec[] = [
+  { colors: 9, capacity: 5, moves: [45, 50] },
+  { colors: 5, capacity: 4, moves: [15, 18] },
+  { colors: 6, capacity: 4, moves: [20, 23] },
+  { colors: 7, capacity: 4, moves: [24, 27] },
+  { colors: 8, capacity: 4, moves: [28, 31] },
+  { colors: 7, capacity: 5, moves: [33, 37] },
+  { colors: 8, capacity: 5, moves: [39, 43] },
 ];
 
 export function dailyKey(date: Date): number {
@@ -224,7 +226,7 @@ export function dailyDate(key: number): Date {
   return new Date(Math.floor(key / 10000), (Math.floor(key / 100) % 100) - 1, key % 100);
 }
 
-export function dailySpec(key: number): LevelSpec {
+export function dailySpec(key: number): DailySpec {
   return DAILY_SPECS[dailyDate(key).getDay()];
 }
 
@@ -232,11 +234,19 @@ export function generateLevel(level: number): Deal {
   return generateDeal(levelSpec(level), level * 9973 + 17);
 }
 
-export function generateDaily(key: number): Deal {
-  return generateDeal(dailySpec(key), key * 7919 + 1);
+export function previousDay(key: number): number {
+  const date = dailyDate(key);
+  date.setDate(date.getDate() - 1);
+  return dailyKey(date);
 }
 
-function generateDeal({ colors, capacity: cap }: LevelSpec, seed: number): Deal {
+export function generateDaily(key: number): Deal {
+  const spec = dailySpec(key);
+  const [min, max] = spec.moves;
+  return generateDeal(spec, key * 7919 + 1, (length) => length >= min && length <= max);
+}
+
+function generateDeal({ colors, capacity: cap }: LevelSpec, seed: number, fits = (_length: number) => true): Deal {
   const rand = mulberry32(seed);
 
   for (;;) {
@@ -250,6 +260,6 @@ function generateDeal({ colors, capacity: cap }: LevelSpec, seed: number): Deal 
 
     if (rods.some((r) => isRodComplete(r, cap))) continue;
     const solution = solveHoops(rods, cap);
-    if (solution) return { rods, solution };
+    if (solution && fits(solution.length)) return { rods, solution };
   }
 }

@@ -21,6 +21,8 @@ export type GameShellProps = {
   onRestart: () => void;
   won: boolean;
   scoring?: Scoring;
+  winNote?: string | null;
+  onShare?: (moves: number) => void;
   nextLabel: string;
   onNext: () => void;
   onWinShown?: () => void;
@@ -128,6 +130,8 @@ export function GameShell(props: GameShellProps) {
               </Text>
               {stars !== null && <Stars count={stars} />}
               <Text style={styles.winText}>{winText}</Text>
+              {props.winNote && <Text style={styles.winNote}>{props.winNote}</Text>}
+              {props.onShare && <Button label="Share" onPress={() => props.onShare?.(moves)} />}
               <Button label={props.nextLabel} onPress={props.onNext} primary />
             </View>
           </View>
@@ -175,5 +179,6 @@ const useStyles = themedStyles((colors) =>
     },
     winTitle: { fontSize: 30, fontWeight: '900', color: colors.ink },
     winText: { fontSize: 16, color: colors.muted, textAlign: 'center' },
+    winNote: { fontSize: 16, fontWeight: '700', color: colors.accent },
   }),
 );

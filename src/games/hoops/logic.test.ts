@@ -9,6 +9,7 @@ import {
   dailySpec,
   generateDaily,
   generateLevel,
+  previousDay,
   hasAnyMove,
   isHoopsSolved,
   isRodComplete,
@@ -304,10 +305,28 @@ describe('daily puzzle', () => {
     expect(dailyDate(20261016)).toEqual(new Date(2026, 9, 16));
   });
 
+  it('steps back a day across month and year ends', () => {
+    expect(previousDay(20261016)).toBe(20261015);
+    expect(previousDay(20261101)).toBe(20261031);
+    expect(previousDay(20270101)).toBe(20261231);
+    expect(previousDay(20280301)).toBe(20280229);
+  });
+
   it('gets harder from Monday to Sunday', () => {
-    const rings = Array.from({ length: 7 }, (_, i) => dailySpec(20261012 + i)).map((s) => s.colors * s.capacity);
+    const week = Array.from({ length: 7 }, (_, i) => dailySpec(20261012 + i));
+    const rings = week.map((s) => s.colors * s.capacity);
     expect(rings).toEqual([...rings].sort((a, b) => a - b));
     expect(new Set(rings).size).toBe(7);
+    week.slice(1).forEach((spec, i) => expect(spec.moves[0]).toBeGreaterThan(week[i].moves[1]));
+  });
+
+  it("keeps each day's best solution inside its weekday's band", () => {
+    for (let key = 20261012; key <= 20261018; key++) {
+      const [min, max] = dailySpec(key).moves;
+      const { length } = generateDaily(key).solution;
+      expect(length).toBeGreaterThanOrEqual(min);
+      expect(length).toBeLessThanOrEqual(max);
+    }
   });
 
   it('deals the same puzzle for the same day and a new one each day', () => {

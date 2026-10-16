@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { type ColorSchemeName, type StyleProp, StyleSheet, type ViewStyle } from 'react-native';
-import { dailyKey } from './games/hoops/logic';
+import { dailyKey, previousDay } from './games/hoops/logic';
 import { HomeScreen } from './HomeScreen';
 import { getSettings, loadSettings } from './settings';
 import { loadStars, recordStars } from './stars';
@@ -72,6 +72,15 @@ describe('HomeScreen', () => {
     await render(<HomeScreen onOpen={jest.fn()} />);
     expect(await screen.findByRole('button', { name: 'Daily Puzzle, solved today, 2 stars' })).toBeOnTheScreen();
     expect(screen.getByText('Solved today ›')).toBeOnTheScreen();
+  });
+
+  it('shows the daily streak, still alive before today is played', async () => {
+    const today = dailyKey(new Date());
+    const yesterday = previousDay(today);
+    recordStars('daily', previousDay(yesterday), 3);
+    recordStars('daily', yesterday, 3);
+    await render(<HomeScreen onOpen={jest.fn()} />);
+    expect(await screen.findByText('Play today · 2-day streak ›')).toBeOnTheScreen();
   });
 
   it('hides the star count until a game has stars', async () => {

@@ -1,6 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, fireEvent, renderAsync, screen } from '@testing-library/react-native';
-import { getStars, loadStars } from '../../stars';
+import { Share } from 'react-native';
+import { dailyLabel } from '../../daily';
+import { getStars, loadStars, recordStars } from '../../stars';
 import { DailyScreen } from './DailyScreen';
 import * as logic from './logic';
 
@@ -38,7 +40,7 @@ beforeEach(async () => {
   await AsyncStorage.clear();
   await loadStars();
   jest.spyOn(logic, 'dailyKey').mockReturnValue(TODAY);
-  jest.spyOn(logic, 'dailySpec').mockReturnValue({ colors: 2, capacity: 4 });
+  jest.spyOn(logic, 'dailySpec').mockReturnValue({ colors: 2, capacity: 4, moves: [1, 99] });
   jest.spyOn(logic, 'generateDaily').mockReturnValue(DEAL);
 });
 afterEach(() => jest.restoreAllMocks());
@@ -48,8 +50,7 @@ describe('DailyScreen', () => {
     await start();
     expect(logic.generateDaily).toHaveBeenCalledWith(TODAY);
     expect(screen.getByText('Daily Puzzle')).toBeOnTheScreen();
-    const date = logic.dailyDate(TODAY).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
-    expect(screen.getByText(date)).toBeOnTheScreen();
+    expect(screen.getByText(dailyLabel(TODAY))).toBeOnTheScreen();
     expect(screen.getByLabelText('3 of 3 stars')).toBeOnTheScreen();
     expect(screen.queryByRole('button', { name: 'Levels' })).toBeNull();
   });
@@ -75,6 +76,22 @@ describe('DailyScreen', () => {
     expect(getStars('daily')).toEqual({ [TODAY]: 3 });
     await fireEvent.press(screen.getByText('Done'));
     expect(onBack).toHaveBeenCalledTimes(1);
+    jest.useRealTimers();
+  });
+
+  it('shows the streak on the win card and shares the result', async () => {
+    jest.useFakeTimers();
+    const share = jest.spyOn(Share, 'share').mockResolvedValue({ action: 'sharedAction' });
+    recordStars('daily', TODAY - 2, 3);
+    recordStars('daily', TODAY - 1, 1);
+    await start();
+    for (const [from, to] of [[0, 2], [2, 3], [1, 0], [3, 1]]) await pour(from, to);
+    await act(() => jest.advanceTimersByTime(650));
+    expect(screen.getByText('3-day streak')).toBeOnTheScreen();
+    await fireEvent.press(screen.getByText('Share'));
+    expect(share).toHaveBeenCalledWith({
+      message: `Stack Puzzles Daily · ${dailyLabel(TODAY)}\n★★☆ 4/${DEAL.solution.length} moves\n3-day streak`,
+    });
     jest.useRealTimers();
   });
 });
