@@ -1,3 +1,4 @@
+import { type Task, runTask } from '../task';
 import type { Move } from '../useHistory';
 
 export type Rods = number[][];
@@ -63,58 +64,6 @@ export function hasAnyMove(rods: Rods, cap: number): boolean {
   return rods.some((_, f) => rods.some((_, t) => canPour(rods, f, t, cap)));
 }
 
-function candidateMoves(rods: Rods, cap: number): Move[] {
-  const moves: Move[] = [];
-  for (let f = 0; f < rods.length; f++) {
-    const src = rods[f];
-    if (src.length === 0 || isRodComplete(src, cap)) continue;
-    let usedEmpty = false;
-    for (let t = 0; t < rods.length; t++) {
-      if (!canPour(rods, f, t, cap)) continue;
-      if (rods[t].length === 0) {
-        if (usedEmpty || isUniform(src)) continue;
-        usedEmpty = true;
-      }
-      moves.push([f, t]);
-    }
-  }
-  return moves;
-}
-
-function bottomRun(rod: number[]): number {
-  let run = 0;
-  while (run < rod.length && rod[run] === rod[0]) run++;
-  return run;
-}
-
-function movesLeftLowerBound(rods: Rods): number {
-  let bound = 0;
-  const bottomRuns = new Map<number, number[]>();
-  for (const rod of rods) {
-    if (rod.length === 0) continue;
-    const run = bottomRun(rod);
-    bound += rod.length - run;
-    bottomRuns.set(rod[0], [...(bottomRuns.get(rod[0]) ?? []), run]);
-  }
-  for (const runs of bottomRuns.values()) bound += runs.reduce((a, b) => a + b, 0) - Math.max(...runs);
-  return bound;
-}
-
-const stateKey = (rodKeys: string[]) => [...rodKeys].sort().join('|');
-
-type SearchNode = {
-  rods: Rods;
-  rodKeys: string[];
-  key: string;
-  cost: number;
-  estimatedLength: number;
-  parent: SearchNode | null;
-  move: Move | null;
-};
-
-const exploresFirst = (a: SearchNode, b: SearchNode) =>
-  a.estimatedLength !== b.estimatedLength ? a.estimatedLength < b.estimatedLength : a.cost > b.cost;
-
 export class MinHeap<T> {
   private items: T[] = [];
 
@@ -154,17 +103,60 @@ export class MinHeap<T> {
   }
 }
 
-export function solveHoops(start: Rods, cap: number, nodeLimit = 200_000): Move[] | null {
-  const startKeys = start.map((rod) => String.fromCharCode(...rod));
-  const startKey = stateKey(startKeys);
+const NODE_LIMIT = 200_000;
+const YIELD_EVERY = 64;
+
+type SearchNode = {
+  rods: string[];
+  key: string;
+  cost: number;
+  estimatedLength: number;
+  parent: SearchNode | null;
+  move: Move | null;
+};
+
+const exploresFirst = (a: SearchNode, b: SearchNode) =>
+  a.estimatedLength !== b.estimatedLength ? a.estimatedLength < b.estimatedLength : a.cost > b.cost;
+
+const stateKey = (rods: string[]) => rods.slice().sort().join('|');
+
+function bottomRun(rod: string): number {
+  let run = 1;
+  while (run < rod.length && rod.charCodeAt(run) === rod.charCodeAt(0)) run++;
+  return run;
+}
+
+function* searchHoops(start: Rods, cap: number, nodeLimit: number): Task<Move[] | null> {
+  const colors = Math.max(0, ...start.flat()) + 1;
+  const runSums = new Array<number>(colors);
+  const runMaxes = new Array<number>(colors);
+  const uniform = (rod: string) => rod.length === 0 || bottomRun(rod) === rod.length;
+  const complete = (rod: string) => rod.length === cap && uniform(rod);
+  const movesLeftLowerBound = (rods: string[]) => {
+    runSums.fill(0);
+    runMaxes.fill(0);
+    let bound = 0;
+    for (const rod of rods) {
+      if (rod.length === 0) continue;
+      const run = bottomRun(rod);
+      const color = rod.charCodeAt(0);
+      bound += rod.length - run;
+      runSums[color] += run;
+      runMaxes[color] = Math.max(runMaxes[color], run);
+    }
+    for (let color = 0; color < colors; color++) bound += runSums[color] - runMaxes[color];
+    return bound;
+  };
+
+  const startRods = start.map((rod) => String.fromCharCode(...rod));
+  const startKey = stateKey(startRods);
   const bestCost = new Map([[startKey, 0]]);
   const open = new MinHeap<SearchNode>(exploresFirst);
   open.push({
-    rods: start,
-    rodKeys: startKeys,
+    rods: startRods,
     key: startKey,
     cost: 0,
-    estimatedLength: movesLeftLowerBound(start),
+    estimatedLength: movesLeftLowerBound(startRods),
     parent: null,
     move: null,
   });
@@ -172,25 +164,42 @@ export function solveHoops(start: Rods, cap: number, nodeLimit = 200_000): Move[
   for (let expanded = 0; open.size > 0 && expanded < nodeLimit; ) {
     const node = open.pop();
     if (bestCost.get(node.key)! < node.cost) continue;
-    if (isHoopsSolved(node.rods, cap)) {
+    const { rods } = node;
+    if (rods.every((rod) => rod.length === 0 || complete(rod))) {
       const path: Move[] = [];
       for (let n: SearchNode | null = node; n?.move; n = n.parent) path.unshift(n.move);
       return path;
     }
     expanded++;
-    for (const [f, t] of candidateMoves(node.rods, cap)) {
-      const rodKeys = [...node.rodKeys];
-      rodKeys[t] += rodKeys[f].at(-1);
-      rodKeys[f] = rodKeys[f].slice(0, -1);
-      const key = stateKey(rodKeys);
-      const cost = node.cost + 1;
-      if ((bestCost.get(key) ?? Infinity) <= cost) continue;
-      bestCost.set(key, cost);
-      const rods = pour(node.rods, f, t);
-      open.push({ rods, rodKeys, key, cost, estimatedLength: cost + movesLeftLowerBound(rods), parent: node, move: [f, t] });
+    if (expanded % YIELD_EVERY === 0) yield;
+    const cost = node.cost + 1;
+    for (let f = 0; f < rods.length; f++) {
+      const src = rods[f];
+      if (src.length === 0 || complete(src)) continue;
+      const ring = src.charCodeAt(src.length - 1);
+      let usedEmpty = false;
+      for (let t = 0; t < rods.length; t++) {
+        const dst = rods[t];
+        if (t === f || dst.length >= cap) continue;
+        if (dst.length === 0) {
+          if (usedEmpty || uniform(src)) continue;
+          usedEmpty = true;
+        } else if (dst.charCodeAt(dst.length - 1) !== ring) continue;
+        const next = rods.slice();
+        next[t] = dst + src[src.length - 1];
+        next[f] = src.slice(0, -1);
+        const key = stateKey(next);
+        if ((bestCost.get(key) ?? Infinity) <= cost) continue;
+        bestCost.set(key, cost);
+        open.push({ rods: next, key, cost, estimatedLength: cost + movesLeftLowerBound(next), parent: node, move: [f, t] });
+      }
     }
   }
   return null;
+}
+
+export function solveHoops(start: Rods, cap: number, nodeLimit = NODE_LIMIT): Move[] | null {
+  return runTask(searchHoops(start, cap, nodeLimit));
 }
 
 export function mulberry32(seed: number): () => number {
@@ -230,8 +239,12 @@ export function dailySpec(key: number): DailySpec {
   return DAILY_SPECS[dailyDate(key).getDay()];
 }
 
+export function levelTask(level: number): Task<Deal> {
+  return dealTask(levelSpec(level), level * 9973 + 17);
+}
+
 export function generateLevel(level: number): Deal {
-  return generateDeal(levelSpec(level), level * 9973 + 17);
+  return runTask(levelTask(level));
 }
 
 export function previousDay(key: number): number {
@@ -240,13 +253,17 @@ export function previousDay(key: number): number {
   return dailyKey(date);
 }
 
-export function generateDaily(key: number): Deal {
+export function dailyTask(key: number): Task<Deal> {
   const spec = dailySpec(key);
   const [min, max] = spec.moves;
-  return generateDeal(spec, key * 7919 + 1, (length) => length >= min && length <= max);
+  return dealTask(spec, key * 7919 + 1, (length) => length >= min && length <= max);
 }
 
-function generateDeal({ colors, capacity: cap }: LevelSpec, seed: number, fits = (_length: number) => true): Deal {
+export function generateDaily(key: number): Deal {
+  return runTask(dailyTask(key));
+}
+
+function* dealTask({ colors, capacity: cap }: LevelSpec, seed: number, fits = (_length: number) => true): Task<Deal> {
   const rand = mulberry32(seed);
 
   for (;;) {
@@ -259,7 +276,7 @@ function generateDeal({ colors, capacity: cap }: LevelSpec, seed: number, fits =
     for (let i = 0; i < EMPTY_RODS; i++) rods.push([]);
 
     if (rods.some((r) => isRodComplete(r, cap))) continue;
-    const solution = solveHoops(rods, cap);
+    const solution = yield* searchHoops(rods, cap, NODE_LIMIT);
     if (solution && fits(solution.length)) return { rods, solution };
   }
 }

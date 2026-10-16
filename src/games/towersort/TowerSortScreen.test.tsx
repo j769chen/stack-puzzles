@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { act, fireEvent, renderAsync, screen } from '@testing-library/react-native';
+import { act, fireEvent, renderAsync, screen, waitFor } from '@testing-library/react-native';
 import { TowerSortScreen } from './TowerSortScreen';
 import * as logic from './logic';
 
@@ -34,8 +34,14 @@ async function move(from: number, to: number) {
 
 const START = [[2, 1], [5, 0], [8, 7, 6], [4, 3], []];
 
+function dealing(rods: number[][]) {
+  return jest.spyOn(logic, 'towerTask').mockImplementation(function* () {
+    return rods;
+  });
+}
+
 async function start(rods = START) {
-  jest.spyOn(logic, 'towerLevel').mockReturnValue(rods);
+  dealing(rods);
   await renderAsync(<TowerSortScreen onBack={jest.fn()} />);
   await screen.findByText('Level 1');
 }
@@ -53,6 +59,30 @@ describe('TowerSortScreen', () => {
     expect(screen.getByText('Moves 0')).toBeOnTheScreen();
     expect(screen.getByText('Sort each color onto its own rod. A ring only fits on a bigger one.')).toBeOnTheScreen();
     expect(screen.queryByLabelText(/of 3 stars/)).toBeNull();
+  });
+
+  it('stores the dealt level and reuses it next time', async () => {
+    await start();
+    expect(JSON.parse((await AsyncStorage.getItem('towersort.deal.1'))!)).toEqual(START);
+    await screen.unmountAsync();
+    jest.mocked(logic.towerTask).mockClear();
+    await renderAsync(<TowerSortScreen onBack={jest.fn()} />);
+    await screen.findByText('Level 1');
+    expect(logic.towerTask).not.toHaveBeenCalled();
+    START.forEach((rod, i) => expect(rodText(i)).toBe(rod.join(',')));
+  });
+
+  it('deals again when the stored level does not fit', async () => {
+    await AsyncStorage.setItem('towersort.deal.1', JSON.stringify([[0, 1, 2], []]));
+    await start();
+    expect(logic.towerTask).toHaveBeenCalledWith(1);
+    START.forEach((rod, i) => expect(rodText(i)).toBe(rod.join(',')));
+  });
+
+  it('deals again when the stored level is not valid JSON', async () => {
+    await AsyncStorage.setItem('towersort.deal.1', '{');
+    await start();
+    expect(logic.towerTask).toHaveBeenCalledWith(1);
   });
 
   it('only lets a ring onto an empty rod or a bigger ring', async () => {
@@ -95,14 +125,14 @@ describe('TowerSortScreen', () => {
 
   it('picks an earlier level from level select, without stars', async () => {
     await AsyncStorage.setItem('towersort.level', '3');
-    jest.spyOn(logic, 'towerLevel').mockReturnValue(START);
+    dealing(START);
     await renderAsync(<TowerSortScreen onBack={jest.fn()} />);
     await screen.findByText('Level 3');
     await fireEvent.press(screen.getByRole('button', { name: 'Levels' }));
     expect(screen.queryByLabelText(/of 3 stars/)).toBeNull();
     await fireEvent.press(screen.getByRole('button', { name: 'Level 2' }));
     expect(await screen.findByText('Level 2')).toBeOnTheScreen();
-    expect(logic.towerLevel).toHaveBeenLastCalledWith(2);
+    expect(logic.towerTask).toHaveBeenLastCalledWith(2);
     await fireEvent.press(screen.getByRole('button', { name: 'Levels' }));
     await fireEvent.press(screen.getByRole('button', { name: 'Back' }));
     expect(screen.queryByRole('button', { name: 'Level 1' })).toBeNull();
@@ -114,10 +144,12 @@ describe('TowerSortScreen', () => {
     await move(3, 0);
     await act(() => jest.advanceTimersByTime(650));
     expect(screen.getByText('Sorted in 1 moves.')).toBeOnTheScreen();
-    expect(logic.towerLevel).toHaveBeenCalledWith(2);
+    await waitFor(() => expect(logic.towerTask).toHaveBeenCalledWith(2));
     await fireEvent.press(screen.getByText('Next level'));
     expect(await screen.findByText('Level 2')).toBeOnTheScreen();
     expect(await AsyncStorage.getItem('towersort.level')).toBe('2');
+    await waitFor(async () => expect(await AsyncStorage.getItem('towersort.deal.1')).toBeNull());
+    expect(await AsyncStorage.getItem('towersort.deal.2')).not.toBeNull();
     jest.useRealTimers();
   });
 });

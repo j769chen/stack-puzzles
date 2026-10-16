@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { LevelSelect } from '../../components/LevelSelect';
+import { LoadingScreen } from '../../components/LoadingScreen';
 import { theme } from '../../theme';
 import { useProgress } from '../useProgress';
 import { type Deal, type Rods, canPour, isRodComplete, levelSpec, topRun } from './logic';
@@ -25,7 +26,7 @@ export function HoopScreen({ onBack }: { onBack: () => void }) {
   const [picking, setPicking] = useState(false);
   const deal = useDeal(loaded ? level : null);
   const prepareNext = useCallback(() => loadDeal(level + 1), [level]);
-  if (!deal) return null;
+  if (!deal) return <LoadingScreen title="Ring Sort" onBack={onBack} />;
   return (
     <View style={styles.root}>
       <RingSortGame

@@ -1,10 +1,11 @@
 import { type ReactNode, useEffect, useState } from 'react';
-import { AccessibilityInfo, Pressable, StyleSheet, Text, View } from 'react-native';
+import { AccessibilityInfo, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { themedStyles } from '../theme';
 import { feedback } from '../feedback';
 import { type Game, recordStars, starsFor } from '../stars';
 import { Button } from './Button';
+import { Header } from './Header';
 import { Stars } from './Stars';
 
 type Scoring = { game: Game; key: number; optimal: number };
@@ -69,33 +70,11 @@ export function GameShell(props: GameShellProps) {
 
   return (
     <SafeAreaView style={styles.root}>
-      <View style={styles.header}>
-        <Pressable
-          onPress={props.onBack}
-          hitSlop={12}
-          style={styles.back}
-          accessibilityRole="button"
-          accessibilityLabel="Back"
-        >
-          <Text style={styles.backText}>‹ Back</Text>
-        </Pressable>
-        <Text style={styles.title} accessibilityRole="header">
-          {props.title}
-        </Text>
-        {props.onLevels ? (
-          <Pressable
-            onPress={props.onLevels}
-            hitSlop={12}
-            style={styles.back}
-            accessibilityRole="button"
-            accessibilityLabel={props.levelsLabel ?? 'Levels'}
-          >
-            <Text style={[styles.backText, styles.levelsText]}>{props.levelsLabel ?? 'Levels'}</Text>
-          </Pressable>
-        ) : (
-          <View style={styles.back} />
-        )}
-      </View>
+      <Header
+        title={props.title}
+        onBack={props.onBack}
+        action={props.onLevels && { label: props.levelsLabel ?? 'Levels', onPress: props.onLevels }}
+      />
 
       <View style={styles.body}>
         <View style={styles.stats}>
@@ -146,17 +125,6 @@ const useStyles = themedStyles((colors) =>
   StyleSheet.create({
     root: { flex: 1, backgroundColor: colors.bg },
     body: { flex: 1 },
-    header: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingHorizontal: 16,
-      paddingTop: 8,
-    },
-    back: { width: 70 },
-    backText: { fontSize: 17, fontWeight: '600', color: colors.accent },
-    levelsText: { textAlign: 'right' },
-    title: { fontSize: 20, fontWeight: '800', color: colors.ink },
     stats: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 24, marginTop: 12 },
     stat: { fontSize: 16, fontWeight: '600', color: colors.muted },
     over: { color: colors.danger },

@@ -7,7 +7,6 @@ import {
   ringColor,
   ringSize,
   solveTower,
-  towerLevel,
   towerSpec,
 } from './logic';
 
@@ -69,9 +68,5 @@ describe('tower sort levels', () => {
 
   it('gives up when the search budget runs out', () => {
     expect(solveTower(generateTower(21), 4, 1)).toBeNull();
-  });
-
-  it('builds each level once', () => {
-    expect(towerLevel(3)).toBe(towerLevel(3));
   });
 });

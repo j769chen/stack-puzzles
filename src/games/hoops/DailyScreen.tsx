@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Share, StyleSheet, View } from 'react-native';
 import { DailyHistory } from '../../components/DailyHistory';
+import { LoadingScreen } from '../../components/LoadingScreen';
 import { dailyLabel, dailyStreak, shareText } from '../../daily';
 import { starsFor, useStars } from '../../stars';
 import { useDailyDeal } from './deals';
@@ -12,7 +13,7 @@ export function DailyScreen({ onBack }: { onBack: () => void }) {
   const [showingHistory, setShowingHistory] = useState(false);
   const deal = useDailyDeal(key);
   const streak = dailyStreak(useStars('daily'), key);
-  if (!deal) return null;
+  if (!deal) return <LoadingScreen title="Daily Puzzle" onBack={onBack} />;
   const optimal = deal.solution.length;
   return (
     <View style={styles.root}>
