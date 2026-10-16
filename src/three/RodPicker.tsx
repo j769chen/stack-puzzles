@@ -1,7 +1,8 @@
 import type { ThreeEvent } from '@react-three/fiber/native';
-import { useRef } from 'react';
+import { useContext, useRef } from 'react';
 import { type Intersection, type Mesh, type PerspectiveCamera, type Raycaster, Vector3 } from 'three';
 import { type RodSpot, nearestRod } from './pick';
+import { TouchCancelled } from './touch';
 
 type Props = {
   rods: RodSpot[];
@@ -20,6 +21,7 @@ function catchEveryRay(this: Mesh, _raycaster: Raycaster, hits: Intersection[]) 
 export function RodPicker({ rods, height, reach, selected, onPick, onDrop, onHover }: Props) {
   const dragFrom = useRef<number | null>(null);
   const hovered = useRef<number | null>(null);
+  const touchCancelled = useContext(TouchCancelled);
   const rodAt = (e: ThreeEvent<PointerEvent>) => nearestRod(e.pointer, e.camera as PerspectiveCamera, rods, height, reach);
 
   const hover = (rod: number | null) => {
@@ -30,6 +32,7 @@ export function RodPicker({ rods, height, reach, selected, onPick, onDrop, onHov
 
   const down = (e: ThreeEvent<PointerEvent>) => {
     e.stopPropagation();
+    hover(null);
     const rod = rodAt(e);
     if (rod === null) return;
     dragFrom.current = selected === null ? rod : null;
@@ -43,15 +46,15 @@ export function RodPicker({ rods, height, reach, selected, onPick, onDrop, onHov
   const up = (e: ThreeEvent<PointerEvent>) => {
     const from = dragFrom.current;
     dragFrom.current = null;
-    hover(null);
-    if (from === null || selected !== from) return;
-    const rod = rodAt(e);
-    if (rod !== null && rod !== from) onDrop(rod);
-  };
-
-  const cancel = () => {
-    dragFrom.current = null;
-    hover(null);
+    const rod = from !== null && selected === from ? rodAt(e) : null;
+    if (rod === null || rod === from) {
+      hover(null);
+      return;
+    }
+    setTimeout(() => {
+      hover(null);
+      if (!touchCancelled.current) onDrop(rod);
+    }, 0);
   };
 
   return (
@@ -61,7 +64,6 @@ export function RodPicker({ rods, height, reach, selected, onPick, onDrop, onHov
       onPointerDown={down}
       onPointerMove={move}
       onPointerUp={up}
-      onPointerCancel={cancel}
     />
   );
 }
