@@ -5,15 +5,49 @@ import { join } from 'node:path';
 const RATE = 22050;
 const OUT = join(import.meta.dirname, '..', 'assets', 'sounds');
 
-function tone(freq, start, duration, { volume = 0.5, decay = 8, harmonic = 0 } = {}) {
+function random(seed) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a * 1664525 + 1013904223) >>> 0;
+    return a / 4294967296 - 0.5;
+  };
+}
+
+function partials(freq, start, duration, { ratios, amps, decay, volume }) {
   return (t) => {
     const local = t - start;
     if (local < 0 || local > duration) return 0;
-    const attack = Math.min(local / 0.004, 1);
-    const envelope = attack * Math.exp(-decay * local);
-    const wave = Math.sin(2 * Math.PI * freq * local) + harmonic * Math.sin(4 * Math.PI * freq * local);
-    return volume * envelope * wave;
+    const attack = Math.min(local / 0.001, 1);
+    return ratios.reduce(
+      (sum, ratio, i) =>
+        sum + amps[i] * Math.exp(-decay * (1 + ratio * 0.6) * local) * Math.sin(2 * Math.PI * freq * ratio * local),
+      0,
+    ) * volume * attack;
   };
+}
+
+function knock(freq, start, { volume = 0.5, decay = 45, click = 0.35, seed = 1 } = {}) {
+  const body = partials(freq, start, 0.25, { ratios: [1, 2.76, 5.4], amps: [1, 0.45, 0.2], decay, volume });
+  const samples = Math.round(RATE * 0.02);
+  const burst = new Float32Array(samples);
+  const rand = random(seed);
+  let low = 0;
+  for (let i = 0; i < samples; i++) {
+    const white = rand();
+    low += 0.35 * (white - low);
+    burst[i] = (white - low) * Math.exp(-i / RATE / 0.003);
+  }
+  return (t) => {
+    const index = Math.round((t - start) * RATE);
+    const contact = index >= 0 && index < samples ? click * burst[index] : 0;
+    return body(t) + contact;
+  };
+}
+
+function marimba(freq, start, duration, { volume = 0.35 } = {}) {
+  const bar = partials(freq, start, duration, { ratios: [1, 4, 10], amps: [1, 0.3, 0.08], decay: 5, volume });
+  const mallet = knock(freq * 2, start, { volume: 0.06, decay: 90, click: 0.12, seed: Math.round(freq) });
+  return (t) => bar(t) + mallet(t);
 }
 
 function writeWav(name, duration, voices) {
@@ -21,7 +55,8 @@ function writeWav(name, duration, voices) {
   const data = Buffer.alloc(samples * 2);
   for (let i = 0; i < samples; i++) {
     const t = i / RATE;
-    const value = Math.max(-1, Math.min(1, voices.reduce((sum, voice) => sum + voice(t), 0)));
+    const fade = Math.min((duration - t) / 0.01, 1);
+    const value = Math.max(-1, Math.min(1, fade * voices.reduce((sum, voice) => sum + voice(t), 0)));
     data.writeInt16LE(Math.round(value * 32767), i * 2);
   }
   const header = Buffer.alloc(44);
@@ -41,14 +76,16 @@ function writeWav(name, duration, voices) {
   writeFileSync(join(OUT, `${name}.wav`), Buffer.concat([header, data]));
 }
 
-writeWav('pick', 0.06, [tone(1320, 0, 0.06, { volume: 0.35, decay: 60 })]);
-writeWav('drop', 0.12, [tone(330, 0, 0.12, { volume: 0.5, decay: 35, harmonic: 0.3 })]);
-writeWav('complete', 0.35, [
-  tone(1319, 0, 0.35, { volume: 0.35, decay: 9 }),
-  tone(1976, 0.09, 0.26, { volume: 0.3, decay: 9 }),
-]);
+writeWav('pick', 0.06, [knock(1500, 0, { volume: 0.22, decay: 110, click: 0.2, seed: 7 })]);
+[520, 580, 470].forEach((freq, i) =>
+  writeWav(`drop${i + 1}`, 0.2, [
+    knock(freq, 0, { seed: 11 + i }),
+    knock(freq * 1.04, 0.032, { volume: 0.14, decay: 60, click: 0.1, seed: 21 + i }),
+  ]),
+);
+writeWav('complete', 0.6, [knock(500, 0, { seed: 31 }), marimba(784, 0, 0.6), marimba(1047, 0.09, 0.51)]);
 writeWav(
   'win',
-  0.9,
-  [523, 659, 784, 1047].map((freq, i) => tone(freq, i * 0.11, 0.9 - i * 0.11, { volume: 0.3, decay: 4, harmonic: 0.15 })),
+  1.2,
+  [523, 659, 784, 1047].map((freq, i) => marimba(freq, i * 0.11, 1.2 - i * 0.11, { volume: 0.3 })),
 );
