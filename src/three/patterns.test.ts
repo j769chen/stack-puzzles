@@ -1,0 +1,37 @@
+import { SRGBColorSpace } from 'three';
+import { theme } from '../theme';
+import { PATTERNS, patternMaterial, patternPixels } from './patterns';
+
+const BLACKISH = Math.round(255 * 0.12);
+const WHITEISH = Math.round(255 * 0.95);
+const marks = (pixels: Uint8Array, mark: number) => {
+  let count = 0;
+  for (let i = 0; i < pixels.length; i += 4) if (pixels[i] === mark && pixels[i + 1] === mark && pixels[i + 2] === mark) count++;
+  return count;
+};
+
+describe('color-blind patterns', () => {
+  it('has a pattern for every ring color', () => {
+    expect(PATTERNS).toHaveLength(theme.rings.length);
+  });
+
+  it('draws a different pattern for every color', () => {
+    const shapes = PATTERNS.map((pattern) =>
+      Array.from({ length: 128 * 32 }, (_, i) => (pattern(((i % 128) + 0.5) / 128, (Math.floor(i / 128) + 0.5) / 32) ? 1 : 0)).join(''),
+    );
+    expect(new Set(shapes).size).toBe(PATTERNS.length);
+  });
+
+  it('leaves red plain and marks the others in a contrasting shade', () => {
+    expect(marks(patternPixels(0), BLACKISH) + marks(patternPixels(0), WHITEISH)).toBe(0);
+    expect(marks(patternPixels(2), BLACKISH)).toBeGreaterThan(0);
+    expect(marks(patternPixels(9), WHITEISH)).toBeGreaterThan(0);
+  });
+
+  it('builds one sRGB texture material per color', () => {
+    const material = patternMaterial(3);
+    expect(patternMaterial(3)).toBe(material);
+    expect(material.map!.colorSpace).toBe(SRGBColorSpace);
+    expect((material.map!.image as { width: number }).width).toBe(128);
+  });
+});

@@ -43,6 +43,7 @@ FEATURES
 - Tells you when no moves are left
 - Sound effects and haptics, each with its own switch
 - Full screen reader support
+- Color-blind patterns that mark every ring color
 - Works offline, with no account, ads, or tracking
 ```
 

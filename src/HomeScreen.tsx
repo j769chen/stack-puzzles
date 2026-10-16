@@ -72,6 +72,11 @@ export function HomeScreen({ onOpen }: Props) {
         <View style={styles.settings}>
           <SettingRow label="Sound" value={settings.sound} onChange={(sound) => updateSettings({ sound })} />
           <SettingRow label="Haptics" value={settings.haptics} onChange={(haptics) => updateSettings({ haptics })} />
+          <SettingRow
+            label="Color-blind patterns"
+            value={settings.patterns}
+            onChange={(patterns) => updateSettings({ patterns })}
+          />
         </View>
       </ScrollView>
     </SafeAreaView>

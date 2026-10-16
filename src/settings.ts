@@ -1,10 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSyncExternalStore } from 'react';
 
-export type Settings = { sound: boolean; haptics: boolean };
+export type Settings = { sound: boolean; haptics: boolean; patterns: boolean };
 
 const STORAGE_KEY = 'settings';
-const DEFAULTS: Settings = { sound: true, haptics: true };
+const DEFAULTS: Settings = { sound: true, haptics: true, patterns: false };
 
 let current = DEFAULTS;
 const listeners = new Set<() => void>();
