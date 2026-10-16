@@ -197,6 +197,17 @@ describe('GameShell', () => {
       win.mockRestore();
     });
 
+    it('reports the win once, the moment the game is won', async () => {
+      const onWin = jest.fn();
+      const props = await renderShell({ onWin });
+      expect(onWin).not.toHaveBeenCalled();
+      await screen.rerender(<GameShell {...props} won />);
+      expect(onWin).toHaveBeenCalledTimes(1);
+      await screen.rerender(<GameShell {...props} won moves={6} onWin={jest.fn()} />);
+      await act(() => jest.advanceTimersByTime(650));
+      expect(onWin).toHaveBeenCalledTimes(1);
+    });
+
     it('locks undo', async () => {
       const props = await renderShell({ won: true });
       await fireEvent.press(screen.getByText('Undo'));

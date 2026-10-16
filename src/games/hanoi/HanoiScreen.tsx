@@ -29,9 +29,10 @@ function pegLabel(state: HanoiState, peg: number) {
 
 export function HanoiScreen({ onBack }: { onBack: () => void }) {
   const stars = useStars('hanoi');
-  const { level, unlocked, goTo, loaded } = useProgress('hanoi', HANOI_MAX_LEVEL, stars);
+  const { level, unlocked, goTo, complete, loaded } = useProgress('hanoi', HANOI_MAX_LEVEL, stars);
   const [picking, setPicking] = useState(false);
   if (!loaded) return null;
+  const next = level >= HANOI_MAX_LEVEL ? 1 : level + 1;
   return (
     <View style={styles.root}>
       <HanoiGame
@@ -39,7 +40,8 @@ export function HanoiScreen({ onBack }: { onBack: () => void }) {
         level={level}
         onBack={onBack}
         onLevels={() => setPicking(true)}
-        onNext={() => goTo(level >= HANOI_MAX_LEVEL ? 1 : level + 1)}
+        onNext={() => goTo(next)}
+        onWin={() => complete(next)}
       />
       {picking && (
         <LevelSelect
@@ -59,9 +61,9 @@ export function HanoiScreen({ onBack }: { onBack: () => void }) {
   );
 }
 
-type GameProps = { level: number; onBack: () => void; onLevels: () => void; onNext: () => void };
+type GameProps = { level: number; onBack: () => void; onLevels: () => void; onNext: () => void; onWin: () => void };
 
-function HanoiGame({ level, onBack, onLevels, onNext }: GameProps) {
+function HanoiGame({ level, onBack, onLevels, onNext, onWin }: GameProps) {
   const disks = disksForLevel(level);
   const history = useHistory(() => createHanoi(disks));
   const [selected, setSelected] = useState<number | null>(null);
@@ -118,6 +120,7 @@ function HanoiGame({ level, onBack, onLevels, onNext }: GameProps) {
       scoring={{ game: 'hanoi', key: level, optimal }}
       nextLabel={level >= HANOI_MAX_LEVEL ? 'Play again from level 1' : 'Next level'}
       onNext={onNext}
+      onWin={onWin}
     >
       <HanoiBoard state={state} disks={disks} selected={selected} onPress={press} onDrop={drop} />
       <RodButtons

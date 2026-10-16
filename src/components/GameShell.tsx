@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useEffectEvent, useState } from 'react';
 import { AccessibilityInfo, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { themedStyles } from '../theme';
@@ -27,6 +27,7 @@ export type GameShellProps = {
   onShare?: (moves: number) => void;
   nextLabel: string;
   onNext: () => void;
+  onWin?: () => void;
   onWinShown?: () => void;
   children: ReactNode;
 };
@@ -53,6 +54,11 @@ export function GameShell(props: GameShellProps) {
   }, [props.won]);
 
   const { won } = props;
+  const handleWin = useEffectEvent(() => props.onWin?.());
+  useEffect(() => {
+    if (won) handleWin();
+  }, [won]);
+
   const game = scoring?.game;
   const key = scoring?.key;
   useEffect(() => {

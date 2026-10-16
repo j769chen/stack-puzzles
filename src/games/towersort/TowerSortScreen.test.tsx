@@ -138,6 +138,20 @@ describe('TowerSortScreen', () => {
     expect(screen.queryByRole('button', { name: 'Level 1' })).toBeNull();
   });
 
+  it('saves the next level as soon as the level is won, even when leaving without Next', async () => {
+    jest.useFakeTimers();
+    await start([[2, 1], [5, 4, 3], [8, 7, 6], [0], []]);
+    await move(3, 0);
+    await act(() => jest.advanceTimersByTime(650));
+    expect(screen.getByText('Sorted in 1 moves.')).toBeOnTheScreen();
+    expect(await AsyncStorage.getItem('towersort.level')).toBe('2');
+    expect(await AsyncStorage.getItem('towersort.furthest')).toBe('2');
+    await screen.unmountAsync();
+    await renderAsync(<TowerSortScreen onBack={jest.fn()} />);
+    expect(await screen.findByText('Level 2')).toBeOnTheScreen();
+    jest.useRealTimers();
+  });
+
   it('wins a sorted board and moves on to the next level', async () => {
     jest.useFakeTimers();
     await start([[2, 1], [5, 4, 3], [8, 7, 6], [0], []]);

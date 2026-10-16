@@ -23,7 +23,7 @@ describe('usePersistentNumber', () => {
     const { result } = await renderHook(() => usePersistentNumber('level', 1));
     expect(result.current[2]).toBe(false);
     await act(async () => answer('3'));
-    expect(result.current).toEqual([3, expect.any(Function), true]);
+    expect(result.current).toEqual([3, expect.any(Function), true, expect.any(Function)]);
   });
 
   it('loads a stored level', async () => {
@@ -43,6 +43,7 @@ describe('usePersistentNumber', () => {
     await waitFor(() => expect(result.current[2]).toBe(true));
     expect(result.current[0]).toBe(1);
     await act(() => result.current[1](2));
+    await act(() => result.current[3](3));
     expect(result.current[0]).toBe(2);
     expect(await AsyncStorage.getItem('level')).toBe('30');
   });
@@ -70,6 +71,13 @@ describe('usePersistentNumber', () => {
     await waitFor(() => expect(result.current[0]).toBe(3));
     await rerender({ key: 'b' });
     await waitFor(() => expect(result.current[0]).toBe(8));
+  });
+
+  it('saves a value for next time without changing the current one', async () => {
+    const { result } = await load('3');
+    await act(() => result.current[3](4));
+    expect(result.current[0]).toBe(3);
+    expect(await AsyncStorage.getItem('level')).toBe('4');
   });
 
   it('saves updates', async () => {

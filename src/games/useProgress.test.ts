@@ -54,6 +54,24 @@ describe('useProgress', () => {
     expect(reloaded.result.current.unlocked).toBe(6);
   });
 
+  it('saves the next level as soon as one is completed, without leaving it', async () => {
+    await AsyncStorage.setItem('hanoi.level', '3');
+    const { result } = await load();
+    await act(() => result.current.complete(4));
+    expect(result.current.level).toBe(3);
+    expect(result.current.unlocked).toBe(4);
+    expect(await AsyncStorage.getItem('hanoi.level')).toBe('4');
+    expect(await AsyncStorage.getItem('hanoi.furthest')).toBe('4');
+  });
+
+  it('keeps later levels unlocked when an earlier one is completed', async () => {
+    await AsyncStorage.setItem('hanoi.furthest', '6');
+    const { result } = await load();
+    await act(() => result.current.complete(2));
+    expect(result.current.unlocked).toBe(6);
+    expect(await AsyncStorage.getItem('hanoi.furthest')).toBe('6');
+  });
+
   it('unlocks the level it moves to', async () => {
     const { result } = await load();
     await act(() => result.current.goTo(2));

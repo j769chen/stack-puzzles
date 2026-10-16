@@ -196,6 +196,16 @@ describe('HanoiScreen', () => {
       expect(await AsyncStorage.getItem('hanoi.level')).toBe('2');
     });
 
+    it('saves the next level as soon as the level is won, even when leaving without Next', async () => {
+      await start();
+      await play(SOLVE_THREE);
+      expect(await AsyncStorage.getItem('hanoi.level')).toBe('2');
+      await fireEvent.press(screen.getByRole('button', { name: 'Back' }));
+      await screen.unmountAsync();
+      await renderAsync(<HanoiScreen onBack={jest.fn()} />);
+      expect(await screen.findByText('Level 2')).toBeOnTheScreen();
+    });
+
     it('ignores taps between the winning move and the win card', async () => {
       jest.spyOn(logic, 'disksForLevel').mockReturnValue(1);
       await start();
