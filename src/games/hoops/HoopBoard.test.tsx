@@ -44,6 +44,34 @@ function tapAt(position: Vector3) {
 }
 
 describe('HoopBoard', () => {
+  it('draws sized rings from smallest to largest, colored by ring', async () => {
+    const r = await create(
+      <HoopBoard
+        rods={[[1 * 3 + 2, 0 * 3 + 1, 2 * 3 + 0], []]}
+        capacity={3}
+        sizes={3}
+        isRodComplete={() => false}
+        ids={[[0, 1, 2], []]}
+        selected={null}
+        onPress={jest.fn()}
+      />,
+    );
+    const meshes = rings(r).map((ring) => ring.children[0] as Mesh);
+    const radii = meshes.map((mesh) => (mesh.geometry as unknown as { parameters: { radius: number } }).parameters.radius);
+    expect(radii[0]).toBeGreaterThan(radii[1]);
+    expect(radii[1]).toBeGreaterThan(radii[2]);
+    const colors = meshes.map((mesh) => (mesh.material as MeshStandardMaterial).color);
+    expect(colors).toEqual([new Color(theme.rings[1]), new Color(theme.rings[0]), new Color(theme.rings[2])]);
+  });
+
+  it('marks a rod done by the given rule', async () => {
+    const r = await create(
+      <HoopBoard rods={[[5, 4, 3], []]} capacity={3} sizes={3} isRodComplete={(rod) => rod.length === 3} ids={[[0, 1, 2], []]} selected={null} onPress={jest.fn()} />,
+    );
+    expect(poleColor(r, 0)).toEqual(new Color(theme.done));
+    expect(poleColor(r, 1)).not.toEqual(new Color(theme.done));
+  });
+
   it.each([
     [5, 1],
     [8, 2],

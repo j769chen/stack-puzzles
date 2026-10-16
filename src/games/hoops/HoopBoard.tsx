@@ -15,11 +15,26 @@ const TUBE = 0.27;
 const RING_R = 0.62;
 const RING_H = TUBE * 2;
 const PLANK_DEPTH = 2.2;
+const SMALLEST_R = 0.4;
+const LARGEST_R = 0.74;
 const RING_GEOMETRY = new TorusGeometry(RING_R, TUBE, 14, 36);
+const sizedGeometries = new Map<string, TorusGeometry>();
+
+function ringGeometry(size: number, sizes: number) {
+  const key = `${size}/${sizes}`;
+  let geometry = sizedGeometries.get(key);
+  if (!geometry) {
+    geometry = new TorusGeometry(SMALLEST_R + ((LARGEST_R - SMALLEST_R) * size) / (sizes - 1), TUBE, 14, 36);
+    sizedGeometries.set(key, geometry);
+  }
+  return geometry;
+}
 
 type Props = {
   rods: Rods;
   capacity: number;
+  sizes?: number;
+  isRodComplete?: (rod: number[]) => boolean;
   ids: number[][];
   selected: number | null;
   onPress: (rod: number) => void;
@@ -44,7 +59,8 @@ function boardLayout(count: number, capacity: number) {
   return { poleHeight, liftY, rowSizes, rowZ, positions, size, tilt: rows === 1 ? 0.55 : 1 };
 }
 
-export function HoopBoard({ rods, capacity, ids, selected, onPress }: Props) {
+export function HoopBoard({ rods, capacity, sizes, isRodComplete: complete, ids, selected, onPress }: Props) {
+  const done = complete ?? ((rod: number[]) => isRodComplete(rod, capacity));
   const { poleHeight, liftY, rowSizes, rowZ, positions, size, tilt } = boardLayout(rods.length, capacity);
 
   return (
@@ -63,16 +79,17 @@ export function HoopBoard({ rods, capacity, ids, selected, onPress }: Props) {
             z={z}
             height={poleHeight}
             padRadius={SPACING / 2 - 0.04}
-            poleColor={isRodComplete(rod, capacity) ? theme.done : undefined}
+            poleColor={done(rod) ? theme.done : undefined}
           />,
-          ...rod.map((color, k) => (
+          ...rod.map((ring, k) => (
             <Ring
               key={ids[i][k]}
               x={x}
               y={k === top && selected === i ? liftY : k * RING_H}
               z={z}
               liftY={liftY}
-              color={color}
+              color={sizes ? Math.floor(ring / sizes) : ring}
+              geometry={sizes ? ringGeometry(ring % sizes, sizes) : RING_GEOMETRY}
             />
           )),
         ];
@@ -81,13 +98,13 @@ export function HoopBoard({ rods, capacity, ids, selected, onPress }: Props) {
   );
 }
 
-type RingProps = { x: number; y: number; z: number; liftY: number; color: number };
+type RingProps = { x: number; y: number; z: number; liftY: number; color: number; geometry: TorusGeometry };
 
-const Ring = memo(function Ring({ x, y, z, liftY, color }: RingProps) {
+const Ring = memo(function Ring({ x, y, z, liftY, color, geometry }: RingProps) {
   return (
     <Piece x={x} y={y} z={z} liftY={liftY}>
       <mesh
-        geometry={RING_GEOMETRY}
+        geometry={geometry}
         material={standardMaterial(theme.rings[color], 0.3)}
         position-y={TUBE}
         rotation-x={Math.PI / 2}

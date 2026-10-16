@@ -1,28 +1,11 @@
-import { useCallback, useState } from 'react';
-import { AccessibilityInfo, StyleSheet, View } from 'react-native';
-import { GameShell, type GameShellProps } from '../../components/GameShell';
+import { useCallback, useMemo, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 import { LevelSelect } from '../../components/LevelSelect';
-import { RodButtons } from '../../components/RodButtons';
-import { feedback } from '../../feedback';
 import { theme } from '../../theme';
-import { useHistory } from '../useHistory';
 import { useProgress } from '../useProgress';
-import {
-  type Deal,
-  type Rods,
-  canPour,
-  hasAnyMove,
-  isHoopsSolved,
-  isRodComplete,
-  levelSpec,
-  pour,
-  topRun,
-} from './logic';
+import { type Deal, type Rods, canPour, isRodComplete, levelSpec, topRun } from './logic';
 import { loadDeal, useDeal } from './deals';
-import { HoopBoard } from './HoopBoard';
-import { rodRows } from './layout';
-
-type Snapshot = { rods: Rods; ids: number[][] };
+import { RodSortGame, type ShellProps, type SortRules } from './RodSortGame';
 
 const colorName = (color: number) => theme.ringNames[color];
 
@@ -74,87 +57,22 @@ export function HoopScreen({ onBack }: { onBack: () => void }) {
   );
 }
 
-function createSnapshot(rods: Rods): Snapshot {
-  let next = 0;
-  return { rods, ids: rods.map((rod) => rod.map(() => next++)) };
+function ringSortRules(capacity: number): SortRules {
+  return {
+    capacity,
+    goal: 'Sort each color onto its own rod',
+    canPour: (rods, from, to) => canPour(rods, from, to, capacity),
+    isRodComplete: (rod) => isRodComplete(rod, capacity),
+    ringName: colorName,
+    rodLabel: (rods, rod) => rodLabel(rods, rod, capacity),
+  };
 }
 
-function pourSnapshot({ rods, ids }: Snapshot, from: number, to: number): Snapshot {
-  const nextIds = ids.map((r) => [...r]);
-  nextIds[to].push(nextIds[from].pop()!);
-  return { rods: pour(rods, from, to), ids: nextIds };
-}
-
-type GameProps = Pick<
-  GameShellProps,
-  'title' | 'label' | 'onBack' | 'onLevels' | 'scoring' | 'winNote' | 'onShare' | 'nextLabel' | 'onNext' | 'onWinShown'
-> & { deal: Deal; capacity: number };
+type GameProps = ShellProps & { deal: Deal; capacity: number };
 
 export function RingSortGame({ deal, capacity, ...shell }: GameProps) {
-  const history = useHistory(() => createSnapshot(deal.rods));
-  const [selected, setSelected] = useState<number | null>(null);
-
-  const current = history.current;
-  const { rods } = current;
-  const { moves } = history;
-  const solved = isHoopsSolved(rods, capacity);
-  const stuck = !solved && !hasAnyMove(rods, capacity);
-  const selectable = (rod: number) => rods[rod].length > 0 && !isRodComplete(rods[rod], capacity);
-
-  const press = (rod: number) => {
-    if (solved) return;
-    if (selected === null) {
-      if (!selectable(rod)) return;
-      setSelected(rod);
-      feedback.pick();
-    } else if (selected === rod) {
-      setSelected(null);
-    } else if (canPour(rods, selected, rod, capacity)) {
-      const after = pourSnapshot(current, selected, rod);
-      history.push(after);
-      if (isRodComplete(after.rods[rod], capacity)) {
-        if (!isHoopsSolved(after.rods, capacity)) feedback.complete();
-      } else {
-        feedback.drop();
-      }
-      const color = colorName(rods[selected][rods[selected].length - 1]);
-      AccessibilityInfo.announceForAccessibility(`Moved ${color} to rod ${rod + 1}`);
-      setSelected(null);
-    } else if (selectable(rod)) {
-      setSelected(rod);
-      feedback.pick();
-    } else {
-      setSelected(null);
-    }
-  };
-
-  const message = stuck ? 'No moves left. Undo or restart.' : 'Sort each color onto its own rod';
-
-  return (
-    <GameShell
-      {...shell}
-      moves={moves}
-      message={message}
-      onUndo={() => {
-        history.undo();
-        setSelected(null);
-      }}
-      canUndo={moves > 0}
-      onRestart={() => {
-        history.restart();
-        setSelected(null);
-      }}
-      won={solved}
-    >
-      <HoopBoard rods={rods} capacity={capacity} ids={current.ids} selected={selected} onPress={press} />
-      <RodButtons
-        labels={rods.map((_, rod) => rodLabel(rods, rod, capacity))}
-        rowSizes={rodRows(rods.length)}
-        selected={selected}
-        onPress={press}
-      />
-    </GameShell>
-  );
+  const rules = useMemo(() => ringSortRules(capacity), [capacity]);
+  return <RodSortGame {...shell} start={deal.rods} rules={rules} />;
 }
 
 const styles = StyleSheet.create({ root: { flex: 1 } });
