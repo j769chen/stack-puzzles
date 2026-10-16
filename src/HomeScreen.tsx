@@ -2,10 +2,10 @@ import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-nat
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { updateSettings, useSettings } from './settings';
 import { dailyStreak } from './daily';
-import { dailyKey } from './games/hoops/logic';
 import { totalStars, useStars } from './stars';
 import { theme, themedStyles, useColors } from './theme';
 import { usePersistentNumber } from './usePersistentNumber';
+import { useToday } from './useToday';
 
 type Props = { onOpen: (game: 'hanoi' | 'hoops' | 'daily' | 'towersort') => void };
 
@@ -16,7 +16,7 @@ export function HomeScreen({ onOpen }: Props) {
   const [towerLevel, , towerLoaded] = usePersistentNumber('towersort.level', 1);
   const hanoiStars = totalStars(useStars('hanoi'));
   const dailyStars = useStars('daily');
-  const today = dailyKey(new Date());
+  const today = useToday();
   const streak = dailyStreak(dailyStars, today);
   let dailyStatus = today in dailyStars ? 'Solved today' : 'Play today';
   if (streak > 1) dailyStatus += ` · ${streak}-day streak`;

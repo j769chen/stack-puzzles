@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, fireEvent, renderAsync, screen } from '@testing-library/react-native';
-import { Share } from 'react-native';
+import { AppState, type AppStateStatus, Share } from 'react-native';
 import { dailyLabel } from '../../daily';
 import { getStars, loadStars, recordStars } from '../../stars';
 import { DailyScreen } from './DailyScreen';
@@ -92,6 +92,20 @@ describe('DailyScreen', () => {
     for (const [from, to] of solution) await pour(from, to);
     await act(() => jest.advanceTimersByTime(650));
     expect(screen.getByText(`Perfect! ${solution.length} moves, the minimum possible.`)).toBeOnTheScreen();
+  });
+
+  it("moves on to the new day's puzzle when the app comes back on a later day", async () => {
+    const tomorrow = [[1, 0, 0, 0], [1, 1, 0, 1], [], []];
+    await start();
+    jest.mocked(logic.dailyKey).mockReturnValue(TODAY + 1);
+    jest.mocked(logic.dailyTask).mockImplementation(function* () {
+      return { rods: tomorrow, solution: logic.solveHoops(tomorrow, 4)! };
+    });
+    const [, listener] = jest.mocked(AppState.addEventListener).mock.calls.at(-1)!;
+    await act(() => (listener as (state: AppStateStatus) => void)('active'));
+    expect(await screen.findByText(dailyLabel(TODAY + 1))).toBeOnTheScreen();
+    expect(logic.dailyTask).toHaveBeenLastCalledWith(TODAY + 1);
+    tomorrow.forEach((rod, i) => expect(screen.getByTestId(`rod-${i}-rings`)).toHaveTextContent(rod.join(',')));
   });
 
   it("records today's stars and closes with Done", async () => {
