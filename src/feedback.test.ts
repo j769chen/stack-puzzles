@@ -32,11 +32,7 @@ beforeAll(async () => {
   preparedAudioModes = jest.mocked(setAudioModeAsync).mock.calls.slice();
 });
 beforeEach(() => jest.useFakeTimers());
-afterEach(() => {
-  jest.runOnlyPendingTimers();
-  jest.useRealTimers();
-  updateSettings({ sound: true, haptics: true });
-});
+afterEach(() => updateSettings({ sound: true, haptics: true }));
 
 describe('feedback', () => {
   it('gives a soft tap and plays a click when a piece is picked up', () => {
