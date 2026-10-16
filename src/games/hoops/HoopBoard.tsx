@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { TorusGeometry } from 'three';
 import { Board } from '../../three/Board';
 import { Piece } from '../../three/Piece';
@@ -40,6 +40,7 @@ type Props = {
   ids: number[][];
   selected: number | null;
   onPress: (rod: number) => void;
+  onDrop: (rod: number) => void;
 };
 
 function boardLayout(count: number, capacity: number) {
@@ -61,7 +62,8 @@ function boardLayout(count: number, capacity: number) {
   return { poleHeight, liftY, rowSizes, rowZ, positions, size, tilt: rows === 1 ? 0.55 : 1 };
 }
 
-export function HoopBoard({ rods, capacity, sizes, isRodComplete: complete, ids, selected, onPress }: Props) {
+export function HoopBoard({ rods, capacity, sizes, isRodComplete: complete, ids, selected, onPress, onDrop }: Props) {
+  const [hovered, setHovered] = useState<number | null>(null);
   const done = complete ?? ((rod: number[]) => isRodComplete(rod, capacity));
   const { patterns } = useSettings();
   const { poleHeight, liftY, rowSizes, rowZ, positions, size, tilt } = boardLayout(rods.length, capacity);
@@ -71,7 +73,15 @@ export function HoopBoard({ rods, capacity, sizes, isRodComplete: complete, ids,
       {rowZ.map((z, r) => (
         <Plank key={`plank${r}`} width={rowSizes[r] * SPACING + 0.3} depth={PLANK_DEPTH} z={z} />
       ))}
-      <RodPicker rods={positions} height={liftY + RING_H} reach={SPACING / 2} onPick={onPress} />
+      <RodPicker
+        rods={positions}
+        height={liftY + RING_H}
+        reach={SPACING / 2}
+        selected={selected}
+        onPick={onPress}
+        onDrop={onDrop}
+        onHover={setHovered}
+      />
       {rods.flatMap((rod, i) => {
         const { x, z } = positions[i];
         const top = rod.length - 1;
@@ -84,18 +94,22 @@ export function HoopBoard({ rods, capacity, sizes, isRodComplete: complete, ids,
             padRadius={SPACING / 2 - 0.04}
             poleColor={done(rod) ? theme.done : undefined}
           />,
-          ...rod.map((ring, k) => (
-            <Ring
-              key={ids[i][k]}
-              x={x}
-              y={k === top && selected === i ? liftY : k * RING_H}
-              z={z}
-              liftY={liftY}
-              color={sizes ? Math.floor(ring / sizes) : ring}
-              patterned={patterns}
-              geometry={sizes ? ringGeometry(ring % sizes, sizes) : RING_GEOMETRY}
-            />
-          )),
+          ...rod.map((ring, k) => {
+            const lifted = k === top && selected === i;
+            const spot = lifted && hovered !== null ? positions[hovered] : positions[i];
+            return (
+              <Ring
+                key={ids[i][k]}
+                x={spot.x}
+                y={lifted ? liftY : k * RING_H}
+                z={spot.z}
+                liftY={liftY}
+                color={sizes ? Math.floor(ring / sizes) : ring}
+                patterned={patterns}
+                geometry={sizes ? ringGeometry(ring % sizes, sizes) : RING_GEOMETRY}
+              />
+            );
+          }),
         ];
       })}
     </Board>

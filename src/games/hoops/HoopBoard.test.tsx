@@ -8,15 +8,22 @@ import type { Rods } from './logic';
 
 jest.mock('../../three/Board', () => ({ Board: ({ children }: { children: unknown }) => children }));
 
-type Props = { rods: Rods; capacity?: number; ids?: number[][]; selected?: number | null; onPress?: (rod: number) => void };
+type Props = {
+  rods: Rods;
+  capacity?: number;
+  ids?: number[][];
+  selected?: number | null;
+  onPress?: (rod: number) => void;
+  onDrop?: (rod: number) => void;
+};
 
 function idsFor(rods: Rods) {
   let next = 0;
   return rods.map((rod) => rod.map(() => next++));
 }
 
-const board = ({ rods, capacity = 4, ids = idsFor(rods), selected = null, onPress = jest.fn() }: Props) => (
-  <HoopBoard rods={rods} capacity={capacity} ids={ids} selected={selected} onPress={onPress} />
+const board = ({ rods, capacity = 4, ids = idsFor(rods), selected = null, onPress = jest.fn(), onDrop = jest.fn() }: Props) => (
+  <HoopBoard rods={rods} capacity={capacity} ids={ids} selected={selected} onPress={onPress} onDrop={onDrop} />
 );
 
 const renderBoard = (props: Props) => create(board(props));
@@ -56,6 +63,7 @@ describe('HoopBoard', () => {
         ids={[[0, 1, 2], []]}
         selected={null}
         onPress={jest.fn()}
+        onDrop={jest.fn()}
       />,
     );
     const meshes = rings(r).map((ring) => ring.children[0] as Mesh);
@@ -78,7 +86,7 @@ describe('HoopBoard', () => {
 
   it('marks a rod done by the given rule', async () => {
     const r = await create(
-      <HoopBoard rods={[[5, 4, 3], []]} capacity={3} sizes={3} isRodComplete={(rod) => rod.length === 3} ids={[[0, 1, 2], []]} selected={null} onPress={jest.fn()} />,
+      <HoopBoard rods={[[5, 4, 3], []]} capacity={3} sizes={3} isRodComplete={(rod) => rod.length === 3} ids={[[0, 1, 2], []]} selected={null} onPress={jest.fn()} onDrop={jest.fn()} />,
     );
     expect(poleColor(r, 0)).toEqual(new Color(theme.done));
     expect(poleColor(r, 1)).not.toEqual(new Color(theme.done));
@@ -164,5 +172,23 @@ describe('HoopBoard', () => {
     const picker = r.scene.children.find((c) => c.type === 'Mesh' && !c.instance.visible)!;
     await r.fireEvent(picker, 'pointerDown', tapAt(rodGroups(r)[2].instance.position));
     expect(onPress).toHaveBeenCalledWith(2);
+  });
+
+  it('carries a dragged ring over the rod under the finger and drops it there', async () => {
+    const onDrop = jest.fn();
+    const rods: Rods = [[0, 1], [1], []];
+    const r = await renderBoard({ rods, onDrop });
+    const picker = r.scene.children.find((c) => c.type === 'Mesh' && !c.instance.visible)!;
+    const spot = (i: number) => rodGroups(r)[i].instance.position;
+    await r.fireEvent(picker, 'pointerDown', tapAt(spot(0)));
+    await r.update(board({ rods, selected: 0, onDrop }));
+    await r.fireEvent(picker, 'pointerMove', tapAt(spot(2)));
+    await r.advanceFrames(200, 0.016);
+    const top = rings(r)[1];
+    expect(top.position.x).toBe(spot(2).x);
+    await r.fireEvent(picker, 'pointerUp', tapAt(spot(2)));
+    expect(onDrop).toHaveBeenCalledWith(2);
+    await r.advanceFrames(200, 0.016);
+    expect(top.position.x).toBe(spot(0).x);
   });
 });

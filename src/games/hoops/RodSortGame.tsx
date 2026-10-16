@@ -77,6 +77,11 @@ export function RodSortGame({ start, rules, ...shell }: Props) {
     }
   };
 
+  const drop = (rod: number) => {
+    if (selected !== null && rules.canPour(rods, selected, rod)) press(rod);
+    else setSelected(null);
+  };
+
   return (
     <GameShell
       {...shell}
@@ -101,6 +106,7 @@ export function RodSortGame({ start, rules, ...shell }: Props) {
         ids={current.ids}
         selected={selected}
         onPress={press}
+        onDrop={drop}
       />
       <RodButtons
         labels={rods.map((_, rod) => rules.rodLabel(rods, rod))}

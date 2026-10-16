@@ -38,6 +38,7 @@ TOWER SORT
 Ring Sort meets the Tower of Hanoi. Rings come in sizes as well as colors, and a ring only fits on a bigger one. Sort every color onto its own rod, largest at the bottom. Levels grow from 3 colors of 3 sizes to 5 colors of 4, and every one is checked to be solvable.
 
 FEATURES
+- Drag pieces between rods, or tap one rod and then another
 - Undo and restart at any time
 - Stars for Tower Stack and the daily puzzle, with a daily streak
 - Tells you when no moves are left
