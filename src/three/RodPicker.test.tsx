@@ -12,15 +12,28 @@ const at = (x: number, y: number) => {
   return new Vector2(p.x, p.y);
 };
 
-async function renderPicker() {
+async function renderPicker(selected: number | null = null) {
   const onPick = jest.fn();
-  const renderer = await create(
-    <RodPicker rods={[-2, 0, 2].map((x) => ({ x, z: 0 }))} height={3} reach={1} onPick={onPick} />,
+  const onDrop = jest.fn();
+  const onHover = jest.fn();
+  const picker = (current: number | null) => (
+    <RodPicker
+      rods={[-2, 0, 2].map((x) => ({ x, z: 0 }))}
+      height={3}
+      reach={1}
+      selected={current}
+      onPick={onPick}
+      onDrop={onDrop}
+      onHover={onHover}
+    />
   );
-  const picker = renderer.scene.children[0];
-  const press = (pointer: Vector2, stopPropagation = jest.fn()) =>
-    renderer.fireEvent(picker, 'pointerDown', { pointer, camera, stopPropagation });
-  return { picker, press, onPick };
+  const renderer = await create(picker(selected));
+  const mesh = () => renderer.scene.children[0];
+  const fire = (event: string, pointer: Vector2, stopPropagation = jest.fn()) =>
+    renderer.fireEvent(mesh(), event, { pointer, camera, stopPropagation });
+  const press = (pointer: Vector2, stopPropagation = jest.fn()) => fire('pointerDown', pointer, stopPropagation);
+  const select = (rod: number | null) => renderer.update(picker(rod));
+  return { picker: mesh(), press, fire, select, onPick, onDrop, onHover };
 }
 
 describe('RodPicker', () => {
@@ -41,5 +54,52 @@ describe('RodPicker', () => {
     const { press, onPick } = await renderPicker();
     await press(at(6, 1));
     expect(onPick).not.toHaveBeenCalled();
+  });
+
+  it('drags a picked-up piece across rods and drops it where the finger lifts', async () => {
+    const { press, fire, select, onPick, onDrop, onHover } = await renderPicker();
+    await press(at(-2, 1));
+    expect(onPick).toHaveBeenCalledWith(0);
+    await select(0);
+    await fire('pointerMove', at(0, 1));
+    await fire('pointerMove', at(0, 1.5));
+    await fire('pointerMove', at(2, 1));
+    expect(onHover.mock.calls).toEqual([[1], [2]]);
+    await fire('pointerUp', at(2, 1));
+    expect(onHover).toHaveBeenLastCalledWith(null);
+    expect(onDrop).toHaveBeenCalledWith(2);
+  });
+
+  it('keeps the piece picked up when the finger lifts on the same rod or off every rod', async () => {
+    const { press, fire, select, onDrop } = await renderPicker();
+    await press(at(-2, 1));
+    await select(0);
+    await fire('pointerUp', at(-2, 1));
+    await select(null);
+    await press(at(-2, 1));
+    await select(0);
+    await fire('pointerUp', at(6, 1));
+    expect(onDrop).not.toHaveBeenCalled();
+  });
+
+  it('does not drag when the touch drops an already picked-up piece', async () => {
+    const { press, fire, onPick, onDrop, onHover } = await renderPicker(1);
+    await press(at(-2, 1));
+    expect(onPick).toHaveBeenCalledWith(0);
+    await fire('pointerMove', at(2, 1));
+    await fire('pointerUp', at(2, 1));
+    expect(onHover).not.toHaveBeenCalled();
+    expect(onDrop).not.toHaveBeenCalled();
+  });
+
+  it('puts the piece back over its rod when the touch is cancelled', async () => {
+    const { press, fire, select, onDrop, onHover } = await renderPicker();
+    await press(at(-2, 1));
+    await select(0);
+    await fire('pointerMove', at(2, 1));
+    await fire('pointerCancel', at(2, 1));
+    expect(onHover).toHaveBeenLastCalledWith(null);
+    await fire('pointerUp', at(2, 1));
+    expect(onDrop).not.toHaveBeenCalled();
   });
 });

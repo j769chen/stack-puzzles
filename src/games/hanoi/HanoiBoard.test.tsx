@@ -6,10 +6,10 @@ import { type HanoiState, createHanoi, moveDisk } from './logic';
 
 jest.mock('../../three/Board', () => ({ Board: ({ children }: { children: unknown }) => children }));
 
-type Props = { state: HanoiState; selected?: number | null; onPress?: (peg: number) => void };
+type Props = { state: HanoiState; selected?: number | null; onPress?: (peg: number) => void; onDrop?: (peg: number) => void };
 
-const board = ({ state, selected = null, onPress = jest.fn() }: Props) => (
-  <HanoiBoard state={state} disks={3} selected={selected} onPress={onPress} />
+const board = ({ state, selected = null, onPress = jest.fn(), onDrop = jest.fn() }: Props) => (
+  <HanoiBoard state={state} disks={3} selected={selected} onPress={onPress} onDrop={onDrop} />
 );
 
 function disk(scene: Object3D, size: number) {
@@ -74,5 +74,20 @@ describe('HanoiBoard', () => {
     const picker = renderer.scene.children.find((c) => c.type === 'Mesh' && !c.instance.visible)!;
     await renderer.fireEvent(picker, 'pointerDown', tapAt(rods[1].instance.position));
     expect(onPress).toHaveBeenCalledWith(1);
+  });
+
+  it('carries a dragged disk over the peg under the finger and drops it there', async () => {
+    const onDrop = jest.fn();
+    const state = createHanoi(3);
+    const renderer = await create(board({ state, onDrop }));
+    const rods = renderer.scene.allChildren.filter((c) => c.type === 'Group' && c.allChildren.length === 3);
+    const picker = renderer.scene.children.find((c) => c.type === 'Mesh' && !c.instance.visible)!;
+    await renderer.fireEvent(picker, 'pointerDown', tapAt(rods[0].instance.position));
+    await renderer.update(board({ state, selected: 0, onDrop }));
+    await renderer.fireEvent(picker, 'pointerMove', tapAt(rods[2].instance.position));
+    await renderer.advanceFrames(200, 0.016);
+    expect(disk(renderer.scene.instance, 1).position.x).toBe(rods[2].instance.position.x);
+    await renderer.fireEvent(picker, 'pointerUp', tapAt(rods[2].instance.position));
+    expect(onDrop).toHaveBeenCalledWith(2);
   });
 });

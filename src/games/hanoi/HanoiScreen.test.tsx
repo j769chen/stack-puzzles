@@ -11,12 +11,19 @@ const { HANOI_MAX_LEVEL, minMoves } = logic;
 let mockScreenReader = false;
 jest.mock('../../useScreenReader', () => ({ useScreenReader: () => mockScreenReader }));
 
+type MockBoardProps = {
+  state: number[][];
+  selected: number | null;
+  onPress: (peg: number) => void;
+  onDrop: (peg: number) => void;
+};
+
 jest.mock('./HanoiBoard', () => {
   const { Pressable, Text } = jest.requireActual<typeof import('react-native')>('react-native');
   return {
-    HanoiBoard: ({ state, selected, onPress }: { state: number[][]; selected: number | null; onPress: (peg: number) => void }) =>
+    HanoiBoard: ({ state, selected, onPress, onDrop }: MockBoardProps) =>
       state.map((peg, i) => (
-        <Pressable key={i} testID={`peg-${i}`} onPress={() => onPress(i)}>
+        <Pressable key={i} testID={`peg-${i}`} onPress={() => onPress(i)} onLongPress={() => onDrop(i)}>
           <Text testID={`peg-${i}-disks`}>{`${selected === i ? '*' : ''}${peg.join(',')}`}</Text>
         </Pressable>
       )),
@@ -36,6 +43,26 @@ async function start(level?: number) {
   await renderAsync(<HanoiScreen onBack={jest.fn()} />);
   await screen.findByText(`Level ${level ?? 1}`);
 }
+
+describe('dragging', () => {
+  it('moves the disk when it is dropped on a legal peg', async () => {
+    await start();
+    await fireEvent.press(peg(0));
+    await fireEvent(peg(2), 'longPress');
+    expect(pegText(2)).toBe('1');
+    expect(screen.getByText('Moves 1/7')).toBeOnTheScreen();
+  });
+
+  it('puts the disk back when it is dropped on a peg it cannot go on', async () => {
+    await start();
+    await move(0, 2);
+    await fireEvent.press(peg(0));
+    await fireEvent(peg(2), 'longPress');
+    expect(pegText(0)).toBe('3,2');
+    expect(pegText(2)).toBe('1');
+    expect(screen.getByText('Moves 1/7')).toBeOnTheScreen();
+  });
+});
 
 const SOLVE_THREE: [number, number][] = [[0, 2], [0, 1], [2, 1], [0, 2], [1, 0], [1, 2], [0, 2]];
 

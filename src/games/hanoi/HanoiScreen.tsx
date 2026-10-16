@@ -90,6 +90,11 @@ function HanoiGame({ level, onBack, onLevels, onNext }: GameProps) {
     }
   };
 
+  const drop = (peg: number) => {
+    if (selected !== null && canMoveDisk(state, selected, peg)) press(peg);
+    else setSelected(null);
+  };
+
   const optimal = minMoves(disks);
 
   return (
@@ -114,7 +119,7 @@ function HanoiGame({ level, onBack, onLevels, onNext }: GameProps) {
       nextLabel={level >= HANOI_MAX_LEVEL ? 'Play again from level 1' : 'Next level'}
       onNext={onNext}
     >
-      <HanoiBoard state={state} disks={disks} selected={selected} onPress={press} />
+      <HanoiBoard state={state} disks={disks} selected={selected} onPress={press} onDrop={drop} />
       <RodButtons
         labels={state.map((_, peg) => pegLabel(state, peg))}
         rowSizes={[state.length]}

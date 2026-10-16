@@ -1,4 +1,4 @@
-import { memo, useMemo } from 'react';
+import { memo, useMemo, useState } from 'react';
 import { Vector2 } from 'three';
 import { Board } from '../../three/Board';
 import { Piece } from '../../three/Piece';
@@ -18,9 +18,11 @@ type Props = {
   disks: number;
   selected: number | null;
   onPress: (peg: number) => void;
+  onDrop: (peg: number) => void;
 };
 
-export function HanoiBoard({ state, disks, selected, onPress }: Props) {
+export function HanoiBoard({ state, disks, selected, onPress, onDrop }: Props) {
+  const [hovered, setHovered] = useState<number | null>(null);
   const maxR = SPACING * 0.45;
   const minR = 0.5;
   const radius = (size: number) => minR + ((maxR - minR) * (size - 1)) / Math.max(disks - 1, 1);
@@ -32,7 +34,15 @@ export function HanoiBoard({ state, disks, selected, onPress }: Props) {
   return (
     <Board width={width} height={liftY + DISK_H} depth={depth}>
       <Plank width={width} depth={depth} />
-      <RodPicker rods={PEGS} height={liftY + DISK_H} reach={SPACING / 2} onPick={onPress} />
+      <RodPicker
+        rods={PEGS}
+        height={liftY + DISK_H}
+        reach={SPACING / 2}
+        selected={selected}
+        onPick={onPress}
+        onDrop={onDrop}
+        onHover={setHovered}
+      />
       {state.flatMap((peg, i) => {
         const { x } = PEGS[i];
         return [
@@ -48,7 +58,7 @@ export function HanoiBoard({ state, disks, selected, onPress }: Props) {
             return (
               <Disk
                 key={size}
-                x={x}
+                x={lifted && hovered !== null ? PEGS[hovered].x : x}
                 y={lifted ? liftY : k * DISK_H}
                 liftY={liftY}
                 radius={radius(size)}

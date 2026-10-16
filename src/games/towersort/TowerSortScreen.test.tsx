@@ -6,14 +6,19 @@ import * as logic from './logic';
 let mockScreenReader = false;
 jest.mock('../../useScreenReader', () => ({ useScreenReader: () => mockScreenReader }));
 
-type MockBoardProps = { rods: number[][]; selected: number | null; onPress: (rod: number) => void };
+type MockBoardProps = {
+  rods: number[][];
+  selected: number | null;
+  onPress: (rod: number) => void;
+  onDrop: (rod: number) => void;
+};
 
 jest.mock('../hoops/HoopBoard', () => {
   const { Pressable, Text } = jest.requireActual<typeof import('react-native')>('react-native');
   return {
-    HoopBoard: ({ rods, selected, onPress }: MockBoardProps) =>
+    HoopBoard: ({ rods, selected, onPress, onDrop }: MockBoardProps) =>
       rods.map((rod, i) => (
-        <Pressable key={i} testID={`rod-${i}`} onPress={() => onPress(i)}>
+        <Pressable key={i} testID={`rod-${i}`} onPress={() => onPress(i)} onLongPress={() => onDrop(i)}>
           <Text testID={`rod-${i}-rings`}>{`${selected === i ? '*' : ''}${rod.join(',')}`}</Text>
         </Pressable>
       )),
@@ -64,6 +69,20 @@ describe('TowerSortScreen', () => {
     await move(3, 4);
     expect(rodText(4)).toBe('3');
     expect(screen.getByText('Moves 2')).toBeOnTheScreen();
+  });
+
+  it('moves a dragged ring onto a bigger one and puts it back from a smaller one', async () => {
+    await start();
+    await fireEvent.press(screen.getByTestId('rod-0'));
+    await fireEvent(screen.getByTestId('rod-3'), 'longPress');
+    expect(rodText(0)).toBe('2,1');
+    expect(rodText(3)).toBe('4,3');
+    await fireEvent(screen.getByTestId('rod-1'), 'longPress');
+    expect(rodText(1)).toBe('5,0');
+    await fireEvent.press(screen.getByTestId('rod-1'));
+    await fireEvent(screen.getByTestId('rod-0'), 'longPress');
+    expect(rodText(0)).toBe('2,1,0');
+    expect(screen.getByText('Moves 1')).toBeOnTheScreen();
   });
 
   it('names rings by color and size for screen readers', async () => {
