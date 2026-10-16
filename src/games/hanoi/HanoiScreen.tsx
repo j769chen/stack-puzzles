@@ -4,6 +4,7 @@ import { GameShell } from '../../components/GameShell';
 import { LevelSelect } from '../../components/LevelSelect';
 import { RodButtons } from '../../components/RodButtons';
 import { feedback } from '../../feedback';
+import { useStars } from '../../stars';
 import { useHistory } from '../useHistory';
 import { useProgress } from '../useProgress';
 import {
@@ -27,7 +28,8 @@ function pegLabel(state: HanoiState, peg: number) {
 }
 
 export function HanoiScreen({ onBack }: { onBack: () => void }) {
-  const { level, unlocked, stars, goTo, loaded } = useProgress('hanoi', HANOI_MAX_LEVEL);
+  const stars = useStars('hanoi');
+  const { level, unlocked, goTo, loaded } = useProgress('hanoi', HANOI_MAX_LEVEL, stars);
   const [picking, setPicking] = useState(false);
   if (!loaded) return null;
   return (
@@ -92,9 +94,8 @@ function HanoiGame({ level, onBack, onLevels, onNext }: GameProps) {
 
   return (
     <GameShell
-      game="hanoi"
       title="Tower Stack"
-      level={level}
+      label={`Level ${level}`}
       moves={moves}
       message={`Move all ${disks} disks to another peg`}
       onBack={onBack}
@@ -109,7 +110,7 @@ function HanoiGame({ level, onBack, onLevels, onNext }: GameProps) {
         setSelected(null);
       }}
       won={solved}
-      optimal={optimal}
+      scoring={{ game: 'hanoi', key: level, optimal }}
       nextLabel={level >= HANOI_MAX_LEVEL ? 'Play again from level 1' : 'Next level'}
       onNext={onNext}
     >

@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { type ColorSchemeName, type StyleProp, StyleSheet, type ViewStyle } from 'react-native';
+import { dailyKey } from './games/hoops/logic';
 import { HomeScreen } from './HomeScreen';
 import { getSettings, loadSettings } from './settings';
 import { loadStars, recordStars } from './stars';
@@ -57,12 +58,20 @@ describe('HomeScreen', () => {
   it('shows the stars earned in each game', async () => {
     recordStars('hanoi', 1, 3);
     recordStars('hanoi', 2, 2);
-    recordStars('hoops', 1, 1);
+    recordStars('daily', 20261015, 1);
     await render(<HomeScreen onOpen={jest.fn()} />);
     expect(await screen.findByRole('button', { name: 'Tower Stack, level 1, 5 stars' })).toBeOnTheScreen();
     expect(screen.getByText('★ 5')).toBeOnTheScreen();
     expect(screen.getByText('★ 1')).toBeOnTheScreen();
-    expect(screen.getByRole('button', { name: 'Ring Sort, level 1, 1 star' })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Daily Puzzle, play today, 1 star' })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Ring Sort, level 1' })).toBeOnTheScreen();
+  });
+
+  it("marks today's daily puzzle as solved once it has stars", async () => {
+    recordStars('daily', dailyKey(new Date()), 2);
+    await render(<HomeScreen onOpen={jest.fn()} />);
+    expect(await screen.findByRole('button', { name: 'Daily Puzzle, solved today, 2 stars' })).toBeOnTheScreen();
+    expect(screen.getByText('Solved today ›')).toBeOnTheScreen();
   });
 
   it('hides the star count until a game has stars', async () => {
@@ -110,6 +119,7 @@ describe('HomeScreen', () => {
     await screen.findAllByText('Level 1 ›');
     await fireEvent.press(screen.getByText('Tower Stack'));
     await fireEvent.press(screen.getByText('Ring Sort'));
-    expect(onOpen.mock.calls).toEqual([['hanoi'], ['hoops']]);
+    await fireEvent.press(screen.getByText('Daily Puzzle'));
+    expect(onOpen.mock.calls).toEqual([['hanoi'], ['hoops'], ['daily']]);
   });
 });

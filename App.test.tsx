@@ -28,7 +28,7 @@ async function renderApp() {
 
 async function open(game: string) {
   await fireEvent.press(screen.getByText(game));
-  await screen.findByText(/^Moves 0\//);
+  await screen.findByText(/^Moves 0/);
 }
 
 describe('App', () => {
@@ -45,7 +45,7 @@ describe('App', () => {
     expect(screen.getByText('Stack Puzzles')).toBeOnTheScreen();
   });
 
-  it.each(['Tower Stack', 'Ring Sort'])('opens %s and comes back with the Back button', async (game) => {
+  it.each(['Tower Stack', 'Ring Sort', 'Daily Puzzle'])('opens %s and comes back with the Back button', async (game) => {
     await renderApp();
     await open(game);
     expect(screen.queryByText('Stack Puzzles')).toBeNull();
@@ -85,6 +85,6 @@ describe('App', () => {
     });
     expect(handled).toBe(true);
     expect(screen.queryByRole('button', { name: 'Level 1, not solved' })).toBeNull();
-    expect(screen.getByText(/^Moves 0\//)).toBeOnTheScreen();
+    expect(screen.getByText(/^Moves 0/)).toBeOnTheScreen();
   });
 });

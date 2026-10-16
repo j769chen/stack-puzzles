@@ -16,7 +16,7 @@ type Props = {
   count: number;
   unlocked: number;
   current: number;
-  stars: LevelStars;
+  stars?: LevelStars;
   onPick: (level: number) => void;
   onBack: () => void;
 };
@@ -65,7 +65,7 @@ export function LevelSelect({ title, count, unlocked, current, stars, onPick, on
           <LevelCell
             level={level}
             width={cellWidth}
-            stars={stars[level] ?? 0}
+            stars={stars ? (stars[level] ?? 0) : null}
             locked={level > unlocked}
             current={level === current}
             onPress={() => onPick(level)}
@@ -79,7 +79,7 @@ export function LevelSelect({ title, count, unlocked, current, stars, onPick, on
 type CellProps = {
   level: number;
   width: number;
-  stars: number;
+  stars: number | null;
   locked: boolean;
   current: boolean;
   onPress: () => void;
@@ -87,9 +87,9 @@ type CellProps = {
 
 function LevelCell({ level, width, stars, locked, current, onPress }: CellProps) {
   const styles = useStyles();
-  let label = `Level ${level}, `;
-  if (locked) label += 'locked';
-  else label += stars ? `${stars} of ${MAX_STARS} stars` : 'not solved';
+  let label = `Level ${level}`;
+  if (locked) label += ', locked';
+  else if (stars !== null) label += stars ? `, ${stars} of ${MAX_STARS} stars` : ', not solved';
   return (
     <Pressable
       onPress={onPress}
@@ -106,7 +106,7 @@ function LevelCell({ level, width, stars, locked, current, onPress }: CellProps)
       ]}
     >
       <Text style={styles.number}>{level}</Text>
-      <Stars count={stars} size={14} />
+      {stars !== null && <Stars count={stars} size={14} />}
     </Pressable>
   );
 }

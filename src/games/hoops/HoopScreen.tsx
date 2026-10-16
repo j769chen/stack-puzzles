@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { AccessibilityInfo, StyleSheet, View } from 'react-native';
-import { GameShell } from '../../components/GameShell';
+import { GameShell, type GameShellProps } from '../../components/GameShell';
 import { LevelSelect } from '../../components/LevelSelect';
 import { RodButtons } from '../../components/RodButtons';
 import { feedback } from '../../feedback';
@@ -38,19 +38,22 @@ function rodLabel(rods: Rods, rod: number, capacity: number) {
 }
 
 export function HoopScreen({ onBack }: { onBack: () => void }) {
-  const { level, unlocked, stars, goTo, loaded } = useProgress('hoops');
+  const { level, unlocked, goTo, loaded } = useProgress('hoops');
   const [picking, setPicking] = useState(false);
   const deal = useDeal(loaded ? level : null);
   const prepareNext = useCallback(() => loadDeal(level + 1), [level]);
   if (!deal) return null;
   return (
     <View style={styles.root}>
-      <HoopGame
+      <RingSortGame
         key={level}
-        level={level}
         deal={deal}
+        capacity={levelSpec(level).capacity}
+        title="Ring Sort"
+        label={`Level ${level}`}
         onBack={onBack}
         onLevels={() => setPicking(true)}
+        nextLabel="Next level"
         onNext={() => goTo(level + 1)}
         onWinShown={prepareNext}
       />
@@ -60,7 +63,6 @@ export function HoopScreen({ onBack }: { onBack: () => void }) {
           count={unlocked}
           unlocked={unlocked}
           current={level}
-          stars={stars}
           onPick={(picked) => {
             goTo(picked);
             setPicking(false);
@@ -83,19 +85,13 @@ function pourSnapshot({ rods, ids }: Snapshot, from: number, to: number): Snapsh
   return { rods: pour(rods, from, to), ids: nextIds };
 }
 
-type GameProps = {
-  level: number;
-  deal: Deal;
-  onBack: () => void;
-  onLevels: () => void;
-  onNext: () => void;
-  onWinShown: () => void;
-};
+type GameProps = Pick<
+  GameShellProps,
+  'title' | 'label' | 'onBack' | 'onLevels' | 'scoring' | 'nextLabel' | 'onNext' | 'onWinShown'
+> & { deal: Deal; capacity: number };
 
-function HoopGame({ level, deal, onBack, onLevels, onNext, onWinShown }: GameProps) {
-  const { capacity } = levelSpec(level);
+export function RingSortGame({ deal, capacity, ...shell }: GameProps) {
   const history = useHistory(() => createSnapshot(deal.rods));
-  const optimal = deal.solution.length;
   const [selected, setSelected] = useState<number | null>(null);
 
   const current = history.current;
@@ -136,13 +132,9 @@ function HoopGame({ level, deal, onBack, onLevels, onNext, onWinShown }: GamePro
 
   return (
     <GameShell
-      game="hoops"
-      title="Ring Sort"
-      level={level}
+      {...shell}
       moves={moves}
       message={message}
-      onBack={onBack}
-      onLevels={onLevels}
       onUndo={() => {
         history.undo();
         setSelected(null);
@@ -153,10 +145,6 @@ function HoopGame({ level, deal, onBack, onLevels, onNext, onWinShown }: GamePro
         setSelected(null);
       }}
       won={solved}
-      optimal={optimal}
-      nextLabel="Next level"
-      onNext={onNext}
-      onWinShown={onWinShown}
     >
       <HoopBoard rods={rods} capacity={capacity} ids={current.ids} selected={selected} onPress={press} />
       <RodButtons

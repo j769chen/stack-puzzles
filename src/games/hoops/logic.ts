@@ -206,9 +206,38 @@ function mulberry32(seed: number): () => number {
 
 export type Deal = { rods: Rods; solution: Move[] };
 
+const DAILY_SPECS: LevelSpec[] = [
+  { colors: 9, capacity: 5 },
+  { colors: 5, capacity: 4 },
+  { colors: 6, capacity: 4 },
+  { colors: 7, capacity: 4 },
+  { colors: 8, capacity: 4 },
+  { colors: 7, capacity: 5 },
+  { colors: 8, capacity: 5 },
+];
+
+export function dailyKey(date: Date): number {
+  return date.getFullYear() * 10000 + (date.getMonth() + 1) * 100 + date.getDate();
+}
+
+export function dailyDate(key: number): Date {
+  return new Date(Math.floor(key / 10000), (Math.floor(key / 100) % 100) - 1, key % 100);
+}
+
+export function dailySpec(key: number): LevelSpec {
+  return DAILY_SPECS[dailyDate(key).getDay()];
+}
+
 export function generateLevel(level: number): Deal {
-  const { colors, capacity: cap } = levelSpec(level);
-  const rand = mulberry32(level * 9973 + 17);
+  return generateDeal(levelSpec(level), level * 9973 + 17);
+}
+
+export function generateDaily(key: number): Deal {
+  return generateDeal(dailySpec(key), key * 7919 + 1);
+}
+
+function generateDeal({ colors, capacity: cap }: LevelSpec, seed: number): Deal {
+  const rand = mulberry32(seed);
 
   for (;;) {
     const rings = Array.from({ length: colors * cap }, (_, i) => Math.floor(i / cap));

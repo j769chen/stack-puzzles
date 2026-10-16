@@ -39,19 +39,19 @@ describe('totalStars', () => {
 describe('stars store', () => {
   it('starts empty', () => {
     expect(getStars('hanoi')).toEqual({});
-    expect(getStars('hoops')).toEqual({});
+    expect(getStars('daily')).toEqual({});
   });
 
   it('records stars per game and level and saves them', async () => {
     recordStars('hanoi', 2, 2);
-    recordStars('hoops', 40, 3);
+    recordStars('daily', 40, 3);
     expect(getStars('hanoi')).toEqual({ 2: 2 });
-    expect(getStars('hoops')).toEqual({ 40: 3 });
+    expect(getStars('daily')).toEqual({ 40: 3 });
 
     await flushStorage();
     await loadStars();
     expect(getStars('hanoi')).toEqual({ 2: 2 });
-    expect(getStars('hoops')).toEqual({ 40: 3 });
+    expect(getStars('daily')).toEqual({ 40: 3 });
   });
 
   it('keeps the best result for a level', () => {
@@ -71,9 +71,9 @@ describe('stars store', () => {
   });
 
   it('keeps only valid levels and star counts from storage', async () => {
-    await loadFrom(JSON.stringify({ hanoi: { 1: 3, 0: 3, 2.5: 2, x: 1, 3: 4, 4: '2', 5: 1 }, hoops: 'none', other: { 1: 3 } }));
+    await loadFrom(JSON.stringify({ hanoi: { 1: 3, 0: 3, 2.5: 2, x: 1, 3: 4, 4: '2', 5: 1 }, daily: 'none', other: { 1: 3 } }));
     expect(getStars('hanoi')).toEqual({ 1: 3, 5: 1 });
-    expect(getStars('hoops')).toEqual({});
+    expect(getStars('daily')).toEqual({});
   });
 
   it.each([
@@ -94,9 +94,9 @@ describe('stars store', () => {
   });
 
   it('re-renders subscribers when stars change', async () => {
-    const { result } = await renderHook(() => useStars('hoops'));
+    const { result } = await renderHook(() => useStars('daily'));
     expect(result.current).toEqual({});
-    await act(() => recordStars('hoops', 3, 2));
+    await act(() => recordStars('daily', 3, 2));
     expect(result.current).toEqual({ 3: 2 });
   });
 });

@@ -48,11 +48,6 @@ describe('HoopScreen', () => {
     logic.generateLevel(1).rods.forEach((rod, i) => expect(rodText(i)).toBe(rod.join(',')));
   });
 
-  it('shows the fewest moves the level needs', async () => {
-    await start([[0, 1], [1], [0, 0, 0, 1], [], [1]]);
-    expect(screen.getByText('Moves 0/4')).toBeOnTheScreen();
-  });
-
   it('reuses the stored deal instead of generating it again', async () => {
     await start();
     await screen.unmountAsync();
@@ -86,14 +81,14 @@ describe('HoopScreen', () => {
     await pour(0, 1);
     expect(rodText(0)).toBe('0');
     expect(rodText(1)).toBe('1,1,1');
-    expect(screen.getByText('Moves 2/4')).toBeOnTheScreen();
+    expect(screen.getByText('Moves 2')).toBeOnTheScreen();
   });
 
   it('moves a ring onto a matching ring and counts the move', async () => {
     await start([[0, 1], [1], [0, 0, 0, 1], [], [1]]);
     await pour(0, 1);
     expect(rodText(1)).toBe('1,1');
-    expect(screen.getByText('Moves 1/4')).toBeOnTheScreen();
+    expect(screen.getByText('Moves 1')).toBeOnTheScreen();
   });
 
   it('chimes when a pour completes a rod, and taps otherwise', async () => {
@@ -142,7 +137,7 @@ describe('HoopScreen', () => {
     expect(rodText(4)).toBe('1');
     await fireEvent.press(screen.getByText('Restart'));
     expect(rodText(0)).toBe('0,1');
-    expect(screen.getByText('Moves 0/4')).toBeOnTheScreen();
+    expect(screen.getByText('Moves 0')).toBeOnTheScreen();
   });
 
   it('reports a dead end', async () => {
@@ -174,9 +169,9 @@ describe('HoopScreen', () => {
     await renderAsync(<HoopScreen onBack={jest.fn()} />);
     await screen.findByText('Level 5');
     await fireEvent.press(screen.getByRole('button', { name: 'Levels' }));
-    expect(screen.getByRole('button', { name: 'Level 5, not solved' })).toBeSelected();
+    expect(screen.getByRole('button', { name: 'Level 5' })).toBeSelected();
     expect(screen.queryByRole('button', { name: /^Level 6/ })).toBeNull();
-    await fireEvent.press(screen.getByRole('button', { name: 'Level 2, not solved' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Level 2' }));
     expect(await screen.findByText('Level 2')).toBeOnTheScreen();
     logic.generateLevel(2).rods.forEach((rod, i) => expect(rodText(i)).toBe(rod.join(',')));
     expect(await AsyncStorage.getItem('hoops.furthest')).toBe('5');
@@ -190,8 +185,9 @@ describe('HoopScreen', () => {
       await start();
       for (const [from, to] of logic.generateLevel(1).solution) await pour(from, to);
       await act(() => jest.advanceTimersByTime(650));
-      expect(screen.getByText(/^Perfect! \d+ moves, the minimum possible\.$/)).toBeOnTheScreen();
-      expect(getStars('hoops')).toEqual({ 1: 3 });
+      expect(screen.getByText(/^Sorted in \d+ moves\.$/)).toBeOnTheScreen();
+      expect(screen.queryByLabelText(/of 3 stars/)).toBeNull();
+      expect(getStars('daily')).toEqual({});
       await fireEvent.press(screen.getByText('Next level'));
       expect(await screen.findByText('Level 2')).toBeOnTheScreen();
       expect(await AsyncStorage.getItem('hoops.level')).toBe('2');
@@ -220,14 +216,6 @@ describe('HoopScreen', () => {
       await fireEvent.press(screen.getByTestId('rod-1'));
       expect(rodText(1)).toBe('1,1,1,1');
       expect(screen.queryByText('Solved!')).toBeNull();
-    });
-
-    it('reports extra moves against the minimum', async () => {
-      await start([[0, 1], [1], [0, 0, 0, 1], [], [1]]);
-      await pour(4, 3);
-      for (const [from, to] of logic.solveHoops([[0, 1], [1], [0, 0, 0, 1], [1], []], 4)!) await pour(from, to);
-      await act(() => jest.advanceTimersByTime(650));
-      expect(screen.getByText(/^\d+ moves\. Solve it in 4 for three stars\.$/)).toBeOnTheScreen();
     });
   });
 });

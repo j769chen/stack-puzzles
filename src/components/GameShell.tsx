@@ -7,34 +7,36 @@ import { type Game, recordStars, starsFor } from '../stars';
 import { Button } from './Button';
 import { Stars } from './Stars';
 
-type Props = {
-  game: Game;
+type Scoring = { game: Game; key: number; optimal: number };
+
+export type GameShellProps = {
   title: string;
-  level: number;
+  label: string;
   moves: number;
   message?: string | null;
   onBack: () => void;
-  onLevels: () => void;
+  onLevels?: () => void;
   onUndo: () => void;
   canUndo: boolean;
   onRestart: () => void;
   won: boolean;
-  optimal: number;
+  scoring?: Scoring;
   nextLabel: string;
   onNext: () => void;
   onWinShown?: () => void;
   children: ReactNode;
 };
 
-export function GameShell(props: Props) {
+export function GameShell(props: GameShellProps) {
   const styles = useStyles();
   const [winDelayPassed, setWinDelayPassed] = useState(false);
   const showWin = props.won && winDelayPassed;
-  const stars = starsFor(props.moves, props.optimal);
-  const winText =
-    stars === 3
-      ? `Perfect! ${props.moves} moves, the minimum possible.`
-      : `${props.moves} moves. Solve it in ${props.optimal} for three stars.`;
+  const { scoring, moves } = props;
+  const stars = scoring ? starsFor(moves, scoring.optimal) : null;
+  let winText = `Sorted in ${moves} moves.`;
+  if (scoring && stars === 3) winText = `Perfect! ${moves} moves, the minimum possible.`;
+  else if (scoring) winText = `${moves} moves. Solve it in ${scoring.optimal} for three stars.`;
+  const announcement = stars === null ? `Solved! ${winText}` : `Solved! ${stars} of 3 stars. ${winText}`;
 
   useEffect(() => {
     if (!props.won) return;
@@ -46,14 +48,16 @@ export function GameShell(props: Props) {
     };
   }, [props.won]);
 
-  const { game, level, won } = props;
+  const { won } = props;
+  const game = scoring?.game;
+  const key = scoring?.key;
   useEffect(() => {
-    if (won) recordStars(game, level, stars);
-  }, [won, game, level, stars]);
+    if (won && game && key !== undefined && stars !== null) recordStars(game, key, stars);
+  }, [won, game, key, stars]);
 
   useEffect(() => {
-    if (showWin) AccessibilityInfo.announceForAccessibility(`Solved! ${stars} of 3 stars. ${winText}`);
-  }, [showWin, stars, winText]);
+    if (showWin) AccessibilityInfo.announceForAccessibility(announcement);
+  }, [showWin, announcement]);
 
   const { onWinShown } = props;
   useEffect(() => {
@@ -75,24 +79,34 @@ export function GameShell(props: Props) {
         <Text style={styles.title} accessibilityRole="header">
           {props.title}
         </Text>
-        <Pressable
-          onPress={props.onLevels}
-          hitSlop={12}
-          style={styles.back}
-          accessibilityRole="button"
-          accessibilityLabel="Levels"
-        >
-          <Text style={[styles.backText, styles.levelsText]}>Levels</Text>
-        </Pressable>
+        {props.onLevels ? (
+          <Pressable
+            onPress={props.onLevels}
+            hitSlop={12}
+            style={styles.back}
+            accessibilityRole="button"
+            accessibilityLabel="Levels"
+          >
+            <Text style={[styles.backText, styles.levelsText]}>Levels</Text>
+          </Pressable>
+        ) : (
+          <View style={styles.back} />
+        )}
       </View>
 
       <View style={styles.body}>
         <View style={styles.stats}>
-          <Text style={styles.stat}>Level {props.level}</Text>
-          <Text style={[styles.stat, props.moves > props.optimal && styles.over]}>
-            {`Moves ${props.moves}/${props.optimal}`}
-          </Text>
-          <Stars count={stars} size={18} />
+          <Text style={styles.stat}>{props.label}</Text>
+          {scoring ? (
+            <>
+              <Text style={[styles.stat, moves > scoring.optimal && styles.over]}>
+                {`Moves ${moves}/${scoring.optimal}`}
+              </Text>
+              <Stars count={stars ?? 0} size={18} />
+            </>
+          ) : (
+            <Text style={styles.stat}>{`Moves ${moves}`}</Text>
+          )}
         </View>
 
         <View style={styles.board}>{props.children}</View>
@@ -112,7 +126,7 @@ export function GameShell(props: Props) {
               <Text style={styles.winTitle} accessibilityRole="header">
                 Solved!
               </Text>
-              <Stars count={stars} />
+              {stars !== null && <Stars count={stars} />}
               <Text style={styles.winText}>{winText}</Text>
               <Button label={props.nextLabel} onPress={props.onNext} primary />
             </View>

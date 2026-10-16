@@ -1,18 +1,20 @@
 import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { updateSettings, useSettings } from './settings';
+import { dailyKey } from './games/hoops/logic';
 import { totalStars, useStars } from './stars';
 import { theme, themedStyles, useColors } from './theme';
 import { usePersistentNumber } from './usePersistentNumber';
 
-type Props = { onOpen: (game: 'hanoi' | 'hoops') => void };
+type Props = { onOpen: (game: 'hanoi' | 'hoops' | 'daily') => void };
 
 export function HomeScreen({ onOpen }: Props) {
   const styles = useStyles();
   const [hanoiLevel, , hanoiLoaded] = usePersistentNumber('hanoi.level', 1);
   const [hoopLevel, , hoopLoaded] = usePersistentNumber('hoops.level', 1);
   const hanoiStars = totalStars(useStars('hanoi'));
-  const hoopStars = totalStars(useStars('hoops'));
+  const dailyStars = useStars('daily');
+  const solvedToday = dailyKey(new Date()) in dailyStars;
   const settings = useSettings();
 
   return (
@@ -23,9 +25,17 @@ export function HomeScreen({ onOpen }: Props) {
       <Text style={styles.subtitle}>Two classic stacking puzzles</Text>
 
       <GameCard
+        title="Daily Puzzle"
+        description="A new Ring Sort puzzle every day, harder as the week goes on. Match the fewest moves for three stars."
+        status={solvedToday ? 'Solved today' : 'Play today'}
+        stars={totalStars(dailyStars)}
+        chips={[theme.rings[3], theme.rings[6], theme.rings[1]].map((color) => ({ color, width: 44 }))}
+        onPress={() => onOpen('daily')}
+      />
+      <GameCard
         title="Tower Stack"
         description="Move the whole tower to another peg. A disk can never sit on a smaller one."
-        level={hanoiLoaded ? hanoiLevel : null}
+        status={hanoiLoaded ? `Level ${hanoiLevel}` : null}
         stars={hanoiStars}
         chips={[
           { color: theme.disks[0], width: 30 },
@@ -36,9 +46,8 @@ export function HomeScreen({ onOpen }: Props) {
       />
       <GameCard
         title="Ring Sort"
-        description="Sort the colored rings so every rod holds a single color."
-        level={hoopLoaded ? hoopLevel : null}
-        stars={hoopStars}
+        description="Sort the colored rings so every rod holds a single color. No scores, just sorting."
+        status={hoopLoaded ? `Level ${hoopLevel}` : null}
         chips={[theme.rings[0], theme.rings[5], theme.rings[2]].map((color) => ({ color, width: 44 }))}
         onPress={() => onOpen('hoops')}
       />
@@ -74,16 +83,16 @@ type Chip = { color: string; width: number };
 type CardProps = {
   title: string;
   description: string;
-  level: number | null;
-  stars: number;
+  status: string | null;
+  stars?: number;
   chips: Chip[];
   onPress: () => void;
 };
 
-function GameCard({ title, description, level, stars, chips, onPress }: CardProps) {
+function GameCard({ title, description, status, stars = 0, chips, onPress }: CardProps) {
   const styles = useStyles();
   let label = title;
-  if (level !== null) label += `, level ${level}`;
+  if (status !== null) label += `, ${status.toLowerCase()}`;
   if (stars > 0) label += `, ${stars} ${stars === 1 ? 'star' : 'stars'}`;
   return (
     <Pressable
@@ -102,7 +111,7 @@ function GameCard({ title, description, level, stars, chips, onPress }: CardProp
         <Text style={styles.cardTitle}>{title}</Text>
         <Text style={styles.cardText}>{description}</Text>
         <View style={styles.cardFooter}>
-          <Text style={styles.cardLevel}>{level === null ? ' ' : `Level ${level} ›`}</Text>
+          <Text style={styles.cardLevel}>{status === null ? ' ' : `${status} ›`}</Text>
           {stars > 0 && <Text style={styles.cardStars}>{`★ ${stars}`}</Text>}
         </View>
       </View>

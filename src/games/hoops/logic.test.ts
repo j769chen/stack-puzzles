@@ -4,6 +4,10 @@ import {
   MAX_COLORS,
   type Rods,
   canPour,
+  dailyDate,
+  dailyKey,
+  dailySpec,
+  generateDaily,
   generateLevel,
   hasAnyMove,
   isHoopsSolved,
@@ -290,5 +294,37 @@ describe('hoops level progression', () => {
     const { capacity } = levelSpec(78);
     const { rods, solution } = generateLevel(78);
     expect(isHoopsSolved(play(rods, solution, capacity), capacity)).toBe(true);
+  });
+});
+
+describe('daily puzzle', () => {
+  it('keys each local calendar day', () => {
+    expect(dailyKey(new Date(2026, 9, 16, 23, 59))).toBe(20261016);
+    expect(dailyKey(new Date(2026, 9, 17, 0, 1))).toBe(20261017);
+    expect(dailyDate(20261016)).toEqual(new Date(2026, 9, 16));
+  });
+
+  it('gets harder from Monday to Sunday', () => {
+    const rings = Array.from({ length: 7 }, (_, i) => dailySpec(20261012 + i)).map((s) => s.colors * s.capacity);
+    expect(rings).toEqual([...rings].sort((a, b) => a - b));
+    expect(new Set(rings).size).toBe(7);
+  });
+
+  it('deals the same puzzle for the same day and a new one each day', () => {
+    expect(generateDaily(20261016)).toEqual(generateDaily(20261016));
+    expect(generateDaily(20261017).rods).not.toEqual(generateDaily(20261016).rods);
+    expect(generateDaily(20261023).rods).not.toEqual(generateDaily(20261016).rods);
+  });
+
+  it.each([20261012, 20261016, 20261018])('deals a fair, solvable puzzle for %i', (key) => {
+    const { rods, solution } = generateDaily(key);
+    const { colors, capacity } = dailySpec(key);
+    expect(rods).toHaveLength(colors + EMPTY_RODS);
+    expect(rods.some((rod) => isRodComplete(rod, capacity))).toBe(false);
+    const end = solution.reduce((state, [from, to]) => {
+      expect(canPour(state, from, to, capacity)).toBe(true);
+      return pour(state, from, to);
+    }, rods);
+    expect(isHoopsSolved(end, capacity)).toBe(true);
   });
 });
