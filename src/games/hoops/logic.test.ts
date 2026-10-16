@@ -312,6 +312,15 @@ describe('daily puzzle', () => {
     expect(previousDay(20280301)).toBe(20280229);
   });
 
+  it('steps back exactly one calendar day across daylight-saving changes', () => {
+    expect(previousDay(20260309)).toBe(20260308);
+    expect(previousDay(20261102)).toBe(20261101);
+    expect(previousDay(20260330)).toBe(20260329);
+    expect(previousDay(20261026)).toBe(20261025);
+    expect(previousDay(20260406)).toBe(20260405);
+    expect(previousDay(20260928)).toBe(20260927);
+  });
+
   it('gets harder from Monday to Sunday', () => {
     const week = Array.from({ length: 7 }, (_, i) => dailySpec(20261012 + i));
     const rings = week.map((s) => s.colors * s.capacity);

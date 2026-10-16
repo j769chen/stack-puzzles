@@ -11,6 +11,7 @@
     "lint": "expo lint",
     "test": "jest",
     "test:coverage": "jest --coverage",
+    "test:timezones": "for tz in America/Los_Angeles Pacific/Auckland; do TZ=$tz jest src/daily.test.ts src/useToday.test.ts src/games/hoops/logic.test.ts src/components/DailyHistory.test.tsx || exit 1; done",
     "check": "npm run typecheck && npm run lint && npm test",
     "postinstall": "patch-package"
   },
