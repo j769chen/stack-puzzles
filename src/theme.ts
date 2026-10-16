@@ -14,12 +14,13 @@ const light = {
   bg: '#F4EFE6',
   card: '#FFFFFF',
   ink: '#2B2B2B',
-  muted: '#7A7368',
-  accent: '#E4572E',
+  muted: '#6B6459',
+  accent: '#C0401B',
   overlay: 'rgba(20, 16, 12, 0.55)',
   border: '#E3DACB',
   danger: '#C62828',
   onAccent: '#FFFFFF',
+  star: '#A87A12',
 };
 
 export type Colors = typeof light;
@@ -29,11 +30,12 @@ const dark: Colors = {
   card: '#2A2622',
   ink: '#F2EDE4',
   muted: '#A89F92',
-  accent: '#E4572E',
+  accent: '#EE6B47',
   overlay: 'rgba(0, 0, 0, 0.6)',
   border: '#4A433B',
   danger: '#FF6B6B',
-  onAccent: '#FFFFFF',
+  onAccent: '#1C1916',
+  star: '#E9B44C',
 };
 
 type Scheme = 'light' | 'dark';
