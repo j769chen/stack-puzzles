@@ -10,8 +10,8 @@ jest.mock('../assets/sounds/drop3.wav', () => 'drop3');
 jest.mock('../assets/sounds/complete.wav', () => 'complete');
 jest.mock('../assets/sounds/win.wav', () => 'win');
 jest.mock('expo-haptics', () => ({
-  impactAsync: jest.fn(),
-  notificationAsync: jest.fn(),
+  impactAsync: jest.fn(() => Promise.resolve()),
+  notificationAsync: jest.fn(() => Promise.resolve()),
   ImpactFeedbackStyle: { Soft: 'soft', Rigid: 'rigid', Medium: 'medium' },
   NotificationFeedbackType: { Success: 'success' },
 }));
@@ -27,6 +27,7 @@ function playerFor(sound: string) {
   };
 }
 
+beforeAll(() => feedback.prepare());
 beforeEach(() => jest.useFakeTimers());
 afterEach(() => {
   jest.runOnlyPendingTimers();
@@ -111,12 +112,74 @@ describe('feedback', () => {
     expect(player!.play).toHaveBeenCalledTimes(plays + 1);
   });
 
-  it('mixes with other audio and respects the silent switch, set up once', () => {
+  it('mixes with other audio and respects the silent switch, set up once', async () => {
     feedback.pick();
     feedback.drop();
     feedback.complete();
     feedback.win();
+    await feedback.prepare();
     expect(setAudioModeAsync).toHaveBeenCalledTimes(1);
     expect(setAudioModeAsync).toHaveBeenCalledWith({ playsInSilentMode: false, interruptionMode: 'mixWithOthers' });
+  });
+
+  it('keeps the game going when a sound cannot play', async () => {
+    const { player } = playerFor('pick');
+    player!.play.mockImplementationOnce(() => {
+      throw new Error('audio session unavailable');
+    });
+    player!.seekTo.mockRejectedValueOnce(new Error('seek'));
+    jest.mocked(Haptics.impactAsync).mockClear().mockRejectedValueOnce(new Error('no vibrator'));
+    expect(() => feedback.pick()).not.toThrow();
+    expect(Haptics.impactAsync).toHaveBeenCalledWith('soft');
+    await Promise.resolve();
+    feedback.pick();
+    expect(player!.play).toHaveBeenLastCalledWith();
+  });
+});
+
+describe('preparing sounds', () => {
+  function freshFeedback() {
+    const audio = jest.requireMock<typeof import('expo-audio')>('expo-audio');
+    jest.mocked(audio.setAudioModeAsync).mockClear();
+    jest.mocked(audio.createAudioPlayer).mockClear();
+    const { feedback: fresh } = jest.requireActual<typeof import('./feedback')>('./feedback');
+    return { audio, fresh };
+  }
+
+  it('sets the audio mode before loading any sound, and plays nothing until then', async () => {
+    await jest.isolateModulesAsync(async () => {
+      const { audio, fresh } = freshFeedback();
+      let modeSet = () => {};
+      jest.mocked(audio.setAudioModeAsync).mockReturnValueOnce(new Promise<void>((resolve) => (modeSet = resolve)));
+      const preparing = fresh.prepare();
+      fresh.pick();
+      expect(audio.createAudioPlayer).not.toHaveBeenCalled();
+      modeSet();
+      await preparing;
+      expect(audio.createAudioPlayer).toHaveBeenCalledTimes(6);
+      fresh.pick();
+      const pick = jest.mocked(audio.createAudioPlayer).mock.results[0].value as MockPlayer;
+      expect(pick.play).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('starts preparing on the first sound if nothing prepared it', async () => {
+    await jest.isolateModulesAsync(async () => {
+      const { audio, fresh } = freshFeedback();
+      fresh.pick();
+      expect(audio.setAudioModeAsync).toHaveBeenCalledTimes(1);
+      await fresh.prepare();
+      expect(audio.createAudioPlayer).toHaveBeenCalledTimes(6);
+    });
+  });
+
+  it('stays silent when the audio mode cannot be set', async () => {
+    await jest.isolateModulesAsync(async () => {
+      const { audio, fresh } = freshFeedback();
+      jest.mocked(audio.setAudioModeAsync).mockRejectedValueOnce(new Error('session'));
+      await fresh.prepare();
+      expect(() => fresh.pick()).not.toThrow();
+      expect(audio.createAudioPlayer).not.toHaveBeenCalled();
+    });
   });
 });
