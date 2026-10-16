@@ -17,7 +17,7 @@ export function DailyHistory({ today, onBack }: Props) {
   const styles = useStyles();
   const solved = useStars('daily');
   const { width } = useWindowDimensions();
-  const cellWidth = (Math.min(width, 480) - SIDE * 2 - GAP * 6) / 7;
+  const starSize = Math.min(10, (Math.min(width, 480) - SIDE * 2 - GAP * 6) / 35);
 
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -34,6 +34,10 @@ export function DailyHistory({ today, onBack }: Props) {
   const year = Math.floor(shown / 12);
   const month = shown % 12;
   const monthName = new Date(year, month, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  const cells = monthCells(year, month);
+  const weeks = Array.from({ length: Math.ceil(cells.length / 7) }, (_, week) =>
+    Array.from({ length: 7 }, (_, day) => cells[week * 7 + day] ?? null),
+  );
 
   const stats = [
     ['Streak', dailyStreak(solved, today)],
@@ -89,35 +93,36 @@ export function DailyHistory({ today, onBack }: Props) {
           </Pressable>
         </View>
 
-        <View style={styles.grid}>
-          {WEEKDAYS.map((day, i) => (
-            <Text key={i} style={[styles.weekday, { width: cellWidth }]} importantForAccessibility="no">
-              {day}
-            </Text>
+        <View style={styles.calendar}>
+          <View style={styles.week}>
+            {WEEKDAYS.map((day, i) => (
+              <Text key={i} style={styles.weekday} importantForAccessibility="no">
+                {day}
+              </Text>
+            ))}
+          </View>
+          {weeks.map((week, w) => (
+            <View key={w} style={styles.week}>
+              {week.map((key, d) => {
+                if (key === null) return <View key={`blank${d}`} style={styles.blank} />;
+                const stars = solved[key] ?? 0;
+                let label = dailyLabel(key);
+                if (key > today) label += ', upcoming';
+                else label += stars ? `, ${stars} of ${MAX_STARS} stars` : ', not solved';
+                return (
+                  <View
+                    key={key}
+                    style={[styles.cell, key === today && styles.today, key > today && styles.faded]}
+                    accessible
+                    accessibilityLabel={label}
+                  >
+                    <Text style={styles.dayNumber}>{key % 100}</Text>
+                    {stars > 0 && <Stars count={stars} size={starSize} />}
+                  </View>
+                );
+              })}
+            </View>
           ))}
-          {monthCells(year, month).map((key, i) => {
-            if (key === null) return <View key={`blank${i}`} style={{ width: cellWidth }} />;
-            const stars = solved[key] ?? 0;
-            let label = dailyLabel(key);
-            if (key > today) label += ', upcoming';
-            else label += stars ? `, ${stars} of ${MAX_STARS} stars` : ', not solved';
-            return (
-              <View
-                key={key}
-                style={[
-                  styles.cell,
-                  { width: cellWidth },
-                  key === today && styles.today,
-                  key > today && styles.faded,
-                ]}
-                accessible
-                accessibilityLabel={label}
-              >
-                <Text style={styles.dayNumber}>{key % 100}</Text>
-                {stars > 0 && <Stars count={stars} size={Math.min(10, cellWidth / 5)} />}
-              </View>
-            );
-          })}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -146,9 +151,12 @@ const useStyles = themedStyles((colors) =>
     monthBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 8 },
     month: { fontSize: 18, fontWeight: '700', color: colors.ink },
     faded: { opacity: 0.35 },
-    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: GAP },
-    weekday: { textAlign: 'center', fontSize: 13, fontWeight: '700', color: colors.muted },
+    calendar: { gap: GAP },
+    week: { flexDirection: 'row', gap: GAP },
+    weekday: { flex: 1, textAlign: 'center', fontSize: 13, fontWeight: '700', color: colors.muted },
+    blank: { flex: 1 },
     cell: {
+      flex: 1,
       aspectRatio: 1,
       borderRadius: 10,
       backgroundColor: colors.card,
