@@ -1,8 +1,26 @@
 diff --git a/node_modules/expo-gl/ios/GLView.swift b/node_modules/expo-gl/ios/GLView.swift
-index 7197e3c..67ef42f 100644
+index 7197e3c..f3936e4 100644
 --- a/node_modules/expo-gl/ios/GLView.swift
 +++ b/node_modules/expo-gl/ios/GLView.swift
-@@ -28,9 +28,7 @@ internal final class GLView: ExpoView, EXGLContextDelegate {
+@@ -13,7 +13,16 @@ internal final class GLView: ExpoView, EXGLContextDelegate {
+   lazy var eaglContext: EAGLContext = glContext.createSharedEAGLContext()
+ 
+   // Props
+-  var msaaSamples: Int = 0
++  var msaaSamples: Int = 0 {
++    didSet {
++      guard msaaSamples != oldValue, !CGSizeEqualToSize(viewBuffersSize, .zero) else {
++        return
++      }
++      let size = viewBuffersSize
++      viewBuffersSize = .zero
++      resizeViewBuffersToWidth(width: size.width, height: size.height)
++    }
++  }
+   var enableExperimentalWorkletSupport: Bool = false
+ 
+   // Events
+@@ -28,9 +37,7 @@ internal final class GLView: ExpoView, EXGLContextDelegate {
    var msaaFramebuffer: GLuint = 0
    var msaaRenderbuffer: GLuint = 0
  
@@ -12,7 +30,7 @@ index 7197e3c..67ef42f 100644
    var viewBuffersSize: CGSize = .zero
  
    override static var layerClass: AnyClass {
-@@ -40,10 +38,6 @@ internal final class GLView: ExpoView, EXGLContextDelegate {
+@@ -40,10 +47,6 @@ internal final class GLView: ExpoView, EXGLContextDelegate {
    required init(appContext: AppContext? = nil) {
      super.init(appContext: appContext)
  
@@ -23,7 +41,7 @@ index 7197e3c..67ef42f 100644
      contentScaleFactor = EXUtilities.screenScale()
  
      // Initialize properties of our backing CAEAGLLayer
-@@ -86,8 +80,6 @@ internal final class GLView: ExpoView, EXGLContextDelegate {
+@@ -86,8 +89,6 @@ internal final class GLView: ExpoView, EXGLContextDelegate {
  
    override func removeFromSuperview() {
      glContext.destroy()
@@ -32,7 +50,7 @@ index 7197e3c..67ef42f 100644
      super.removeFromSuperview()
    }
  
-@@ -219,34 +211,7 @@ internal final class GLView: ExpoView, EXGLContextDelegate {
+@@ -219,34 +220,7 @@ internal final class GLView: ExpoView, EXGLContextDelegate {
      }
    }
  
@@ -68,12 +86,13 @@ index 7197e3c..67ef42f 100644
    func blitFramebuffers() {
      if glContext.isInitialized() && viewFramebuffer != 0 && viewColorbuffer != 0 {
        // Save surrounding framebuffer
-@@ -283,8 +248,8 @@ internal final class GLView: ExpoView, EXGLContextDelegate {
+@@ -283,8 +257,9 @@ internal final class GLView: ExpoView, EXGLContextDelegate {
          glBindFramebuffer(GLenum(GL_FRAMEBUFFER), prevFramebuffer)
        }
  
 -      // mark renderbuffer as not presented
 -      isRenderbufferPresented = false
++      glFlush()
 +      glBindRenderbuffer(GLenum(GL_RENDERBUFFER), viewColorbuffer)
 +      eaglContext.presentRenderbuffer(Int(GL_RENDERBUFFER))
      }
