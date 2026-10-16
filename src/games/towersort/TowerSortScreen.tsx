@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
 import { LevelSelect } from '../../components/LevelSelect';
 import { LoadingScreen } from '../../components/LoadingScreen';
+import { WithOverlay } from '../../components/WithOverlay';
 import { theme } from '../../theme';
 import type { Rods } from '../hoops/logic';
 import { RodSortGame, type SortRules } from '../hoops/RodSortGame';
@@ -36,8 +36,21 @@ export function TowerSortScreen({ onBack }: { onBack: () => void }) {
   const rules = useMemo(() => towerRules(towerSpec(level).sizes), [level]);
   const prepareNext = useCallback(() => loadTowerLevel(level + 1), [level]);
   if (!start) return <LoadingScreen title="Tower Sort" onBack={onBack} />;
+  const levels = picking && (
+    <LevelSelect
+      title="Tower Sort"
+      count={unlocked}
+      unlocked={unlocked}
+      current={level}
+      onPick={(picked) => {
+        goTo(picked);
+        setPicking(false);
+      }}
+      onBack={() => setPicking(false)}
+    />
+  );
   return (
-    <View style={styles.root}>
+    <WithOverlay overlay={levels}>
       <RodSortGame
         key={level}
         start={start}
@@ -51,21 +64,6 @@ export function TowerSortScreen({ onBack }: { onBack: () => void }) {
         onWin={() => complete(level + 1)}
         onWinShown={prepareNext}
       />
-      {picking && (
-        <LevelSelect
-          title="Tower Sort"
-          count={unlocked}
-          unlocked={unlocked}
-          current={level}
-          onPick={(picked) => {
-            goTo(picked);
-            setPicking(false);
-          }}
-          onBack={() => setPicking(false)}
-        />
-      )}
-    </View>
+    </WithOverlay>
   );
 }
-
-const styles = StyleSheet.create({ root: { flex: 1 } });

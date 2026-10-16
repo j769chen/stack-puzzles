@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { AccessibilityInfo, StyleSheet, View } from 'react-native';
+import { AccessibilityInfo } from 'react-native';
 import { GameShell } from '../../components/GameShell';
 import { LevelSelect } from '../../components/LevelSelect';
+import { WithOverlay } from '../../components/WithOverlay';
 import { RodButtons } from '../../components/RodButtons';
 import { feedback } from '../../feedback';
 import { useStars } from '../../stars';
@@ -33,8 +34,22 @@ export function HanoiScreen({ onBack }: { onBack: () => void }) {
   const [picking, setPicking] = useState(false);
   if (!loaded) return null;
   const next = level >= HANOI_MAX_LEVEL ? 1 : level + 1;
+  const levels = picking && (
+    <LevelSelect
+      title="Tower Stack"
+      count={HANOI_MAX_LEVEL}
+      unlocked={unlocked}
+      current={level}
+      stars={stars}
+      onPick={(picked) => {
+        goTo(picked);
+        setPicking(false);
+      }}
+      onBack={() => setPicking(false)}
+    />
+  );
   return (
-    <View style={styles.root}>
+    <WithOverlay overlay={levels}>
       <HanoiGame
         key={level}
         level={level}
@@ -43,21 +58,7 @@ export function HanoiScreen({ onBack }: { onBack: () => void }) {
         onNext={() => goTo(next)}
         onWin={() => complete(next)}
       />
-      {picking && (
-        <LevelSelect
-          title="Tower Stack"
-          count={HANOI_MAX_LEVEL}
-          unlocked={unlocked}
-          current={level}
-          stars={stars}
-          onPick={(picked) => {
-            goTo(picked);
-            setPicking(false);
-          }}
-          onBack={() => setPicking(false)}
-        />
-      )}
-    </View>
+    </WithOverlay>
   );
 }
 
@@ -140,5 +141,3 @@ function HanoiGame({ level, onBack, onLevels, onNext, onWin }: GameProps) {
     </GameShell>
   );
 }
-
-const styles = StyleSheet.create({ root: { flex: 1 } });

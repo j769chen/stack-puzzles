@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Share, StyleSheet, View } from 'react-native';
+import { Share } from 'react-native';
 import { DailyHistory } from '../../components/DailyHistory';
 import { LoadingScreen } from '../../components/LoadingScreen';
+import { WithOverlay } from '../../components/WithOverlay';
 import { dailyLabel, dailyStreak, shareText } from '../../daily';
 import { starsFor, useStars } from '../../stars';
 import { useToday } from '../../useToday';
@@ -16,8 +17,9 @@ export function DailyScreen({ onBack }: { onBack: () => void }) {
   const streak = dailyStreak(useStars('daily'), key);
   if (!deal) return <LoadingScreen title="Daily Puzzle" onBack={onBack} />;
   const optimal = deal.solution.length;
+  const history = showingHistory && <DailyHistory today={key} onBack={() => setShowingHistory(false)} />;
   return (
-    <View style={styles.root}>
+    <WithOverlay overlay={history}>
       <RingSortGame
         deal={deal}
         capacity={dailySpec(key).capacity}
@@ -34,9 +36,6 @@ export function DailyScreen({ onBack }: { onBack: () => void }) {
         nextLabel="Done"
         onNext={onBack}
       />
-      {showingHistory && <DailyHistory today={key} onBack={() => setShowingHistory(false)} />}
-    </View>
+    </WithOverlay>
   );
 }
-
-const styles = StyleSheet.create({ root: { flex: 1 } });

@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
 import { LevelSelect } from '../../components/LevelSelect';
 import { LoadingScreen } from '../../components/LoadingScreen';
+import { WithOverlay } from '../../components/WithOverlay';
 import { theme } from '../../theme';
 import { useProgress } from '../useProgress';
 import { type Deal, type Rods, canPour, isRodComplete, levelSpec, topRun } from './logic';
@@ -27,8 +27,21 @@ export function HoopScreen({ onBack }: { onBack: () => void }) {
   const deal = useDeal(loaded ? level : null);
   const prepareNext = useCallback(() => loadDeal(level + 1), [level]);
   if (!deal) return <LoadingScreen title="Ring Sort" onBack={onBack} />;
+  const levels = picking && (
+    <LevelSelect
+      title="Ring Sort"
+      count={unlocked}
+      unlocked={unlocked}
+      current={level}
+      onPick={(picked) => {
+        goTo(picked);
+        setPicking(false);
+      }}
+      onBack={() => setPicking(false)}
+    />
+  );
   return (
-    <View style={styles.root}>
+    <WithOverlay overlay={levels}>
       <RingSortGame
         key={level}
         deal={deal}
@@ -42,20 +55,7 @@ export function HoopScreen({ onBack }: { onBack: () => void }) {
         onWin={() => complete(level + 1)}
         onWinShown={prepareNext}
       />
-      {picking && (
-        <LevelSelect
-          title="Ring Sort"
-          count={unlocked}
-          unlocked={unlocked}
-          current={level}
-          onPick={(picked) => {
-            goTo(picked);
-            setPicking(false);
-          }}
-          onBack={() => setPicking(false)}
-        />
-      )}
-    </View>
+    </WithOverlay>
   );
 }
 
@@ -76,5 +76,3 @@ export function RingSortGame({ deal, capacity, ...shell }: GameProps) {
   const rules = useMemo(() => ringSortRules(capacity), [capacity]);
   return <RodSortGame {...shell} start={deal.rods} rules={rules} />;
 }
-
-const styles = StyleSheet.create({ root: { flex: 1 } });
