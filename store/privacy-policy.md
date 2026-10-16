@@ -1,13 +1,14 @@
 # Stack Puzzles Privacy Policy
 
-Last updated: October 15, 2026
+Last updated: October 16, 2026
 
 Stack Puzzles does not collect, store, or share any personal data.
 
 - No accounts. You never sign in or give us a name, email address, or other identifier.
 - No tracking or analytics. The app contains no analytics, advertising, or crash reporting SDKs and makes no network requests.
 - No permissions. The app does not access your camera, microphone, location, contacts, or photos.
-- Data on your device. Your level progress, best move counts, and sound and haptics settings are saved only on your device. Deleting the app deletes them.
+- Data on your device. Your level progress, stars, daily puzzle results, and sound and haptics settings are saved only on your device. Deleting the app deletes them.
+- Sharing. If you tap Share after a daily puzzle, your result text goes to the app you pick in your device's share sheet. Stack Puzzles sends nothing itself.
 
 Because nothing leaves your device, there is nothing for us to sell, share, or delete on request.
 

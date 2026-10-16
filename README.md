@@ -1,11 +1,13 @@
 # Stack Puzzles
 
-Two stacking puzzles in one Expo / React Native app, rendered in 3D with three.js via react-three-fiber and expo-gl.
+Stacking and sorting puzzles in one Expo / React Native app, rendered in 3D with three.js via react-three-fiber and expo-gl.
 
-- Tower Stack: Tower of Hanoi with 3 to 10 disks across 8 levels. Includes a move counter against the optimal count, undo, and restart.
-- Ring Sort: sort colored rings onto rods, moving one ring at a time onto an empty rod or a ring of the same color. Levels are endless and seeded, so the same level number always deals the same rings. Every level is checked solvable before it is shown. Colors ramp from 3 to 10, then the rods grow to hold 5 rings from level 25 and 6 from level 37, with colors ramping again at each height. Includes undo, restart, a best move count, and stuck detection.
+- Daily Puzzle: a Ring Sort deal seeded from the local date, so everyone gets the same puzzle each day. Each weekday only accepts deals whose optimal solution falls in its band, from 15–18 moves on Monday to 45–50 on Sunday. Scored with one to three stars against the optimal count, with a streak and a Share button.
+- Tower Stack: Tower of Hanoi with 3 to 10 disks across 8 levels. Includes a move counter against the optimal count with live stars, undo, and restart.
+- Ring Sort: sort colored rings onto rods, moving one ring at a time onto an empty rod or a ring of the same color. Levels are endless and seeded, so the same level number always deals the same rings. Every level is checked solvable before it is shown. Colors ramp from 3 to 10, then the rods grow to hold 5 rings from level 25 and 6 from level 37, with colors ramping again at each height. A zen mode: a plain move count, no stars. Includes undo, restart, and stuck detection.
+- Tower Sort: Ring Sort with Tower of Hanoi sizes. A ring fits on an empty rod or a bigger ring of any color; each color must end on its own rod, largest at the bottom. Levels grow from 3 colors of 3 sizes to 5 colors of 4, each a seeded random layout kept only if a search solves it. Zen like Ring Sort.
 
-Both games give haptic and sound feedback, each of which can be switched off on the home screen. Level progress and settings persist with AsyncStorage.
+Every game gives haptic and sound feedback, each of which can be switched off on the home screen. Level progress and settings persist with AsyncStorage.
 
 ## Run
 
