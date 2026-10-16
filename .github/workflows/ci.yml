@@ -27,6 +27,7 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm run test:coverage -- --ci
+      - run: npm run test:timezones
       - uses: actions/upload-artifact@v7
         if: always()
         with:

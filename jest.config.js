@@ -6,6 +6,9 @@ const expoModulesCore = path.dirname(require.resolve('expo-modules-core/package.
 module.exports = {
   preset: 'jest-expo',
   setupFiles: ['<rootDir>/jest.setup.ts'],
+  setupFilesAfterEnv: ['<rootDir>/jest.after-env.ts'],
+  clearMocks: true,
+  testTimeout: 15000,
   transformIgnorePatterns: ['/node_modules/(?!(.pnpm|react-native|@react-native|@react-native-community|expo|@expo|three/))'],
   moduleNameMapper: {
     '^three$': '<rootDir>/node_modules/three/build/three.module.js',

@@ -18,16 +18,19 @@ jest.mock('expo-haptics', () => ({
 
 type MockPlayer = { seekTo: jest.Mock; play: jest.Mock };
 
+const players = new Map<string, MockPlayer>();
+let preparedAudioModes: unknown[][] = [];
+
 function playerFor(sound: string) {
-  const created = jest.mocked(createAudioPlayer).mock;
-  const index = created.calls.findIndex(([source]) => source === sound);
-  return {
-    player: created.results[index]?.value as MockPlayer | undefined,
-    creations: created.calls.filter(([source]) => source === sound).length,
-  };
+  return { player: players.get(sound) };
 }
 
-beforeAll(() => feedback.prepare());
+beforeAll(async () => {
+  await feedback.prepare();
+  const created = jest.mocked(createAudioPlayer).mock;
+  created.calls.forEach(([source], i) => players.set(source as string, created.results[i].value as MockPlayer));
+  preparedAudioModes = jest.mocked(setAudioModeAsync).mock.calls.slice();
+});
 beforeEach(() => jest.useFakeTimers());
 afterEach(() => {
   jest.runOnlyPendingTimers();
@@ -68,7 +71,6 @@ describe('feedback', () => {
     feedback.drop();
     feedback.drop();
     expect(plays()).toEqual(before.map((count) => count + 1));
-    expect(['drop1', 'drop2', 'drop3'].map((sound) => playerFor(sound).creations)).toEqual([1, 1, 1]);
   });
 
   it('creates each sound once and rewinds it before replaying', () => {
@@ -77,7 +79,8 @@ describe('feedback', () => {
     const plays = player!.play.mock.calls.length;
     feedback.pick();
     feedback.pick();
-    expect(playerFor('pick').creations).toBe(1);
+    expect(players.size).toBe(6);
+    expect(createAudioPlayer).not.toHaveBeenCalled();
     expect(player!.seekTo).toHaveBeenLastCalledWith(0);
     expect(player!.play).toHaveBeenCalledTimes(plays + 2);
   });
@@ -118,8 +121,8 @@ describe('feedback', () => {
     feedback.complete();
     feedback.win();
     await feedback.prepare();
-    expect(setAudioModeAsync).toHaveBeenCalledTimes(1);
-    expect(setAudioModeAsync).toHaveBeenCalledWith({ playsInSilentMode: false, interruptionMode: 'mixWithOthers' });
+    expect(preparedAudioModes).toEqual([[{ playsInSilentMode: false, interruptionMode: 'mixWithOthers' }]]);
+    expect(setAudioModeAsync).not.toHaveBeenCalled();
   });
 
   it('keeps the game going when a sound cannot play', async () => {

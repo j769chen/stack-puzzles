@@ -24,6 +24,19 @@ describe('bestStreak', () => {
   });
 });
 
+describe('streaks across daylight-saving changes', () => {
+  it.each([
+    ['US spring forward', [20260307, 20260308, 20260309]],
+    ['US fall back', [20261031, 20261101, 20261102]],
+    ['EU spring forward', [20260328, 20260329, 20260330]],
+    ['NZ spring forward', [20260926, 20260927, 20260928]],
+  ])('keeps a streak going through the %s', (_, days) => {
+    const solved = Object.fromEntries(days.map((day) => [day, 3]));
+    expect(dailyStreak(solved, days[2])).toBe(3);
+    expect(bestStreak(solved)).toBe(3);
+  });
+});
+
 describe('monthCells', () => {
   it('lays out a month from Monday, with blanks before the first day', () => {
     const october = monthCells(2026, 9);
