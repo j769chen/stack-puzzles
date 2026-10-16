@@ -28,7 +28,7 @@ async function renderApp() {
 
 async function open(game: string) {
   await fireEvent.press(screen.getByText(game));
-  await screen.findByText('Moves 0');
+  await screen.findByText(/^Moves 0\//);
 }
 
 describe('App', () => {
@@ -85,6 +85,6 @@ describe('App', () => {
     });
     expect(handled).toBe(true);
     expect(screen.queryByRole('button', { name: 'Level 1, not solved' })).toBeNull();
-    expect(screen.getByText('Moves 0')).toBeOnTheScreen();
+    expect(screen.getByText(/^Moves 0\//)).toBeOnTheScreen();
   });
 });

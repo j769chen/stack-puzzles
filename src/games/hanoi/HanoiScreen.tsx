@@ -96,7 +96,7 @@ function HanoiGame({ level, onBack, onLevels, onNext }: GameProps) {
       title="Tower Stack"
       level={level}
       moves={moves}
-      message={`Move all ${disks} disks to another peg · best ${optimal}`}
+      message={`Move all ${disks} disks to another peg`}
       onBack={onBack}
       onLevels={onLevels}
       onUndo={() => {

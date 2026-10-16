@@ -132,7 +132,7 @@ function HoopGame({ level, deal, onBack, onLevels, onNext, onWinShown }: GamePro
     }
   };
 
-  const message = stuck ? 'No moves left. Undo or restart.' : `Sort each color onto its own rod · best ${optimal}`;
+  const message = stuck ? 'No moves left. Undo or restart.' : 'Sort each color onto its own rod';
 
   return (
     <GameShell

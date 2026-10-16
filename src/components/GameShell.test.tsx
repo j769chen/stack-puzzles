@@ -38,9 +38,20 @@ describe('GameShell', () => {
     await renderShell();
     expect(screen.getByText('Test Game')).toBeOnTheScreen();
     expect(screen.getByText('Level 3')).toBeOnTheScreen();
-    expect(screen.getByText('Moves 5')).toBeOnTheScreen();
+    expect(screen.getByText('Moves 5/5')).toBeOnTheScreen();
     expect(screen.getByText('Do the thing')).toBeOnTheScreen();
     expect(screen.getByText('board')).toBeOnTheScreen();
+  });
+
+  it('shows the stars the current move count would earn', async () => {
+    await renderShell({ moves: 4, optimal: 4 });
+    expect(screen.getByLabelText('3 of 3 stars')).toBeOnTheScreen();
+    expect(screen.getByText('Moves 4/4')).not.toHaveStyle({ color: '#C62828' });
+    await renderShell({ moves: 5, optimal: 4 });
+    expect(screen.getByLabelText('2 of 3 stars')).toBeOnTheScreen();
+    expect(screen.getByText('Moves 5/4')).toHaveStyle({ color: '#C62828' });
+    await renderShell({ moves: 7, optimal: 4 });
+    expect(screen.getByLabelText('1 of 3 stars')).toBeOnTheScreen();
   });
 
   it('keeps the message line in place when there is no message', async () => {
