@@ -2,6 +2,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { BackHandler } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { feedback } from './src/feedback';
 import { HomeScreen } from './src/HomeScreen';
 import { HanoiScreen } from './src/games/hanoi/HanoiScreen';
 import { DailyScreen } from './src/games/hoops/DailyScreen';
@@ -18,6 +19,7 @@ export default function App() {
   useEffect(() => {
     loadSettings();
     loadStars();
+    feedback.prepare();
   }, []);
 
   useEffect(() => {

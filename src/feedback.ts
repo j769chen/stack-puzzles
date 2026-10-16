@@ -16,24 +16,36 @@ let drops = 0;
 type Sound = keyof typeof sounds;
 
 const players = new Map<Sound, AudioPlayer>();
+let preparing: Promise<void> | null = null;
+
+function prepare(): Promise<void> {
+  preparing ??= setAudioModeAsync({ playsInSilentMode: false, interruptionMode: 'mixWithOthers' })
+    .then(() => {
+      for (const sound of Object.keys(sounds) as Sound[]) players.set(sound, createAudioPlayer(sounds[sound]));
+    })
+    .catch(() => {});
+  return preparing;
+}
 
 function play(sound: Sound) {
   if (!getSettings().sound) return;
-  let player = players.get(sound);
+  const player = players.get(sound);
   if (!player) {
-    if (players.size === 0) setAudioModeAsync({ playsInSilentMode: false, interruptionMode: 'mixWithOthers' });
-    player = createAudioPlayer(sounds[sound]);
-    players.set(sound, player);
+    prepare();
+    return;
   }
-  player.seekTo(0);
-  player.play();
+  try {
+    player.seekTo(0).catch(() => {});
+    player.play();
+  } catch {}
 }
 
 function buzz(haptic: () => Promise<void>) {
-  if (getSettings().haptics) haptic();
+  if (getSettings().haptics) haptic().catch(() => {});
 }
 
 export const feedback = {
+  prepare,
   pick() {
     buzz(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Soft));
     play('pick');
