@@ -1,5 +1,5 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSyncExternalStore } from 'react';
+import { storedValue } from './storedValue';
 
 export type Game = 'hanoi' | 'daily';
 export type LevelStars = Record<number, number>;
@@ -7,21 +7,7 @@ type AllStars = Record<Game, LevelStars>;
 
 export const MAX_STARS = 3;
 
-const STORAGE_KEY = 'stars';
 const EMPTY: AllStars = { hanoi: {}, daily: {} };
-
-let current = EMPTY;
-const listeners = new Set<() => void>();
-
-function publish(next: AllStars) {
-  current = next;
-  listeners.forEach((listener) => listener());
-}
-
-function subscribe(listener: () => void) {
-  listeners.add(listener);
-  return () => listeners.delete(listener);
-}
 
 function parseLevels(value: unknown): LevelStars {
   if (typeof value !== 'object' || value === null) return {};
@@ -51,21 +37,28 @@ export function totalStars(levels: LevelStars): number {
   return Object.values(levels).reduce((sum, stars) => sum + stars, 0);
 }
 
-export function getStars(game: Game): LevelStars {
-  return current[game];
+function best(a: LevelStars, b: LevelStars): LevelStars {
+  const better = Object.entries(b).filter(([level, stars]) => (a[Number(level)] ?? 0) < stars);
+  return better.length ? { ...a, ...Object.fromEntries(better) } : a;
 }
 
-export async function loadStars() {
-  const stored = await AsyncStorage.getItem(STORAGE_KEY).catch(() => null);
-  publish(parse(stored));
+const store = storedValue('stars', parse);
+
+export function getStars(game: Game): LevelStars {
+  return store.get()[game];
+}
+
+export function loadStars() {
+  return store.load();
 }
 
 export function recordStars(game: Game, level: number, stars: number) {
-  if ((current[game][level] ?? 0) >= stars) return;
-  publish({ ...current, [game]: { ...current[game], [level]: stars } });
-  AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(current)).catch(() => {});
+  const all = store.get();
+  if ((all[game][level] ?? 0) >= stars) return;
+  const next = { ...all, [game]: { ...all[game], [level]: stars } };
+  store.update((saved) => ({ hanoi: best(saved.hanoi, next.hanoi), daily: best(saved.daily, next.daily) }));
 }
 
 export function useStars(game: Game): LevelStars {
-  return useSyncExternalStore(subscribe, () => current[game]);
+  return useSyncExternalStore(store.subscribe, () => store.get()[game]);
 }

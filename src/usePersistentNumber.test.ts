@@ -36,10 +36,15 @@ describe('usePersistentNumber', () => {
     expect(result.current[0]).toBe(1);
   });
 
-  it('still finishes loading when storage fails', async () => {
+  it('still finishes loading when storage fails, without saving over what is stored', async () => {
+    await AsyncStorage.setItem('level', '30');
     jest.mocked(AsyncStorage.getItem).mockRejectedValueOnce(new Error('disk'));
-    const { result } = await load();
+    const { result } = await renderHook(() => usePersistentNumber('level', 1));
+    await waitFor(() => expect(result.current[2]).toBe(true));
     expect(result.current[0]).toBe(1);
+    await act(() => result.current[1](2));
+    expect(result.current[0]).toBe(2);
+    expect(await AsyncStorage.getItem('level')).toBe('30');
   });
 
   it('does not update after unmounting before storage answers', async () => {

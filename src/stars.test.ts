@@ -81,16 +81,50 @@ describe('stars store', () => {
     ['a number', '42'],
     ['null', 'null'],
   ])('starts empty for %s', async (_, stored) => {
-    recordStars('hanoi', 1, 3);
+    await loadFrom(JSON.stringify({ hanoi: { 1: 3 } }));
     await loadFrom(stored);
     expect(getStars('hanoi')).toEqual({});
   });
 
-  it('starts empty when storage cannot be read', async () => {
-    recordStars('hanoi', 1, 3);
+  it('keeps saved stars when storage cannot be read at launch', async () => {
+    await AsyncStorage.setItem('stars', JSON.stringify({ hanoi: { 1: 3 }, daily: { 20261015: 2 } }));
     jest.mocked(AsyncStorage.getItem).mockRejectedValueOnce(new Error('disk'));
     await loadStars();
-    expect(getStars('hanoi')).toEqual({});
+    recordStars('daily', 20261016, 1);
+    await loadStars();
+    expect(getStars('hanoi')).toEqual({ 1: 3 });
+    expect(getStars('daily')).toEqual({ 20261015: 2, 20261016: 1 });
+  });
+
+  it('skips a save it cannot merge, then saves that win with the next one', async () => {
+    await AsyncStorage.setItem('stars', JSON.stringify({ hanoi: { 1: 3 } }));
+    jest.mocked(AsyncStorage.getItem).mockRejectedValueOnce(new Error('disk'));
+    recordStars('daily', 20261015, 2);
+    await flushStorage();
+    expect(JSON.parse((await AsyncStorage.getItem('stars'))!)).toEqual({ hanoi: { 1: 3 } });
+    recordStars('daily', 20261016, 3);
+    await flushStorage();
+    expect(JSON.parse((await AsyncStorage.getItem('stars'))!)).toEqual({
+      hanoi: { 1: 3 },
+      daily: { 20261015: 2, 20261016: 3 },
+    });
+  });
+
+  it('keeps a win recorded before loading finishes', async () => {
+    await AsyncStorage.setItem('stars', JSON.stringify({ hanoi: { 1: 3 } }));
+    const loading = loadStars();
+    recordStars('hanoi', 2, 2);
+    await loading;
+    await loadStars();
+    expect(getStars('hanoi')).toEqual({ 1: 3, 2: 2 });
+  });
+
+  it('saves wins recorded in quick succession', async () => {
+    recordStars('hanoi', 1, 3);
+    recordStars('hanoi', 2, 1);
+    recordStars('daily', 20261016, 2);
+    await loadStars();
+    expect(JSON.parse((await AsyncStorage.getItem('stars'))!)).toEqual({ hanoi: { 1: 3, 2: 1 }, daily: { 20261016: 2 } });
   });
 
   it('re-renders subscribers when stars change', async () => {
