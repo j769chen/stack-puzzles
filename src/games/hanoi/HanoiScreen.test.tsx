@@ -54,7 +54,7 @@ describe('HanoiScreen', () => {
   it('starts level 1 with three disks on the left peg', async () => {
     await start();
     expect(pegText(0)).toBe('3,2,1');
-    expect(screen.getByText('Move all 3 disks to another peg · best 7')).toBeOnTheScreen();
+    expect(screen.getByText('Move all 3 disks to another peg')).toBeOnTheScreen();
   });
 
   it('selects, moves and counts', async () => {
@@ -63,7 +63,7 @@ describe('HanoiScreen', () => {
     expect(pegText(0)).toBe('*3,2,1');
     await fireEvent.press(peg(2));
     expect(pegText(2)).toBe('1');
-    expect(screen.getByText('Moves 1')).toBeOnTheScreen();
+    expect(screen.getByText('Moves 1/7')).toBeOnTheScreen();
   });
 
   it('deselects on a second tap and ignores empty pegs', async () => {
@@ -80,7 +80,7 @@ describe('HanoiScreen', () => {
     await move(0, 2);
     await move(0, 2);
     expect(pegText(2)).toBe('*1');
-    expect(screen.getByText('Moves 1')).toBeOnTheScreen();
+    expect(screen.getByText('Moves 1/7')).toBeOnTheScreen();
   });
 
   it('undoes and restarts', async () => {
@@ -89,10 +89,10 @@ describe('HanoiScreen', () => {
     await move(0, 1);
     await fireEvent.press(screen.getByText('Undo'));
     expect(pegText(1)).toBe('');
-    expect(screen.getByText('Moves 1')).toBeOnTheScreen();
+    expect(screen.getByText('Moves 1/7')).toBeOnTheScreen();
     await fireEvent.press(screen.getByText('Restart'));
     expect(pegText(0)).toBe('3,2,1');
-    expect(screen.getByText('Moves 0')).toBeOnTheScreen();
+    expect(screen.getByText('Moves 0/7')).toBeOnTheScreen();
   });
 
   it('gives feedback when picking up and dropping a disk', async () => {
@@ -143,7 +143,7 @@ describe('HanoiScreen', () => {
       await fireEvent.press(screen.getByRole('button', { name: 'Levels' }));
       await fireEvent.press(screen.getByRole('button', { name: 'Back' }));
       expect(screen.queryByRole('button', { name: /^Level 1,/ })).toBeNull();
-      expect(screen.getByText('Moves 1')).toBeOnTheScreen();
+      expect(screen.getByText('Moves 1/7')).toBeOnTheScreen();
     });
 
     it('resumes the game in progress when its own level is picked', async () => {
@@ -151,7 +151,7 @@ describe('HanoiScreen', () => {
       await move(0, 2);
       await fireEvent.press(screen.getByRole('button', { name: 'Levels' }));
       await fireEvent.press(screen.getByRole('button', { name: 'Level 1, not solved' }));
-      expect(screen.getByText('Moves 1')).toBeOnTheScreen();
+      expect(screen.getByText('Moves 1/7')).toBeOnTheScreen();
     });
   });
 
@@ -175,7 +175,7 @@ describe('HanoiScreen', () => {
       await move(0, 2);
       await fireEvent.press(peg(2));
       expect(pegText(2)).toBe('1');
-      expect(screen.getByText('Moves 1')).toBeOnTheScreen();
+      expect(screen.getByText('Moves 1/1')).toBeOnTheScreen();
     });
 
     it('reports extra moves', async () => {

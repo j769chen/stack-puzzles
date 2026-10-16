@@ -50,7 +50,7 @@ describe('HoopScreen', () => {
 
   it('shows the fewest moves the level needs', async () => {
     await start([[0, 1], [1], [0, 0, 0, 1], [], [1]]);
-    expect(screen.getByText('Sort each color onto its own rod · best 4')).toBeOnTheScreen();
+    expect(screen.getByText('Moves 0/4')).toBeOnTheScreen();
   });
 
   it('reuses the stored deal instead of generating it again', async () => {
@@ -86,14 +86,14 @@ describe('HoopScreen', () => {
     await pour(0, 1);
     expect(rodText(0)).toBe('0');
     expect(rodText(1)).toBe('1,1,1');
-    expect(screen.getByText('Moves 2')).toBeOnTheScreen();
+    expect(screen.getByText('Moves 2/4')).toBeOnTheScreen();
   });
 
   it('moves a ring onto a matching ring and counts the move', async () => {
     await start([[0, 1], [1], [0, 0, 0, 1], [], [1]]);
     await pour(0, 1);
     expect(rodText(1)).toBe('1,1');
-    expect(screen.getByText('Moves 1')).toBeOnTheScreen();
+    expect(screen.getByText('Moves 1/4')).toBeOnTheScreen();
   });
 
   it('chimes when a pour completes a rod, and taps otherwise', async () => {
@@ -142,7 +142,7 @@ describe('HoopScreen', () => {
     expect(rodText(4)).toBe('1');
     await fireEvent.press(screen.getByText('Restart'));
     expect(rodText(0)).toBe('0,1');
-    expect(screen.getByText('Moves 0')).toBeOnTheScreen();
+    expect(screen.getByText('Moves 0/4')).toBeOnTheScreen();
   });
 
   it('reports a dead end', async () => {

@@ -89,7 +89,10 @@ export function GameShell(props: Props) {
       <View style={styles.body}>
         <View style={styles.stats}>
           <Text style={styles.stat}>Level {props.level}</Text>
-          <Text style={styles.stat}>Moves {props.moves}</Text>
+          <Text style={[styles.stat, props.moves > props.optimal && styles.over]}>
+            {`Moves ${props.moves}/${props.optimal}`}
+          </Text>
+          <Stars count={stars} size={18} />
         </View>
 
         <View style={styles.board}>{props.children}</View>
@@ -135,8 +138,9 @@ const useStyles = themedStyles((colors) =>
     backText: { fontSize: 17, fontWeight: '600', color: colors.accent },
     levelsText: { textAlign: 'right' },
     title: { fontSize: 20, fontWeight: '800', color: colors.ink },
-    stats: { flexDirection: 'row', justifyContent: 'center', gap: 24, marginTop: 12 },
+    stats: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 24, marginTop: 12 },
     stat: { fontSize: 16, fontWeight: '600', color: colors.muted },
+    over: { color: colors.danger },
     board: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16 },
     message: { textAlign: 'center', fontSize: 15, color: colors.muted, marginBottom: 12, minHeight: 20 },
     controls: { flexDirection: 'row', justifyContent: 'center', gap: 12, paddingBottom: 16 },

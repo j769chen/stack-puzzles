@@ -18,6 +18,7 @@ const light = {
   accent: '#E4572E',
   overlay: 'rgba(20, 16, 12, 0.55)',
   border: '#E3DACB',
+  danger: '#C62828',
   onAccent: '#FFFFFF',
 };
 
@@ -31,6 +32,7 @@ const dark: Colors = {
   accent: '#E4572E',
   overlay: 'rgba(0, 0, 0, 0.6)',
   border: '#4A433B',
+  danger: '#FF6B6B',
   onAccent: '#FFFFFF',
 };
 
