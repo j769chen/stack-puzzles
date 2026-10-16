@@ -45,12 +45,12 @@ describe('App', () => {
     expect(screen.getByText('Stack Puzzles')).toBeOnTheScreen();
   });
 
-  it.each(['Tower Stack', 'Ring Sort', 'Daily Puzzle'])('opens %s and comes back with the Back button', async (game) => {
+  it.each(['Tower Stack', 'Ring Sort', 'Daily Puzzle', 'Tower Sort'])('opens %s and comes back with the Back button', async (game) => {
     await renderApp();
     await open(game);
     expect(screen.queryByText('Stack Puzzles')).toBeNull();
     await fireEvent.press(screen.getByText('‹ Back'));
-    expect(await screen.findAllByText('Level 1 ›')).toHaveLength(2);
+    expect(await screen.findAllByText('Level 1 ›')).toHaveLength(3);
   });
 
   it('stops listening for the back button when it unmounts', async () => {
@@ -71,7 +71,7 @@ describe('App', () => {
       handled = backPress(backEvent);
     });
     expect(handled).toBe(true);
-    expect(await screen.findAllByText('Level 1 ›')).toHaveLength(2);
+    expect(await screen.findAllByText('Level 1 ›')).toHaveLength(3);
   });
 
   it('closes level select on hardware back instead of leaving the game', async () => {

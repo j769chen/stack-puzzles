@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { updateSettings, useSettings } from './settings';
 import { dailyStreak } from './daily';
@@ -7,12 +7,13 @@ import { totalStars, useStars } from './stars';
 import { theme, themedStyles, useColors } from './theme';
 import { usePersistentNumber } from './usePersistentNumber';
 
-type Props = { onOpen: (game: 'hanoi' | 'hoops' | 'daily') => void };
+type Props = { onOpen: (game: 'hanoi' | 'hoops' | 'daily' | 'towersort') => void };
 
 export function HomeScreen({ onOpen }: Props) {
   const styles = useStyles();
   const [hanoiLevel, , hanoiLoaded] = usePersistentNumber('hanoi.level', 1);
   const [hoopLevel, , hoopLoaded] = usePersistentNumber('hoops.level', 1);
+  const [towerLevel, , towerLoaded] = usePersistentNumber('towersort.level', 1);
   const hanoiStars = totalStars(useStars('hanoi'));
   const dailyStars = useStars('daily');
   const today = dailyKey(new Date());
@@ -23,43 +24,56 @@ export function HomeScreen({ onOpen }: Props) {
 
   return (
     <SafeAreaView style={styles.root}>
-      <Text style={styles.title} accessibilityRole="header">
-        Stack Puzzles
-      </Text>
-      <Text style={styles.subtitle}>Two classic stacking puzzles</Text>
+      <ScrollView contentContainerStyle={styles.content}>
+        <Text style={styles.title} accessibilityRole="header">
+          Stack Puzzles
+        </Text>
+        <Text style={styles.subtitle}>Stacking and sorting puzzles</Text>
 
-      <GameCard
-        title="Daily Puzzle"
-        description="A new Ring Sort puzzle every day, harder as the week goes on. Match the fewest moves for three stars."
-        status={dailyStatus}
-        stars={totalStars(dailyStars)}
-        chips={[theme.rings[3], theme.rings[6], theme.rings[1]].map((color) => ({ color, width: 44 }))}
-        onPress={() => onOpen('daily')}
-      />
-      <GameCard
-        title="Tower Stack"
-        description="Move the whole tower to another peg. A disk can never sit on a smaller one."
-        status={hanoiLoaded ? `Level ${hanoiLevel}` : null}
-        stars={hanoiStars}
-        chips={[
-          { color: theme.disks[0], width: 30 },
-          { color: theme.disks[1], width: 44 },
-          { color: theme.disks[3], width: 58 },
-        ]}
-        onPress={() => onOpen('hanoi')}
-      />
-      <GameCard
-        title="Ring Sort"
-        description="Sort the colored rings so every rod holds a single color. No scores, just sorting."
-        status={hoopLoaded ? `Level ${hoopLevel}` : null}
-        chips={[theme.rings[0], theme.rings[5], theme.rings[2]].map((color) => ({ color, width: 44 }))}
-        onPress={() => onOpen('hoops')}
-      />
+        <GameCard
+          title="Daily Puzzle"
+          description="A new Ring Sort puzzle every day, harder as the week goes on. Match the fewest moves for three stars."
+          status={dailyStatus}
+          stars={totalStars(dailyStars)}
+          chips={[theme.rings[3], theme.rings[6], theme.rings[1]].map((color) => ({ color, width: 44 }))}
+          onPress={() => onOpen('daily')}
+        />
+        <GameCard
+          title="Tower Stack"
+          description="Move the whole tower to another peg. A disk can never sit on a smaller one."
+          status={hanoiLoaded ? `Level ${hanoiLevel}` : null}
+          stars={hanoiStars}
+          chips={[
+            { color: theme.disks[0], width: 30 },
+            { color: theme.disks[1], width: 44 },
+            { color: theme.disks[3], width: 58 },
+          ]}
+          onPress={() => onOpen('hanoi')}
+        />
+        <GameCard
+          title="Ring Sort"
+          description="Sort the colored rings so every rod holds a single color. No scores, just sorting."
+          status={hoopLoaded ? `Level ${hoopLevel}` : null}
+          chips={[theme.rings[0], theme.rings[5], theme.rings[2]].map((color) => ({ color, width: 44 }))}
+          onPress={() => onOpen('hoops')}
+        />
+        <GameCard
+          title="Tower Sort"
+          description="Sort the rings by color, but a ring only fits on a bigger one."
+          status={towerLoaded ? `Level ${towerLevel}` : null}
+          chips={[
+            { color: theme.rings[4], width: 58 },
+            { color: theme.rings[0], width: 44 },
+            { color: theme.rings[2], width: 30 },
+          ]}
+          onPress={() => onOpen('towersort')}
+        />
 
-      <View style={styles.settings}>
-        <SettingRow label="Sound" value={settings.sound} onChange={(sound) => updateSettings({ sound })} />
-        <SettingRow label="Haptics" value={settings.haptics} onChange={(haptics) => updateSettings({ haptics })} />
-      </View>
+        <View style={styles.settings}>
+          <SettingRow label="Sound" value={settings.sound} onChange={(sound) => updateSettings({ sound })} />
+          <SettingRow label="Haptics" value={settings.haptics} onChange={(haptics) => updateSettings({ haptics })} />
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -125,7 +139,8 @@ function GameCard({ title, description, status, stars = 0, chips, onPress }: Car
 
 const useStyles = themedStyles((colors) =>
   StyleSheet.create({
-    root: { flex: 1, backgroundColor: colors.bg, paddingHorizontal: 20, gap: 16 },
+    root: { flex: 1, backgroundColor: colors.bg },
+    content: { paddingHorizontal: 20, paddingBottom: 20, gap: 16 },
     title: { fontSize: 34, fontWeight: '900', color: colors.ink, marginTop: 24 },
     subtitle: { fontSize: 16, color: colors.muted, marginBottom: 8 },
     card: {

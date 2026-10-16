@@ -111,8 +111,11 @@ describe('HomeScreen', () => {
   });
 
   it('follows the system dark mode', async () => {
-    const root = () => screen.getByRole('header', { name: 'Stack Puzzles' }).parent?.parent;
-    const background = () => StyleSheet.flatten(root()?.props.style)?.backgroundColor;
+    const background = () => {
+      let node = screen.getByRole('header', { name: 'Stack Puzzles' }).parent;
+      while (node && !StyleSheet.flatten(node.props.style)?.backgroundColor) node = node.parent;
+      return StyleSheet.flatten(node?.props.style)?.backgroundColor;
+    };
     await render(<HomeScreen onOpen={jest.fn()} />);
     await screen.findAllByText('Level 1 ›');
     expect(background()).toBe('#F4EFE6');
@@ -129,6 +132,7 @@ describe('HomeScreen', () => {
     await fireEvent.press(screen.getByText('Tower Stack'));
     await fireEvent.press(screen.getByText('Ring Sort'));
     await fireEvent.press(screen.getByText('Daily Puzzle'));
-    expect(onOpen.mock.calls).toEqual([['hanoi'], ['hoops'], ['daily']]);
+    await fireEvent.press(screen.getByText('Tower Sort'));
+    expect(onOpen.mock.calls).toEqual([['hanoi'], ['hoops'], ['daily'], ['towersort']]);
   });
 });

@@ -115,7 +115,7 @@ type SearchNode = {
 const exploresFirst = (a: SearchNode, b: SearchNode) =>
   a.estimatedLength !== b.estimatedLength ? a.estimatedLength < b.estimatedLength : a.cost > b.cost;
 
-class MinHeap<T> {
+export class MinHeap<T> {
   private items: T[] = [];
 
   constructor(private readonly before: (a: T, b: T) => boolean) {}
@@ -193,7 +193,7 @@ export function solveHoops(start: Rods, cap: number, nodeLimit = 200_000): Move[
   return null;
 }
 
-function mulberry32(seed: number): () => number {
+export function mulberry32(seed: number): () => number {
   let a = seed >>> 0;
   return () => {
     a = (a + 0x6d2b79f5) >>> 0;

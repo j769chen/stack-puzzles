@@ -6,10 +6,11 @@ import { HomeScreen } from './src/HomeScreen';
 import { HanoiScreen } from './src/games/hanoi/HanoiScreen';
 import { DailyScreen } from './src/games/hoops/DailyScreen';
 import { HoopScreen } from './src/games/hoops/HoopScreen';
+import { TowerSortScreen } from './src/games/towersort/TowerSortScreen';
 import { loadSettings } from './src/settings';
 import { loadStars } from './src/stars';
 
-type Screen = 'home' | 'hanoi' | 'hoops' | 'daily';
+type Screen = 'home' | 'hanoi' | 'hoops' | 'daily' | 'towersort';
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>('home');
@@ -37,6 +38,7 @@ export default function App() {
       {screen === 'hanoi' && <HanoiScreen onBack={goHome} />}
       {screen === 'hoops' && <HoopScreen onBack={goHome} />}
       {screen === 'daily' && <DailyScreen onBack={goHome} />}
+      {screen === 'towersort' && <TowerSortScreen onBack={goHome} />}
     </SafeAreaProvider>
   );
 }
