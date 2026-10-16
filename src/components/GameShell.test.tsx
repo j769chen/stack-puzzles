@@ -129,6 +129,21 @@ describe('GameShell', () => {
       expect(getStars('hanoi')).toEqual({ 3: 3 });
     });
 
+    it('shows a note and a Share button on the win card when given', async () => {
+      const onShare = jest.fn();
+      await renderShell({ won: true, moves: 6, winNote: '4-day streak', onShare });
+      await act(() => jest.advanceTimersByTime(650));
+      expect(screen.getByText('4-day streak')).toBeOnTheScreen();
+      await fireEvent.press(screen.getByText('Share'));
+      expect(onShare).toHaveBeenCalledWith(6);
+    });
+
+    it('leaves out the note and Share button by default', async () => {
+      await renderShell({ won: true });
+      await act(() => jest.advanceTimersByTime(650));
+      expect(screen.queryByText('Share')).toBeNull();
+    });
+
     it('shows a plain move count and no stars without scoring', async () => {
       await renderShell({ won: true, moves: 9, scoring: undefined, onLevels: undefined });
       expect(screen.getByText('Moves 9')).toBeOnTheScreen();

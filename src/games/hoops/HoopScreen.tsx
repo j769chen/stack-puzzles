@@ -87,7 +87,7 @@ function pourSnapshot({ rods, ids }: Snapshot, from: number, to: number): Snapsh
 
 type GameProps = Pick<
   GameShellProps,
-  'title' | 'label' | 'onBack' | 'onLevels' | 'scoring' | 'nextLabel' | 'onNext' | 'onWinShown'
+  'title' | 'label' | 'onBack' | 'onLevels' | 'scoring' | 'winNote' | 'onShare' | 'nextLabel' | 'onNext' | 'onWinShown'
 > & { deal: Deal; capacity: number };
 
 export function RingSortGame({ deal, capacity, ...shell }: GameProps) {

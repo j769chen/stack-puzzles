@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { updateSettings, useSettings } from './settings';
+import { dailyStreak } from './daily';
 import { dailyKey } from './games/hoops/logic';
 import { totalStars, useStars } from './stars';
 import { theme, themedStyles, useColors } from './theme';
@@ -14,7 +15,10 @@ export function HomeScreen({ onOpen }: Props) {
   const [hoopLevel, , hoopLoaded] = usePersistentNumber('hoops.level', 1);
   const hanoiStars = totalStars(useStars('hanoi'));
   const dailyStars = useStars('daily');
-  const solvedToday = dailyKey(new Date()) in dailyStars;
+  const today = dailyKey(new Date());
+  const streak = dailyStreak(dailyStars, today);
+  let dailyStatus = today in dailyStars ? 'Solved today' : 'Play today';
+  if (streak > 1) dailyStatus += ` · ${streak}-day streak`;
   const settings = useSettings();
 
   return (
@@ -27,7 +31,7 @@ export function HomeScreen({ onOpen }: Props) {
       <GameCard
         title="Daily Puzzle"
         description="A new Ring Sort puzzle every day, harder as the week goes on. Match the fewest moves for three stars."
-        status={solvedToday ? 'Solved today' : 'Play today'}
+        status={dailyStatus}
         stars={totalStars(dailyStars)}
         chips={[theme.rings[3], theme.rings[6], theme.rings[1]].map((color) => ({ color, width: 44 }))}
         onPress={() => onOpen('daily')}
