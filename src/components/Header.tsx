@@ -43,7 +43,7 @@ const useStyles = themedStyles((colors) =>
       paddingHorizontal: 16,
       paddingTop: 8,
     },
-    side: { width: 70 },
+    side: { flex: 1 },
     link: { fontSize: 17, fontWeight: '600', color: colors.accent },
     actionText: { textAlign: 'right' },
     title: { fontSize: 20, fontWeight: '800', color: colors.ink },

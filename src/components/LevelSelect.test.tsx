@@ -1,6 +1,12 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
-import { BackHandler } from 'react-native';
+import { BackHandler, StyleSheet } from 'react-native';
 import { LevelSelect } from './LevelSelect';
+
+let mockFontScale = 1;
+jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({
+  __esModule: true,
+  default: () => ({ width: 390, height: 844, scale: 3, fontScale: mockFontScale }),
+}));
 
 type BackPressHandler = Parameters<typeof BackHandler.addEventListener>[1];
 
@@ -19,9 +25,24 @@ async function renderSelect(overrides: Partial<Parameters<typeof LevelSelect>[0]
   return props;
 }
 
-afterEach(() => jest.restoreAllMocks());
+afterEach(() => {
+  jest.restoreAllMocks();
+  mockFontScale = 1;
+});
 
 describe('LevelSelect', () => {
+  it.each([
+    [1, 76],
+    [1.3, 99],
+    [3, 114],
+  ])('sizes each level for text at %p times normal, up to one and a half', async (fontScale, height) => {
+    mockFontScale = fontScale;
+    await renderSelect();
+    const cell = screen.getByRole('button', { name: 'Level 1, 3 of 3 stars' });
+    expect(StyleSheet.flatten(cell.props.style).height).toBe(height);
+    expect(screen.getByText('1').props.maxFontSizeMultiplier).toBe(1.5);
+  });
+
   it('lists every level with its stars, and locks the ones not reached', async () => {
     await renderSelect();
     expect(screen.getByRole('header', { name: 'Test Game' })).toBeOnTheScreen();

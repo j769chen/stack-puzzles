@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
-import { BackHandler } from 'react-native';
+import { BackHandler, StyleSheet } from 'react-native';
 import { dailyLabel } from '../daily';
 import { loadStars, recordStars } from '../stars';
 import { DailyHistory } from './DailyHistory';
@@ -57,6 +57,14 @@ describe('DailyHistory', () => {
     expect(screen.getByRole('button', { name: 'Previous month' })).toBeDisabled();
     await fireEvent.press(screen.getByRole('button', { name: 'Next month' }));
     expect(screen.getByLabelText(`${dailyLabel(20260901)}, not solved`)).toBeOnTheScreen();
+  });
+
+  it('gives the month arrows full-size touch targets', async () => {
+    await render(<DailyHistory today={TODAY} onBack={jest.fn()} />);
+    for (const name of ['Previous month', 'Next month']) {
+      const style = StyleSheet.flatten(screen.getByRole('button', { name }).props.style);
+      expect(style).toMatchObject({ minWidth: 44, minHeight: 44 });
+    }
   });
 
   it('closes on Back and on the hardware back button', async () => {

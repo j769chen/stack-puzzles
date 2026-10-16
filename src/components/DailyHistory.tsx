@@ -5,6 +5,7 @@ import { bestStreak, dailyLabel, dailyStreak, monthCells } from '../daily';
 import { dailyDate } from '../games/hoops/logic';
 import { MAX_STARS, totalStars, useStars } from '../stars';
 import { themedStyles } from '../theme';
+import { Header } from './Header';
 import { Stars } from './Stars';
 
 const SIDE = 16;
@@ -48,15 +49,7 @@ export function DailyHistory({ today, onBack }: Props) {
 
   return (
     <SafeAreaView style={styles.root} accessibilityViewIsModal>
-      <View style={styles.header}>
-        <Pressable onPress={onBack} hitSlop={12} style={styles.side} accessibilityRole="button" accessibilityLabel="Back">
-          <Text style={styles.link}>‹ Back</Text>
-        </Pressable>
-        <Text style={styles.title} accessibilityRole="header">
-          History
-        </Text>
-        <View style={styles.side} />
-      </View>
+      <Header title="History" onBack={onBack} />
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.stats}>
           {stats.map(([label, value]) => (
@@ -72,6 +65,7 @@ export function DailyHistory({ today, onBack }: Props) {
             onPress={() => setShown(shown - 1)}
             disabled={shown <= first}
             hitSlop={12}
+            style={styles.arrow}
             accessibilityRole="button"
             accessibilityLabel="Previous month"
             accessibilityState={{ disabled: shown <= first }}
@@ -85,6 +79,7 @@ export function DailyHistory({ today, onBack }: Props) {
             onPress={() => setShown(shown + 1)}
             disabled={shown >= months(now)}
             hitSlop={12}
+            style={styles.arrow}
             accessibilityRole="button"
             accessibilityLabel="Next month"
             accessibilityState={{ disabled: shown >= months(now) }}
@@ -132,18 +127,9 @@ export function DailyHistory({ today, onBack }: Props) {
 const useStyles = themedStyles((colors) =>
   StyleSheet.create({
     root: { ...StyleSheet.absoluteFill, backgroundColor: colors.bg },
-    header: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingHorizontal: 16,
-      paddingTop: 8,
-      paddingBottom: 12,
-    },
-    side: { width: 70 },
     link: { fontSize: 17, fontWeight: '600', color: colors.accent },
-    title: { fontSize: 20, fontWeight: '800', color: colors.ink },
-    content: { paddingHorizontal: SIDE, paddingBottom: SIDE, gap: 20, alignSelf: 'center', maxWidth: 480, width: '100%' },
+    arrow: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
+    content: { paddingHorizontal: SIDE, paddingTop: 12, paddingBottom: SIDE, gap: 20, alignSelf: 'center', maxWidth: 480, width: '100%' },
     stats: { flexDirection: 'row', gap: 8 },
     stat: { flex: 1, backgroundColor: colors.card, borderRadius: 14, paddingVertical: 12, alignItems: 'center', gap: 2 },
     statValue: { fontSize: 22, fontWeight: '800', color: colors.ink },
