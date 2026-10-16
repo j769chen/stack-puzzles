@@ -1,11 +1,13 @@
 import { useCallback, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { LevelSelect } from '../../components/LevelSelect';
+import { LoadingScreen } from '../../components/LoadingScreen';
 import { theme } from '../../theme';
 import type { Rods } from '../hoops/logic';
 import { RodSortGame, type SortRules } from '../hoops/RodSortGame';
 import { useProgress } from '../useProgress';
-import { canStack, isTowerComplete, ringColor, ringSize, towerLevel, towerSpec } from './logic';
+import { loadTowerLevel, useTowerLevel } from './deals';
+import { canStack, isTowerComplete, ringColor, ringSize, towerSpec } from './logic';
 
 function towerRules(sizes: number): SortRules {
   const colorName = (ring: number) => theme.ringNames[ringColor(ring, sizes)];
@@ -30,10 +32,10 @@ function towerRules(sizes: number): SortRules {
 export function TowerSortScreen({ onBack }: { onBack: () => void }) {
   const { level, unlocked, goTo, loaded } = useProgress('towersort');
   const [picking, setPicking] = useState(false);
-  const start = useMemo(() => (loaded ? towerLevel(level) : null), [loaded, level]);
+  const start = useTowerLevel(loaded ? level : null);
   const rules = useMemo(() => towerRules(towerSpec(level).sizes), [level]);
-  const prepareNext = useCallback(() => towerLevel(level + 1), [level]);
-  if (!start) return null;
+  const prepareNext = useCallback(() => loadTowerLevel(level + 1), [level]);
+  if (!start) return <LoadingScreen title="Tower Sort" onBack={onBack} />;
   return (
     <View style={styles.root}>
       <RodSortGame

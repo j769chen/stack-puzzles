@@ -31,7 +31,12 @@ async function pour(from: number, to: number) {
 }
 
 async function start(rods?: logic.Rods) {
-  if (rods) jest.spyOn(logic, 'generateLevel').mockReturnValueOnce({ rods, solution: logic.solveHoops(rods, 4)! });
+  if (rods) {
+    const deal = { rods, solution: logic.solveHoops(rods, 4)! };
+    jest.spyOn(logic, 'levelTask').mockImplementationOnce(function* () {
+      return deal;
+    });
+  }
   await renderAsync(<HoopScreen onBack={jest.fn()} />);
   await screen.findByText('Level 1');
 }
@@ -51,7 +56,7 @@ describe('HoopScreen', () => {
   it('reuses the stored deal instead of generating it again', async () => {
     await start();
     await screen.unmountAsync();
-    const generate = jest.spyOn(logic, 'generateLevel');
+    const generate = jest.spyOn(logic, 'levelTask');
     await renderAsync(<HoopScreen onBack={jest.fn()} />);
     await screen.findByText('Level 1');
     expect(generate).not.toHaveBeenCalled();
@@ -62,6 +67,23 @@ describe('HoopScreen', () => {
     await AsyncStorage.setItem('hoops.deal.1', JSON.stringify({ rods: [[0, 0, 0, 0], []], solution: [[0, 1]] }));
     await start();
     logic.generateLevel(1).rods.forEach((rod, i) => expect(rodText(i)).toBe(rod.join(',')));
+  });
+
+  it('keeps Back working while the level is being dealt', async () => {
+    const deal = logic.generateLevel(1);
+    let dealt = false;
+    jest.spyOn(logic, 'levelTask').mockImplementationOnce(function* () {
+      while (!dealt) yield;
+      return deal;
+    });
+    const onBack = jest.fn();
+    await renderAsync(<HoopScreen onBack={onBack} />);
+    expect(await screen.findByLabelText('Loading')).toBeOnTheScreen();
+    expect(screen.getByRole('header', { name: 'Ring Sort' })).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: 'Back' }));
+    expect(onBack).toHaveBeenCalledTimes(1);
+    dealt = true;
+    expect(await screen.findByText('Level 1')).toBeOnTheScreen();
   });
 
   it('deals taller rods on later levels', async () => {
@@ -201,7 +223,7 @@ describe('HoopScreen', () => {
       await act(() => jest.advanceTimersByTime(650));
       await waitFor(async () => expect(await AsyncStorage.getItem('hoops.deal.2')).not.toBeNull());
 
-      const generate = jest.spyOn(logic, 'generateLevel');
+      const generate = jest.spyOn(logic, 'levelTask');
       generate.mockClear();
       await fireEvent.press(screen.getByText('Next level'));
       expect(await screen.findByText('Level 2')).toBeOnTheScreen();

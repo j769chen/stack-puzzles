@@ -41,7 +41,9 @@ beforeEach(async () => {
   await loadStars();
   jest.spyOn(logic, 'dailyKey').mockReturnValue(TODAY);
   jest.spyOn(logic, 'dailySpec').mockReturnValue({ colors: 2, capacity: 4, moves: [1, 99] });
-  jest.spyOn(logic, 'generateDaily').mockReturnValue(DEAL);
+  jest.spyOn(logic, 'dailyTask').mockImplementation(function* () {
+    return DEAL;
+  });
 });
 afterEach(() => jest.restoreAllMocks());
 
@@ -57,7 +59,7 @@ describe('DailyScreen', () => {
 
   it("deals today's puzzle with the date, best count and no level select", async () => {
     await start();
-    expect(logic.generateDaily).toHaveBeenCalledWith(TODAY);
+    expect(logic.dailyTask).toHaveBeenCalledWith(TODAY);
     expect(screen.getByText('Daily Puzzle')).toBeOnTheScreen();
     expect(screen.getByText(dailyLabel(TODAY))).toBeOnTheScreen();
     expect(screen.getByLabelText('3 of 3 stars')).toBeOnTheScreen();
@@ -68,11 +70,11 @@ describe('DailyScreen', () => {
     await start();
     await screen.unmountAsync();
     await start();
-    expect(logic.generateDaily).toHaveBeenCalledTimes(1);
+    expect(logic.dailyTask).toHaveBeenCalledTimes(1);
     await screen.unmountAsync();
     jest.mocked(logic.dailyKey).mockReturnValue(TODAY + 1);
     await start();
-    expect(logic.generateDaily).toHaveBeenLastCalledWith(TODAY + 1);
+    expect(logic.dailyTask).toHaveBeenLastCalledWith(TODAY + 1);
     expect(JSON.parse((await AsyncStorage.getItem('daily.deal'))!).key).toBe(TODAY + 1);
   });
 
