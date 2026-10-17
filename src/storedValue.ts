@@ -4,6 +4,7 @@ export function storedValue<T>(storageKey: string, parse: (stored: string | null
   let current = parse(null);
   let queue: Promise<void> = Promise.resolve();
   let pendingSaves = 0;
+  let unsaved: ((value: T) => T)[] = [];
   const listeners = new Set<() => void>();
 
   const publish = (next: T) => {
@@ -33,10 +34,13 @@ export function storedValue<T>(storageKey: string, parse: (stored: string | null
       publish(change(current));
       pendingSaves++;
       inOrder(async () => {
+        unsaved.push(change);
         try {
-          const saved = change(parse(await AsyncStorage.getItem(storageKey)));
+          const stored = await AsyncStorage.getItem(storageKey);
+          const saved = unsaved.reduce((value, apply) => apply(value), parse(stored));
           const json = JSON.stringify(saved);
-          await AsyncStorage.setItem(storageKey, json);
+          if (json !== stored) await AsyncStorage.setItem(storageKey, json);
+          unsaved = [];
           if (pendingSaves === 1 && json !== JSON.stringify(current)) publish(saved);
         } finally {
           pendingSaves--;

@@ -53,10 +53,7 @@ export function loadStars() {
 }
 
 export function recordStars(game: Game, level: number, stars: number) {
-  const all = store.get();
-  if ((all[game][level] ?? 0) >= stars) return;
-  const next = { ...all, [game]: { ...all[game], [level]: stars } };
-  store.update((saved) => ({ ...saved, ...eachGame((g) => best(saved[g], next[g])) }));
+  store.update((saved) => ({ ...saved, [game]: best(saved[game], { [level]: stars }) }));
 }
 
 export function useStars(game: Game): LevelStars {

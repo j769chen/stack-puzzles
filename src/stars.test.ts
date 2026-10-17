@@ -67,7 +67,20 @@ describe('stars store', () => {
     await flushStorage();
     jest.mocked(AsyncStorage.setItem).mockClear();
     recordStars('hanoi', 1, 2);
+    recordStars('hanoi', 1, 3);
+    await flushStorage();
     expect(AsyncStorage.setItem).not.toHaveBeenCalled();
+  });
+
+  it('saves a win whose write failed when the level is won again', async () => {
+    jest.mocked(AsyncStorage.setItem).mockRejectedValueOnce(new Error('disk full'));
+    recordStars('daily', 20261017, 3);
+    await flushStorage();
+    expect(getStars('daily')).toEqual({ 20261017: 3 });
+    recordStars('daily', 20261017, 3);
+    await flushStorage();
+    await loadStars();
+    expect(getStars('daily')).toEqual({ 20261017: 3 });
   });
 
   it('keeps only valid levels and star counts from storage', async () => {

@@ -172,13 +172,42 @@ describe('preparing sounds', () => {
     });
   });
 
-  it('stays silent when the audio mode cannot be set', async () => {
+  it('stays silent when the audio mode cannot be set, and tries again on the next sound', async () => {
     await jest.isolateModulesAsync(async () => {
       const { audio, fresh } = freshFeedback();
       jest.mocked(audio.setAudioModeAsync).mockRejectedValueOnce(new Error('session'));
       await fresh.prepare();
       expect(() => fresh.pick()).not.toThrow();
       expect(audio.createAudioPlayer).not.toHaveBeenCalled();
+      expect(audio.setAudioModeAsync).toHaveBeenCalledTimes(2);
+      await fresh.prepare();
+      expect(audio.createAudioPlayer).toHaveBeenCalledTimes(6);
+      fresh.pick();
+      const pick = jest.mocked(audio.createAudioPlayer).mock.results[0]!.value as MockPlayer;
+      expect(pick.play).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('loads every other sound when one cannot be loaded, and tries that one again when it is played', async () => {
+    await jest.isolateModulesAsync(async () => {
+      const { audio, fresh } = freshFeedback();
+      jest.mocked(audio.createAudioPlayer).mockImplementationOnce(() => {
+        throw new Error('asset missing');
+      });
+      await fresh.prepare();
+      const created = () => jest.mocked(audio.createAudioPlayer).mock.calls.map(([source]) => source);
+      expect(created()).toEqual(['pick', 'drop1', 'drop2', 'drop3', 'complete', 'win']);
+      fresh.win();
+      const win = jest.mocked(audio.createAudioPlayer).mock.results[5]!.value as MockPlayer;
+      expect(win.play).toHaveBeenCalledTimes(1);
+
+      fresh.pick();
+      await fresh.prepare();
+      expect(created()).toEqual(['pick', 'drop1', 'drop2', 'drop3', 'complete', 'win', 'pick']);
+      fresh.pick();
+      const pick = jest.mocked(audio.createAudioPlayer).mock.results[6]!.value as MockPlayer;
+      expect(pick.play).toHaveBeenCalledTimes(1);
+      expect(audio.setAudioModeAsync).toHaveBeenCalledTimes(1);
     });
   });
 });
