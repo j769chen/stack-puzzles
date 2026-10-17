@@ -8,6 +8,8 @@ type Options<T> = {
   fits: (stored: T, id: number) => boolean;
 };
 
+type Loaded<T> = { id: number; value: T };
+
 export type DealCache<T> = ReturnType<typeof dealCache<T>>;
 
 export function dealCache<T>({ prefix, task, fits }: Options<T>) {
@@ -48,40 +50,33 @@ export function dealCache<T>({ prefix, task, fits }: Options<T>) {
   }
 
   function useDeal(id: number | null) {
-    const [loaded, setLoaded] = useState<{ id: number; value: T }[]>([]);
+    const [current, setCurrent] = useState<Loaded<T> | null>(null);
+    const [ahead, setAhead] = useState<Loaded<T> | null>(null);
     const [failure, setFailure] = useState<{ error: unknown } | null>(null);
-
-    const keep = useCallback(
-      (loadedId: number, value: T) =>
-        setLoaded((deals) => [...deals.filter((deal) => deal.id !== loadedId), { id: loadedId, value }].slice(-2)),
-      [],
-    );
 
     useEffect(() => {
       if (id === null) return;
       let active = true;
       load(id).then(
-        (value) => active && keep(id, value),
+        (value) => active && setCurrent({ id, value }),
         (error: unknown) => active && setFailure({ error }),
       );
       forgetAllBut(id);
       return () => {
         active = false;
       };
-    }, [id, keep]);
+    }, [id]);
 
-    const prepare = useCallback(
-      (next: number) => {
-        load(next).then(
-          (value) => keep(next, value),
-          () => {},
-        );
-      },
-      [keep],
-    );
+    const prepare = useCallback((next: number) => {
+      load(next).then(
+        (value) => setAhead({ id: next, value }),
+        () => {},
+      );
+    }, []);
 
     if (failure) throw failure.error;
-    return { deal: loaded.find((deal) => deal.id === id)?.value ?? null, prepare };
+    const deal = [current, ahead].find((loaded) => loaded?.id === id);
+    return { deal: deal?.value ?? null, prepare };
   }
 
   return { load, useDeal };

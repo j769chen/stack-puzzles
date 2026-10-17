@@ -40,6 +40,18 @@ describe('dealCache', () => {
     expect(result.current).toEqual(new Error('No deal found'));
   });
 
+  it('keeps the current deal when deals prepared for other levels arrive', async () => {
+    const deals = cache((id) => returns(id * 10));
+    const { result, rerender } = await renderHook(({ id }: { id: number }) => deals.useDeal(id), { initialProps: { id: 1 } });
+    await act(async () => {});
+    await act(async () => result.current.prepare(5));
+    await act(async () => result.current.prepare(2));
+    expect(result.current.deal).toBe(10);
+    await rerender({ id: 2 });
+    expect(result.current.deal).toBe(20);
+    await act(async () => {});
+  });
+
   it('ignores a failure while preparing ahead', async () => {
     const deals = cache((id) => (id === 2 ? fails() : returns(id * 10)));
     const { result } = await renderHook(() => deals.useDeal(1));
