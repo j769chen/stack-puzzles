@@ -33,14 +33,21 @@ export function useRodGame(start: () => Rods, rules: RodRules) {
   const { rods } = current;
   const { moves } = history;
   const solved = rules.isSolved(rods);
-  const selectable = (rod: number) => rods[rod]!.length > 0 && !rules.isRodComplete(rods[rod]!);
+  const cantPick = (rod: number) => {
+    if (rods[rod]!.length === 0) return 'Nothing to pick up';
+    return rules.isRodComplete(rods[rod]!) ? 'Already sorted' : null;
+  };
   const top = (rod: number) => rules.pieceName(rods[rod]!.at(-1)!);
   const announce = (message: string) => AccessibilityInfo.announceForAccessibility(message);
 
   const press = (rod: number) => {
     if (solved) return;
     if (selected === null) {
-      if (!selectable(rod)) return;
+      const reason = cantPick(rod);
+      if (reason) {
+        announce(reason);
+        return;
+      }
       setSelected(rod);
       feedback.pick();
       announce(`Picked up ${top(rod)} from ${rules.placeName(rod)}`);
@@ -56,7 +63,7 @@ export function useRodGame(start: () => Rods, rules: RodRules) {
       }
       announce(`Moved ${top(selected)} to ${rules.placeName(rod)}`);
       setSelected(null);
-    } else if (selectable(rod)) {
+    } else if (!cantPick(rod)) {
       setSelected(rod);
       feedback.pick();
       announce(`Can't move ${top(selected)} to ${rules.placeName(rod)}. Picked up ${top(rod)} instead`);
@@ -77,6 +84,7 @@ export function useRodGame(start: () => Rods, rules: RodRules) {
     selected,
     press,
     drop,
+    cantPick,
     canMoveTo: (rod: number) => selected !== null && rules.canMove(rods, selected, rod),
     controls: {
       moves,

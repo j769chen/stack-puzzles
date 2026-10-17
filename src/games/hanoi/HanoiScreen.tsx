@@ -105,6 +105,7 @@ function HanoiGame({ level, onBack, onLevels, onNext, onWin, onProgress }: GameP
         rowSizes={[state.length]}
         selected={game.selected}
         canMoveTo={game.canMoveTo}
+        cantPick={game.cantPick}
         onPress={game.press}
       />
     </GameShell>

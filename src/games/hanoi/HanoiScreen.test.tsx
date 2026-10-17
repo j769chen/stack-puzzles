@@ -131,6 +131,16 @@ describe('HanoiScreen', () => {
       expect(AccessibilityInfo.announceForAccessibility).toHaveBeenCalledWith('Moved disk 1 to the right peg');
     });
 
+    it('says there is nothing to pick up on an empty peg', async () => {
+      await start();
+      expect(screen.getByRole('button', { name: /^left peg/ }).props.accessibilityHint).toBe('Picks up the top');
+      const empty = screen.getByRole('button', { name: 'middle peg, empty' });
+      expect(empty.props.accessibilityHint).toBe('Nothing to pick up');
+      await fireEvent.press(empty);
+      expect(AccessibilityInfo.announceForAccessibility).toHaveBeenLastCalledWith('Nothing to pick up');
+      expect(screen.getByRole('button', { name: 'middle peg, empty' })).not.toBeSelected();
+    });
+
     it('tells which pegs a picked-up disk cannot go on, and what tapping them does', async () => {
       await start();
       await move(0, 2);

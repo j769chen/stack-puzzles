@@ -12,7 +12,15 @@ afterEach(() => jest.restoreAllMocks());
 
 async function renderButtons(props: Partial<Parameters<typeof RodButtons>[0]> = {}) {
   await renderAsync(
-    <RodButtons labels={labels} rowSizes={[3, 2]} selected={null} canMoveTo={() => true} onPress={jest.fn()} {...props} />,
+    <RodButtons
+      labels={labels}
+      rowSizes={[3, 2]}
+      selected={null}
+      canMoveTo={() => true}
+      cantPick={() => null}
+      onPress={jest.fn()}
+      {...props}
+    />,
   );
   await act(async () => {});
 }
@@ -30,6 +38,13 @@ describe('RodButtons', () => {
     const buttons = screen.getAllByRole('button');
     expect(buttons.map((b) => b.props.accessibilityLabel)).toEqual(labels);
     expect(buttons[0].props.accessibilityHint).toBe('Picks up the top');
+  });
+
+  it("says why a rod can't be picked up", async () => {
+    screenReader(true);
+    await renderButtons({ cantPick: (rod) => (rod === 1 ? 'Nothing to pick up' : null) });
+    expect(screen.getByRole('button', { name: 'Rod 1' }).props.accessibilityHint).toBe('Picks up the top');
+    expect(screen.getByRole('button', { name: 'Rod 2' }).props.accessibilityHint).toBe('Nothing to pick up');
   });
 
   it('reports the selected rod and where a tap will move', async () => {

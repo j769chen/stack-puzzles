@@ -118,10 +118,12 @@ describe('HoopScreen', () => {
     expect(drop).toHaveBeenCalledTimes(2);
   });
 
-  it('will not select an empty or complete rod', async () => {
+  it('will not select an empty or complete rod, and says why', async () => {
     await start([[0, 0, 0, 0], [], [1, 1, 1], [1]]);
     await fireEvent.press(rod(0));
+    expect(AccessibilityInfo.announceForAccessibility).toHaveBeenLastCalledWith('Already sorted');
     await fireEvent.press(rod(1));
+    expect(AccessibilityInfo.announceForAccessibility).toHaveBeenLastCalledWith('Nothing to pick up');
     expect(rodText(0)).toBe('0,0,0,0');
     expect(rodText(1)).toBe('');
   });
@@ -207,8 +209,9 @@ describe('HoopScreen', () => {
 
     it('describes each rod by color and plays through the rod buttons', async () => {
       await start([[0, 0, 0, 0], [], [1, 1], [1, 1]]);
-      expect(await screen.findByRole('button', { name: 'Rod 1, complete, red' })).toBeOnTheScreen();
-      expect(screen.getByRole('button', { name: 'Rod 2, empty' })).toBeOnTheScreen();
+      const complete = await screen.findByRole('button', { name: 'Rod 1, complete, red' });
+      expect(complete.props.accessibilityHint).toBe('Already sorted');
+      expect(screen.getByRole('button', { name: 'Rod 2, empty' }).props.accessibilityHint).toBe('Nothing to pick up');
       const source = screen.getByRole('button', { name: 'Rod 4, orange, orange from the bottom, top 2 orange' });
 
       await fireEvent.press(source);
