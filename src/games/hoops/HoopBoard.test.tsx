@@ -1,12 +1,13 @@
 import { act, create } from '@react-three/test-renderer';
-import { Color, type Mesh, type MeshStandardMaterial, type Object3D, PerspectiveCamera, Vector2, Vector3 } from 'three';
+import { Color, type Mesh, type MeshStandardMaterial, type Object3D, PerspectiveCamera, type TorusGeometry, Vector2, Vector3 } from 'three';
 import { updateSettings } from '../../settings';
+import { Board } from '../../three/Board';
 import { patternMaterial } from '../../three/patterns';
 import { theme } from '../../theme';
 import { HoopBoard } from './HoopBoard';
 import type { Rods } from './logic';
 
-jest.mock('../../three/Board', () => ({ Board: ({ children }: { children: unknown }) => children }));
+jest.mock('../../three/Board', () => ({ Board: jest.fn(({ children }: { children: unknown }) => children) }));
 
 type Props = {
   rods: Rods;
@@ -135,6 +136,13 @@ describe('HoopBoard', () => {
     const ys = (r: Renderer) => rings(r).map((o) => o.position.y);
     expect(ys(selected).slice(0, 2)).toEqual(ys(plain).slice(0, 2));
     expect(ys(selected)[2]).toBeGreaterThan(ys(plain)[2] + 1);
+  });
+
+  it('frames the board up to the top of a lifted ring', async () => {
+    const r = await renderBoard({ rods: [[0, 1, 0, 1], []], selected: 0 });
+    const lifted = rings(r).at(-1)!;
+    const { tube } = ((lifted.children[0] as Mesh).geometry as TorusGeometry).parameters;
+    expect(jest.mocked(Board).mock.calls.at(-1)![0].height).toBeCloseTo(lifted.position.y + 2 * tube);
   });
 
   it('colors complete rods', async () => {
