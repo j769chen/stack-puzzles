@@ -12,14 +12,14 @@ export function createHanoi(disks: number): HanoiState {
 
 export function canMoveDisk(state: HanoiState, from: number, to: number): boolean {
   if (from === to) return false;
-  const disk = state[from].at(-1);
+  const disk = state[from]!.at(-1);
   if (disk === undefined) return false;
-  const target = state[to].at(-1);
+  const target = state[to]!.at(-1);
   return target === undefined || target > disk;
 }
 
 export function isHanoiSolved(state: HanoiState, disks: number): boolean {
-  return state[0].length === 0 && state.some((peg) => peg.length === disks);
+  return state[0]!.length === 0 && state.some((peg) => peg.length === disks);
 }
 
 export function minMoves(disks: number): number {

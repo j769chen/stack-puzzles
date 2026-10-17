@@ -33,7 +33,7 @@ async function renderPicker(selected: number | null = null, touchCancelled = { c
     </TouchCancelled>
   );
   const renderer = await create(picker(selected));
-  const mesh = () => renderer.scene.children[0];
+  const mesh = () => renderer.scene.children[0]!;
   const fire = (event: string, pointer: Vector2, stopPropagation = jest.fn()) =>
     renderer.fireEvent(mesh(), event, { pointer, camera, stopPropagation });
   const press = (pointer: Vector2, stopPropagation = jest.fn()) => fire('pointerDown', pointer, stopPropagation);

@@ -14,20 +14,20 @@ const MAX_STEP = 0.1;
 
 function createTween(points: Vector3[]): Tween {
   let length = 0;
-  for (let i = 1; i < points.length; i++) length += points[i - 1].distanceTo(points[i]);
+  for (let i = 1; i < points.length; i++) length += points[i - 1]!.distanceTo(points[i]!);
   return { points, length, duration: Math.min(MIN_DURATION + length / SPEED, MAX_DURATION), elapsed: 0 };
 }
 
 function placeAlong({ points }: Tween, distance: number, out: Vector3) {
   for (let i = 1; i < points.length; i++) {
-    const d = points[i - 1].distanceTo(points[i]);
+    const d = points[i - 1]!.distanceTo(points[i]!);
     if (distance < d) {
-      out.lerpVectors(points[i - 1], points[i], distance / d);
+      out.lerpVectors(points[i - 1]!, points[i]!, distance / d);
       return;
     }
     distance -= d;
   }
-  out.copy(points[points.length - 1]);
+  out.copy(points[points.length - 1]!);
 }
 
 const easeInOut = (u: number) => (1 - Math.cos(Math.PI * u)) / 2;
@@ -63,7 +63,7 @@ export function Piece({ x, y, z, liftY, children }: Props) {
       placeAlong(t, t.length * easeInOut(u), pos);
       invalidate();
     } else {
-      pos.copy(t.points[t.points.length - 1]);
+      pos.copy(t.points[t.points.length - 1]!);
       tween.current = null;
     }
   });

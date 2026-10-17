@@ -26,15 +26,15 @@ export const ringColor = (ring: number, sizes: number) => Math.floor(ring / size
 export const ringSize = (ring: number, sizes: number) => ring % sizes;
 
 export function canStack(rods: Rods, from: number, to: number, sizes: number): boolean {
-  const ring = rods[from].at(-1);
+  const ring = rods[from]!.at(-1);
   if (from === to || ring === undefined) return false;
-  const under = rods[to].at(-1);
+  const under = rods[to]!.at(-1);
   return under === undefined || ringSize(under, sizes) > ringSize(ring, sizes);
 }
 
 function settled(rod: number[], sizes: number): number {
   let n = 0;
-  while (n < rod.length && ringColor(rod[n], sizes) === ringColor(rod[0], sizes) && ringSize(rod[n], sizes) === sizes - 1 - n) n++;
+  while (n < rod.length && ringColor(rod[n]!, sizes) === ringColor(rod[0]!, sizes) && ringSize(rod[n]!, sizes) === sizes - 1 - n) n++;
   return n;
 }
 
@@ -78,13 +78,13 @@ function deal({ colors, sizes }: TowerSpec, rand: () => number): Rods {
   const bases = rods.map((_, i) => i);
   for (let i = bases.length - 1; i > 0; i--) {
     const j = Math.floor(rand() * (i + 1));
-    [bases[i], bases[j]] = [bases[j], bases[i]];
+    [bases[i], bases[j]] = [bases[j]!, bases[i]!];
   }
-  for (let color = 0; color < colors; color++) rods[bases[color]].push(color * sizes + sizes - 1);
+  for (let color = 0; color < colors; color++) rods[bases[color]!]!.push(color * sizes + sizes - 1);
   for (let size = sizes - 2; size >= 0; size--) {
     for (let color = 0; color < colors; color++) {
-      const fits = bases.filter((rod) => rods[rod].length === 0 || ringSize(rods[rod].at(-1)!, sizes) > size);
-      rods[fits[Math.floor(rand() * fits.length)]].push(color * sizes + size);
+      const fits = bases.filter((rod) => rods[rod]!.length === 0 || ringSize(rods[rod]!.at(-1)!, sizes) > size);
+      rods[fits[Math.floor(rand() * fits.length)]!]!.push(color * sizes + size);
     }
   }
   return rods;

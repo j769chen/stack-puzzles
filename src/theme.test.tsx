@@ -12,12 +12,12 @@ function luminance(hex: string) {
     const channel = parseInt(hex.slice(i, i + 2), 16) / 255;
     return channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
   });
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  return 0.2126 * r! + 0.7152 * g! + 0.0722 * b!;
 }
 
 function contrast(a: string, b: string) {
   const [light, dark] = [luminance(a), luminance(b)].sort((x, y) => y - x);
-  return (light + 0.05) / (dark + 0.05);
+  return (light! + 0.05) / (dark! + 0.05);
 }
 
 function inScheme(scheme: ColorSchemeName) {

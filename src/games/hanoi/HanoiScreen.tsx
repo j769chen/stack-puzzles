@@ -20,7 +20,7 @@ import { HanoiBoard } from './HanoiBoard';
 const PEG_NAMES = ['left', 'middle', 'right'];
 
 function pegLabel(state: HanoiState, peg: number) {
-  const disks = state[peg];
+  const disks = state[peg]!;
   const contents = disks.length ? `disks ${disks.join(', ')} from the bottom` : 'empty';
   return `${PEG_NAMES[peg]} peg, ${contents}`;
 }

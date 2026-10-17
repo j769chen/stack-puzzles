@@ -118,7 +118,7 @@ describe('DailyScreen', () => {
     recordStars('daily', TODAY - 2, 3);
     recordStars('daily', TODAY - 1, 1);
     await start();
-    for (const [from, to] of [[0, 2], [2, 3], [1, 0], [3, 1]]) await move(from, to);
+    for (const [from, to] of [[0, 2], [2, 3], [1, 0], [3, 1]] as const) await move(from, to);
     await act(() => jest.advanceTimersByTime(650));
     expect(screen.getByText('3-day streak')).toBeOnTheScreen();
     await fireEvent.press(screen.getByText('Share'));

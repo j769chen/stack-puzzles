@@ -56,7 +56,7 @@ describe('streaks across daylight-saving changes', () => {
     ['NZ spring forward', [20260926, 20260927, 20260928]],
   ])('keeps a streak going through the %s', (_, days) => {
     const solved = Object.fromEntries(days.map((day) => [day, 3]));
-    expect(dailyStreak(solved, days[2])).toBe(3);
+    expect(dailyStreak(solved, days[2]!)).toBe(3);
     expect(bestStreak(solved)).toBe(3);
   });
 });

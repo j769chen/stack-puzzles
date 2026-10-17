@@ -28,7 +28,7 @@ function playerFor(sound: string) {
 beforeAll(async () => {
   await feedback.prepare();
   const created = jest.mocked(createAudioPlayer).mock;
-  created.calls.forEach(([source], i) => players.set(source as string, created.results[i].value as MockPlayer));
+  created.calls.forEach(([source], i) => players.set(source as string, created.results[i]!.value as MockPlayer));
   preparedAudioModes = jest.mocked(setAudioModeAsync).mock.calls.slice();
 });
 beforeEach(() => jest.useFakeTimers());
@@ -157,7 +157,7 @@ describe('preparing sounds', () => {
       await preparing;
       expect(audio.createAudioPlayer).toHaveBeenCalledTimes(6);
       fresh.pick();
-      const pick = jest.mocked(audio.createAudioPlayer).mock.results[0].value as MockPlayer;
+      const pick = jest.mocked(audio.createAudioPlayer).mock.results[0]!.value as MockPlayer;
       expect(pick.play).toHaveBeenCalledTimes(1);
     });
   });

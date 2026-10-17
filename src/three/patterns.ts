@@ -36,7 +36,7 @@ export function patternPixels(colorIndex: number): Uint8Array {
   const base = new Color(theme.rings[colorIndex]).getRGB({ r: 0, g: 0, b: 0 }, SRGBColorSpace);
   const light = 0.299 * base.r + 0.587 * base.g + 0.114 * base.b > 0.55;
   const mark = light ? 0.12 : 0.95;
-  const pattern = PATTERNS[colorIndex];
+  const pattern = PATTERNS[colorIndex]!;
   const pixels = new Uint8Array(WIDTH * HEIGHT * 4);
   for (let y = 0; y < HEIGHT; y++) {
     for (let x = 0; x < WIDTH; x++) {

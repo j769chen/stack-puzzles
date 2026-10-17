@@ -43,7 +43,7 @@ export function HanoiBoard({ state, disks, selected, onPress, onDrop }: Props) {
       <Plank width={width} depth={depth} />
       {picker}
       {state.flatMap((peg, i) => {
-        const { x } = PEGS[i];
+        const { x } = PEGS[i]!;
         return [
           <Rod
             key={`rod${i}`}
@@ -61,7 +61,7 @@ export function HanoiBoard({ state, disks, selected, onPress, onDrop }: Props) {
                 y={lifted ? liftY : k * DISK_H}
                 liftY={liftY}
                 radius={radius(size)}
-                color={theme.disks[(size - 1) % theme.disks.length]}
+                color={theme.disks[(size - 1) % theme.disks.length]!}
               />
             );
           }),
@@ -98,6 +98,6 @@ function ringProfile(inner: number, outer: number, height: number, round: number
       points.push(new Vector2(cx + Math.cos(a) * round, cy + Math.sin(a) * round));
     }
   }
-  points.push(points[0].clone());
+  points.push(points[0]!.clone());
   return points;
 }

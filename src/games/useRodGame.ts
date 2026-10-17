@@ -21,7 +21,7 @@ function createSnapshot(rods: Rods): Snapshot {
 
 function pourSnapshot({ rods, ids }: Snapshot, from: number, to: number): Snapshot {
   const nextIds = ids.map((r) => [...r]);
-  nextIds[to].push(nextIds[from].pop()!);
+  nextIds[to]!.push(nextIds[from]!.pop()!);
   return { rods: pour(rods, from, to), ids: nextIds };
 }
 
@@ -33,8 +33,8 @@ export function useRodGame(start: () => Rods, rules: RodRules) {
   const { rods } = current;
   const { moves } = history;
   const solved = rules.isSolved(rods);
-  const selectable = (rod: number) => rods[rod].length > 0 && !rules.isRodComplete(rods[rod]);
-  const top = (rod: number) => rules.pieceName(rods[rod][rods[rod].length - 1]);
+  const selectable = (rod: number) => rods[rod]!.length > 0 && !rules.isRodComplete(rods[rod]!);
+  const top = (rod: number) => rules.pieceName(rods[rod]!.at(-1)!);
   const announce = (message: string) => AccessibilityInfo.announceForAccessibility(message);
 
   const press = (rod: number) => {
@@ -51,7 +51,7 @@ export function useRodGame(start: () => Rods, rules: RodRules) {
       const after = pourSnapshot(current, selected, rod);
       history.push(after);
       if (!rules.isSolved(after.rods)) {
-        if (rules.isRodComplete(after.rods[rod])) feedback.complete();
+        if (rules.isRodComplete(after.rods[rod]!)) feedback.complete();
         else feedback.drop();
       }
       announce(`Moved ${top(selected)} to ${rules.placeName(rod)}`);

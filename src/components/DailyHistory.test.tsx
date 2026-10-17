@@ -74,7 +74,7 @@ describe('DailyHistory', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Back' }));
     let handled: ReturnType<Parameters<typeof BackHandler.addEventListener>[1]>;
     await act(() => {
-      handled = add.mock.calls[0][1]({ type: 'hardwareBackPress', timeStamp: 0 });
+      handled = add.mock.calls[0]![1]({ type: 'hardwareBackPress', timeStamp: 0 });
     });
     expect(handled).toBe(true);
     expect(onBack).toHaveBeenCalledTimes(2);

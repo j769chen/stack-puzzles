@@ -9,25 +9,25 @@ const colorOf = (mesh: Mesh) => (mesh.material as MeshStandardMaterial).color;
 describe('Rod', () => {
   it('stands at its position with default colors', async () => {
     const renderer = await create(<Rod {...props} />);
-    const group = renderer.scene.children[0];
+    const group = renderer.scene.children[0]!;
     expect(group.instance.position.toArray()).toEqual([1, 0, 2]);
     const [pole, , pad] = group.children.map((c) => c.instance as Mesh);
-    expect(colorOf(pole).equals(new Color(theme.pole))).toBe(true);
-    expect(colorOf(pad).equals(new Color(theme.pad))).toBe(true);
+    expect(colorOf(pole!).equals(new Color(theme.pole))).toBe(true);
+    expect(colorOf(pad!).equals(new Color(theme.pad))).toBe(true);
   });
 
   it('uses the given pole color', async () => {
     const renderer = await create(<Rod {...props} poleColor={theme.done} />);
-    const [pole, , pad] = renderer.scene.children[0].children.map((c) => c.instance as Mesh);
-    expect(colorOf(pole).equals(new Color(theme.done))).toBe(true);
-    expect(colorOf(pad).equals(new Color(theme.pad))).toBe(true);
+    const [pole, , pad] = renderer.scene.children[0]!.children.map((c) => c.instance as Mesh);
+    expect(colorOf(pole!).equals(new Color(theme.done))).toBe(true);
+    expect(colorOf(pad!).equals(new Color(theme.pad))).toBe(true);
   });
 });
 
 describe('Plank', () => {
   it('sits just below the floor line', async () => {
     const renderer = await create(<Plank width={4} depth={2} z={1} />);
-    expect(renderer.scene.children[0].instance.position.toArray()).toEqual([0, -0.15, 1]);
+    expect(renderer.scene.children[0]!.instance.position.toArray()).toEqual([0, -0.15, 1]);
   });
 });
 
@@ -40,10 +40,10 @@ describe('shared resources', () => {
       </>,
     );
     const [a, b] = renderer.scene.children.map((g) => g.children.map((c) => c.instance as Mesh));
-    a.forEach((mesh, i) => {
-      expect(mesh.geometry).toBe(b[i].geometry);
-      expect(mesh.material).toBe(b[i].material);
+    a!.forEach((mesh, i) => {
+      expect(mesh.geometry).toBe(b![i]!.geometry);
+      expect(mesh.material).toBe(b![i]!.material);
     });
-    expect(b[0].scale.y).toBe(5);
+    expect(b![0]!.scale.y).toBe(5);
   });
 });

@@ -172,7 +172,7 @@ function randomWalk(start: Rods, cap: number, steps: number, rand: () => number)
   for (let i = 0; i < steps; i++) {
     const pours = legalPours(rods, cap);
     if (pours.length === 0) break;
-    rods = pour(rods, ...pours[Math.floor(rand() * pours.length)]);
+    rods = pour(rods, ...pours[Math.floor(rand() * pours.length)]!);
     states.push(rods);
   }
   return states;
@@ -182,7 +182,7 @@ function shuffledRods(colors: number, cap: number, rand: () => number): Rods {
   const rings = Array.from({ length: colors * cap }, (_, i) => Math.floor(i / cap));
   for (let i = rings.length - 1; i > 0; i--) {
     const j = Math.floor(rand() * (i + 1));
-    [rings[i], rings[j]] = [rings[j], rings[i]];
+    [rings[i], rings[j]] = [rings[j]!, rings[i]!];
   }
   return [...Array.from({ length: colors }, (_, i) => rings.slice(i * cap, (i + 1) * cap)), [], []];
 }
@@ -220,8 +220,8 @@ describe('hoops rules under random play', () => {
     for (const { capacity, rods } of positions)
       for (const [from, to] of legalPours(rods, capacity)) {
         const after = pour(rods, from, to);
-        const expectedFrom = rods[from].slice(0, -1);
-        const expectedTo = [...rods[to], rods[from].at(-1)];
+        const expectedFrom = rods[from]!.slice(0, -1);
+        const expectedTo = [...rods[to]!, rods[from]!.at(-1)];
         const ok =
           JSON.stringify(after[from]) === JSON.stringify(expectedFrom) &&
           JSON.stringify(after[to]) === JSON.stringify(expectedTo) &&
@@ -246,7 +246,7 @@ describe('hoops solver on mid-game positions', () => {
   const positions = [1, 2, 4, 6, 8].flatMap((level) =>
     Array.from({ length: 6 }, () => {
       const states = randomWalk(generateLevel(level).rods, CAP, 4 + Math.floor(rand() * 12), rand);
-      return states[states.length - 1];
+      return states[states.length - 1]!;
     }),
   );
 
@@ -282,14 +282,14 @@ describe('hoops level progression', () => {
   const specs = Array.from({ length: 200 }, (_, i) => levelSpec(i + 1));
 
   it('never makes rods shorter as levels go up', () => {
-    specs.forEach((spec, i) => i > 0 && expect(spec.capacity).toBeGreaterThanOrEqual(specs[i - 1].capacity));
+    specs.forEach((spec, i) => i > 0 && expect(spec.capacity).toBeGreaterThanOrEqual(specs[i - 1]!.capacity));
   });
 
   it('only steps difficulty every third level within a rod height', () => {
     specs.forEach((spec, i) => {
-      if (i === 0 || spec.capacity !== specs[i - 1].capacity) return;
-      expect(spec.colors - specs[i - 1].colors).toBeGreaterThanOrEqual(0);
-      expect(spec.colors - specs[i - 1].colors).toBeLessThanOrEqual(1);
+      if (i === 0 || spec.capacity !== specs[i - 1]!.capacity) return;
+      expect(spec.colors - specs[i - 1]!.colors).toBeGreaterThanOrEqual(0);
+      expect(spec.colors - specs[i - 1]!.colors).toBeLessThanOrEqual(1);
     });
     const runs = new Map<string, number>();
     specs.slice(0, 45).forEach((spec) => runs.set(`${spec.capacity}/${spec.colors}`, (runs.get(`${spec.capacity}/${spec.colors}`) ?? 0) + 1));
@@ -318,7 +318,7 @@ describe('daily puzzle', () => {
     const rings = week.map((s) => s.colors * s.capacity);
     expect(rings).toEqual([...rings].sort((a, b) => a - b));
     expect(new Set(rings).size).toBe(7);
-    week.slice(1).forEach((spec, i) => expect(spec.moves[0]).toBeGreaterThan(week[i].moves[1]));
+    week.slice(1).forEach((spec, i) => expect(spec.moves[0]).toBeGreaterThan(week[i]!.moves[1]));
   });
 
   it("keeps each day's best solution inside its weekday's band", () => {

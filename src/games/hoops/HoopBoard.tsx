@@ -48,11 +48,11 @@ function boardLayout(count: number, capacity: number) {
   const liftY = poleHeight + 0.35;
   const rowSizes = rodRows(count);
   const rows = rowSizes.length;
-  const cols = rowSizes[0];
+  const cols = rowSizes[0]!;
   const rowZ = rowSizes.map((_, r) => (r - (rows - 1) / 2) * ROW_GAP);
   const positions = Array.from({ length: count }, (_, i) => {
     const r = Math.floor(i / cols);
-    return { x: ((i % cols) - (rowSizes[r] - 1) / 2) * SPACING, z: rowZ[r] };
+    return { x: ((i % cols) - (rowSizes[r]! - 1) / 2) * SPACING, z: rowZ[r]! };
   });
   const size = {
     width: cols * SPACING + 0.3,
@@ -78,11 +78,11 @@ export function HoopBoard({ rods, capacity, sizes, isRodComplete: complete, ids,
   return (
     <Board {...size} tilt={tilt}>
       {rowZ.map((z, r) => (
-        <Plank key={`plank${r}`} width={rowSizes[r] * SPACING + 0.3} depth={PLANK_DEPTH} z={z} />
+        <Plank key={`plank${r}`} width={rowSizes[r]! * SPACING + 0.3} depth={PLANK_DEPTH} z={z} />
       ))}
       {picker}
       {rods.flatMap((rod, i) => {
-        const { x, z } = positions[i];
+        const { x, z } = positions[i]!;
         const top = rod.length - 1;
         return [
           <Rod
@@ -98,7 +98,7 @@ export function HoopBoard({ rods, capacity, sizes, isRodComplete: complete, ids,
             const spot = spotOf(i, lifted);
             return (
               <Ring
-                key={ids[i][k]}
+                key={ids[i]![k]}
                 x={spot.x}
                 y={lifted ? liftY : k * RING_H}
                 z={spot.z}
@@ -130,7 +130,7 @@ const Ring = memo(function Ring({ x, y, z, liftY, color, patterned, geometry }: 
     <Piece x={x} y={y} z={z} liftY={liftY}>
       <mesh
         geometry={geometry}
-        material={patterned ? patternMaterial(color) : standardMaterial(theme.rings[color], 0.3)}
+        material={patterned ? patternMaterial(color) : standardMaterial(theme.rings[color]!, 0.3)}
         position-y={TUBE}
         rotation-x={Math.PI / 2}
         castShadow
