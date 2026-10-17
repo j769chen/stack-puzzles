@@ -63,13 +63,28 @@ describe('settings', () => {
     expect(JSON.parse((await AsyncStorage.getItem('settings'))!)).toEqual({ sound: false, haptics: false, patterns: false });
   });
 
-  it('skips a save it cannot merge with what is stored', async () => {
+  it('skips a save it cannot merge with what is stored, then saves that change with the next one', async () => {
     await AsyncStorage.setItem('settings', JSON.stringify({ sound: false }));
     jest.mocked(AsyncStorage.getItem).mockRejectedValueOnce(new Error('disk'));
     updateSettings({ haptics: false });
     expect(getSettings().haptics).toBe(false);
     await flushStorage();
     expect(JSON.parse((await AsyncStorage.getItem('settings'))!)).toEqual({ sound: false });
+    updateSettings({ patterns: true });
+    await flushStorage();
+    expect(getSettings()).toEqual({ sound: false, haptics: false, patterns: true });
+    expect(JSON.parse((await AsyncStorage.getItem('settings'))!)).toEqual({ sound: false, haptics: false, patterns: true });
+  });
+
+  it('keeps a change whose write failed and saves it with the next one', async () => {
+    jest.mocked(AsyncStorage.setItem).mockRejectedValueOnce(new Error('disk full'));
+    updateSettings({ sound: false });
+    await flushStorage();
+    expect(getSettings().sound).toBe(false);
+    updateSettings({ patterns: true });
+    await flushStorage();
+    expect(getSettings()).toEqual({ sound: false, haptics: true, patterns: true });
+    expect(JSON.parse((await AsyncStorage.getItem('settings'))!)).toEqual({ sound: false, haptics: true, patterns: true });
   });
 
   it('keeps a change made before loading finishes', async () => {
