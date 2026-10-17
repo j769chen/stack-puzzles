@@ -1,13 +1,15 @@
 import { useSyncExternalStore } from 'react';
 import { storedValue } from './storedValue';
 
-export type Game = 'hanoi' | 'daily';
+const GAMES = ['hanoi', 'daily'] as const;
+export type Game = (typeof GAMES)[number];
 export type LevelStars = Record<number, number>;
-type AllStars = Record<Game, LevelStars>;
+type AllStars = Record<string, unknown> & Record<Game, LevelStars>;
 
 export const MAX_STARS = 3;
 
-const EMPTY: AllStars = { hanoi: {}, daily: {} };
+const eachGame = (stars: (game: Game) => LevelStars) =>
+  Object.fromEntries(GAMES.map((game) => [game, stars(game)])) as Record<Game, LevelStars>;
 
 function parseLevels(value: unknown): LevelStars {
   if (typeof value !== 'object' || value === null) return {};
@@ -18,14 +20,12 @@ function parseLevels(value: unknown): LevelStars {
 }
 
 function parse(stored: string | null): AllStars {
+  let saved: Record<string, unknown> = {};
   try {
     const value: unknown = JSON.parse(stored ?? '{}');
-    if (typeof value !== 'object' || value === null) return EMPTY;
-    const games = value as Partial<Record<Game, unknown>>;
-    return { hanoi: parseLevels(games.hanoi), daily: parseLevels(games.daily) };
-  } catch {
-    return EMPTY;
-  }
+    if (typeof value === 'object' && value !== null && !Array.isArray(value)) saved = value as Record<string, unknown>;
+  } catch {}
+  return { ...saved, ...eachGame((game) => parseLevels(saved[game])) };
 }
 
 export function starsFor(moves: number, optimal: number): number {
@@ -56,7 +56,7 @@ export function recordStars(game: Game, level: number, stars: number) {
   const all = store.get();
   if ((all[game][level] ?? 0) >= stars) return;
   const next = { ...all, [game]: { ...all[game], [level]: stars } };
-  store.update((saved) => ({ hanoi: best(saved.hanoi, next.hanoi), daily: best(saved.daily, next.daily) }));
+  store.update((saved) => ({ ...saved, ...eachGame((g) => best(saved[g], next[g])) }));
 }
 
 export function useStars(game: Game): LevelStars {

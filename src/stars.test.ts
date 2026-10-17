@@ -119,6 +119,17 @@ describe('stars store', () => {
     expect(getStars('hanoi')).toEqual({ 1: 3, 2: 2 });
   });
 
+  it('keeps stars saved for games it does not know about', async () => {
+    await loadFrom(JSON.stringify({ hanoi: { 1: 3 }, towersort: { 4: 2 } }));
+    recordStars('daily', 20261016, 2);
+    await loadStars();
+    expect(JSON.parse((await AsyncStorage.getItem('stars'))!)).toEqual({
+      hanoi: { 1: 3 },
+      daily: { 20261016: 2 },
+      towersort: { 4: 2 },
+    });
+  });
+
   it('saves wins recorded in quick succession', async () => {
     recordStars('hanoi', 1, 3);
     recordStars('hanoi', 2, 1);
