@@ -31,7 +31,9 @@ export function HanoiBoard({ state, disks, selected, onPress, onDrop }: Props) {
   const depth = maxR * 2 + 0.6;
   const { picker, spotOf } = usePicker({
     rods: PEGS,
-    height: liftY + DISK_H,
+    stacks: state.map((peg) => peg.length),
+    piece: { radius: maxR, height: DISK_H },
+    liftY,
     reach: SPACING / 2,
     selected,
     onPick: onPress,

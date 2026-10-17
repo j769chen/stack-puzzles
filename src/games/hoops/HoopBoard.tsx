@@ -68,7 +68,9 @@ export function HoopBoard({ rods, capacity, sizes, isRodComplete: complete, ids,
   const { poleHeight, liftY, rowSizes, rowZ, positions, size, tilt } = boardLayout(rods.length, capacity);
   const { picker, spotOf } = usePicker({
     rods: positions,
-    height: liftY + RING_H,
+    stacks: rods.map((rod) => rod.length),
+    piece: { radius: (sizes ? LARGEST_R : RING_R) + TUBE, height: RING_H },
+    liftY,
     reach: SPACING / 2,
     selected,
     onPick: onPress,

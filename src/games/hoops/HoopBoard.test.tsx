@@ -1,7 +1,8 @@
 import { act, create } from '@react-three/test-renderer';
-import { Color, type Mesh, type MeshStandardMaterial, type Object3D, PerspectiveCamera, type TorusGeometry, Vector2, Vector3 } from 'three';
+import { Color, type Mesh, type MeshStandardMaterial, type Object3D, PerspectiveCamera, Raycaster, type TorusGeometry, Vector2, Vector3 } from 'three';
 import { updateSettings } from '../../settings';
 import { Board } from '../../three/Board';
+import { fitCamera } from '../../three/fit';
 import { patternMaterial } from '../../three/patterns';
 import { theme } from '../../theme';
 import { HoopBoard } from './HoopBoard';
@@ -51,6 +52,41 @@ tapCamera.updateMatrixWorld();
 function tapAt(position: Vector3) {
   const p = position.clone().setY(1).project(tapCamera);
   return { pointer: new Vector2(p.x, p.y), camera: tapCamera, stopPropagation: jest.fn() };
+}
+
+const picker = (r: Renderer) => r.scene.children.find((c) => c.type === 'Mesh' && !c.instance.visible)!;
+
+const fullRods: Rods = [
+  [0, 1, 2, 3, 4, 5],
+  [1, 2, 3, 4, 5, 6],
+  [2, 3, 4, 5, 6, 0],
+  [3, 4, 5, 6, 0, 1],
+  [4, 5, 6, 0, 1, 2],
+  [5, 6, 0, 1, 2, 3],
+  [6, 0, 1, 2, 3, 4],
+  [],
+  [],
+];
+
+function fittedCamera(aspect: number) {
+  const { width, height, depth, tilt } = jest.mocked(Board).mock.calls.at(-1)![0];
+  const camera = new PerspectiveCamera(32, aspect);
+  fitCamera(camera, { width, height, depth }, tilt!, aspect);
+  return camera;
+}
+
+const ringSize = (ring: Object3D) => ((ring.children[0] as Mesh).geometry as TorusGeometry).parameters;
+
+function touchAt(point: Vector3, camera: PerspectiveCamera) {
+  const p = point.clone().project(camera);
+  return { pointer: new Vector2(p.x, p.y), camera, stopPropagation: jest.fn() };
+}
+
+function ringUnder(r: Renderer, { pointer, camera }: { pointer: Vector2; camera: PerspectiveCamera }) {
+  r.scene.instance.updateMatrixWorld(true);
+  const raycaster = new Raycaster();
+  raycaster.setFromCamera(pointer, camera);
+  return raycaster.intersectObjects(rings(r))[0]?.object.parent;
 }
 
 describe('HoopBoard', () => {
@@ -177,24 +213,63 @@ describe('HoopBoard', () => {
   it('reports which rod was tapped', async () => {
     const onPress = jest.fn();
     const r = await renderBoard({ rods: [[], [], []], onPress });
-    const picker = r.scene.children.find((c) => c.type === 'Mesh' && !c.instance.visible)!;
-    await r.fireEvent(picker, 'pointerDown', tapAt(rodGroups(r)[2]!.instance.position));
+    await r.fireEvent(picker(r), 'pointerDown', tapAt(rodGroups(r)[2]!.instance.position));
     expect(onPress).toHaveBeenCalledWith(2);
+  });
+
+  it.each([0.6, 0.9])('picks the rod of a lifted ring the finger is on, not the rod behind it (aspect %p)', async (aspect) => {
+    const onPress = jest.fn();
+    const r = await renderBoard({ rods: fullRods, capacity: 6, selected: 4, onPress });
+    const lifted = rings(r).reduce((a, b) => (a.position.y > b.position.y ? a : b));
+    const { radius, tube } = ringSize(lifted);
+    const touch = touchAt(lifted.position.clone().add(new Vector3(0, 2 * tube, -radius)), fittedCamera(aspect));
+    expect(ringUnder(r, touch)).toBe(lifted);
+    await r.fireEvent(picker(r), 'pointerDown', touch);
+    expect(onPress).toHaveBeenCalledWith(4);
+  });
+
+  it('picks a back rod by its bottom ring, just above a full rod in front', async () => {
+    const onPress = jest.fn();
+    const r = await renderBoard({ rods: fullRods, capacity: 6, onPress });
+    const bottom = rings(r)[0]!;
+    const { radius, tube } = ringSize(bottom);
+    const touch = touchAt(bottom.position.clone().add(new Vector3(0, tube, radius + tube)), fittedCamera(0.6));
+    expect(ringUnder(r, touch)).toBe(bottom);
+    await r.fireEvent(picker(r), 'pointerDown', touch);
+    expect(onPress).toHaveBeenCalledWith(0);
+  });
+
+  it('keeps a dragged ring over the rod it hangs above while the finger rests on it', async () => {
+    const onDrop = jest.fn();
+    const r = await renderBoard({ rods: fullRods, capacity: 6, onDrop });
+    const camera = fittedCamera(0.6);
+    const spot = (i: number) => rodGroups(r)[i]!.instance.position.clone().setY(1);
+    await r.fireEvent(picker(r), 'pointerDown', touchAt(spot(1), camera));
+    await r.update(board({ rods: fullRods, capacity: 6, selected: 1, onDrop }));
+    await r.fireEvent(picker(r), 'pointerMove', touchAt(spot(4), camera));
+    await r.advanceFrames(200, 0.016);
+    const carried = rings(r)[11]!;
+    const { radius, tube } = ringSize(carried);
+    const onCarried = touchAt(carried.position.clone().add(new Vector3(0, 2 * tube, -radius)), camera);
+    expect(ringUnder(r, onCarried)).toBe(carried);
+    await r.fireEvent(picker(r), 'pointerMove', onCarried);
+    await r.fireEvent(picker(r), 'pointerUp', onCarried);
+    await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
+    expect(onDrop).toHaveBeenCalledWith(4);
   });
 
   it('carries a dragged ring over the rod under the finger and drops it there', async () => {
     const onDrop = jest.fn();
     const rods: Rods = [[0, 1], [1], []];
     const r = await renderBoard({ rods, onDrop });
-    const picker = r.scene.children.find((c) => c.type === 'Mesh' && !c.instance.visible)!;
     const spot = (i: number) => rodGroups(r)[i]!.instance.position;
-    await r.fireEvent(picker, 'pointerDown', tapAt(spot(0)));
+    await r.fireEvent(picker(r), 'pointerDown', tapAt(spot(0)));
     await r.update(board({ rods, selected: 0, onDrop }));
-    await r.fireEvent(picker, 'pointerMove', tapAt(spot(2)));
+    await r.fireEvent(picker(r), 'pointerMove', tapAt(spot(2)));
     await r.advanceFrames(200, 0.016);
     const top = rings(r)[1]!;
     expect(top.position.x).toBe(spot(2).x);
-    await r.fireEvent(picker, 'pointerUp', tapAt(spot(2)));
+    await r.fireEvent(picker(r), 'pointerUp', tapAt(spot(2)));
     await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
     expect(onDrop).toHaveBeenCalledWith(2);
     await r.advanceFrames(200, 0.016);

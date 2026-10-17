@@ -3,6 +3,9 @@ import { type Object3D, PerspectiveCamera, Raycaster, Vector2, Vector3 } from 't
 import { RodPicker } from './RodPicker';
 import { TouchCancelled } from './touch';
 
+const SIZE = 400;
+const POINT = 2 / SIZE;
+
 const camera = new PerspectiveCamera(32, 1);
 camera.position.set(0, 6, 12);
 camera.lookAt(0, 1, 0);
@@ -23,7 +26,9 @@ async function renderPicker(selected: number | null = null, touchCancelled = { c
     <TouchCancelled value={touchCancelled}>
       <RodPicker
         rods={[-2, 0, 2].map((x) => ({ x, z: 0 }))}
-        height={3}
+        stacks={[2, 2, 2]}
+        piece={{ radius: 0.6, height: 0.5 }}
+        liftY={2.5}
         reach={1}
         selected={current}
         onPick={onPick}
@@ -32,13 +37,14 @@ async function renderPicker(selected: number | null = null, touchCancelled = { c
       />
     </TouchCancelled>
   );
-  const renderer = await create(picker(selected));
+  const renderer = await create(picker(selected), { width: SIZE, height: SIZE });
   const mesh = () => renderer.scene.children[0]!;
-  const fire = (event: string, pointer: Vector2, stopPropagation = jest.fn()) =>
-    renderer.fireEvent(mesh(), event, { pointer, camera, stopPropagation });
-  const press = (pointer: Vector2, stopPropagation = jest.fn()) => fire('pointerDown', pointer, stopPropagation);
+  const stopPropagation = jest.fn();
+  const fire = (event: string, pointer: Vector2, pointerId = 1) =>
+    renderer.fireEvent(mesh(), event, { pointer, pointerId, camera, stopPropagation });
+  const press = (pointer: Vector2, pointerId = 1) => fire('pointerDown', pointer, pointerId);
   const select = (rod: number | null) => renderer.update(picker(rod));
-  return { picker: mesh(), press, fire, select, onPick, onDrop, onHover };
+  return { picker: mesh(), press, fire, select, onPick, onDrop, onHover, stopPropagation };
 }
 
 describe('RodPicker', () => {
@@ -57,9 +63,8 @@ describe('RodPicker', () => {
   });
 
   it('picks the nearest rod as soon as the finger touches down', async () => {
-    const { press, onPick } = await renderPicker();
-    const stopPropagation = jest.fn();
-    await press(at(2, 1), stopPropagation);
+    const { press, onPick, stopPropagation } = await renderPicker();
+    await press(at(2, 1));
     expect(onPick).toHaveBeenCalledWith(2);
     expect(stopPropagation).toHaveBeenCalledTimes(1);
   });
@@ -98,6 +103,47 @@ describe('RodPicker', () => {
     expect(onDrop).not.toHaveBeenCalled();
   });
 
+  it('treats a touch that slides under 10 points as a tap, even across to the next rod', async () => {
+    const { press, fire, select, onPick, onDrop, onHover } = await renderPicker();
+    const between = at(-1, 1);
+    await press(new Vector2(between.x - 4 * POINT, between.y));
+    expect(onPick).toHaveBeenCalledWith(0);
+    await select(0);
+    const over = new Vector2(between.x + 4 * POINT, between.y);
+    await fire('pointerMove', over);
+    await fire('pointerUp', over);
+    await settle();
+    expect(onHover).not.toHaveBeenCalled();
+    expect(onDrop).not.toHaveBeenCalled();
+  });
+
+  it('drags once the finger has moved 10 points, even if it comes back', async () => {
+    const { press, fire, select, onDrop, onHover } = await renderPicker();
+    const between = at(-1, 1);
+    await press(new Vector2(between.x - 4 * POINT, between.y));
+    await select(0);
+    await fire('pointerMove', new Vector2(between.x + 7 * POINT, between.y));
+    expect(onHover).toHaveBeenLastCalledWith(1);
+    await fire('pointerUp', new Vector2(between.x + 4 * POINT, between.y));
+    await settle();
+    expect(onDrop).toHaveBeenCalledWith(1);
+  });
+
+  it('ignores other fingers while one is dragging a piece', async () => {
+    const { press, fire, select, onPick, onDrop, onHover } = await renderPicker();
+    await press(at(-2, 1), 1);
+    await select(0);
+    await fire('pointerMove', at(2, 1), 1);
+    await press(at(0, 1), 2);
+    await fire('pointerMove', at(0, 1), 2);
+    await fire('pointerUp', at(0, 1), 2);
+    expect(onPick).toHaveBeenCalledTimes(1);
+    expect(onHover.mock.calls).toEqual([[2]]);
+    await fire('pointerUp', at(2, 1), 1);
+    await settle();
+    expect(onDrop).toHaveBeenCalledWith(2);
+  });
+
   it('does not drag when the touch drops an already picked-up piece', async () => {
     const { press, fire, onPick, onDrop, onHover } = await renderPicker(1);
     await press(at(-2, 1));
@@ -129,7 +175,7 @@ describe('RodPicker', () => {
     await fire('pointerMove', at(2, 1));
     expect(onHover).toHaveBeenLastCalledWith(2);
     await select(null);
-    await press(at(0, 1));
+    await press(at(0, 1), 2);
     expect(onHover).toHaveBeenLastCalledWith(null);
     expect(onPick).toHaveBeenLastCalledWith(1);
   });

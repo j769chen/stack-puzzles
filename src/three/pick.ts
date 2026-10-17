@@ -1,6 +1,8 @@
-import { MathUtils, type PerspectiveCamera, Vector2, Vector3 } from 'three';
+import { MathUtils, type PerspectiveCamera, type Ray, Raycaster, Vector2, Vector3 } from 'three';
 
 export type RodSpot = { x: number; z: number };
+
+export type Column = RodSpot & { rod: number; bottom: number; top: number };
 
 function toScreen(point: Vector3, camera: PerspectiveCamera) {
   point.project(camera);
@@ -24,6 +26,34 @@ export function nearestRod(pointer: Vector2, camera: PerspectiveCamera, rods: Ro
     const distance = distanceToSegment(tap, base, top);
     if (distance <= radius && distance < nearestDistance) {
       nearest = i;
+      nearestDistance = distance;
+    }
+  });
+  return nearest;
+}
+
+function distanceInto({ origin, direction }: Ray, { x, z, bottom, top }: Column, radius: number) {
+  const dx = origin.x - x;
+  const dz = origin.z - z;
+  const a = direction.x * direction.x + direction.z * direction.z;
+  const b = dx * direction.x + dz * direction.z;
+  const root = Math.sqrt(b * b - a * (dx * dx + dz * dz - radius * radius));
+  const toBottom = (bottom - origin.y) / direction.y;
+  const toTop = (top - origin.y) / direction.y;
+  const enter = Math.max((-b - root) / a, Math.min(toBottom, toTop), 0);
+  const exit = Math.min((-b + root) / a, Math.max(toBottom, toTop));
+  return enter <= exit ? enter : Infinity;
+}
+
+export function rodUnder(pointer: Vector2, camera: PerspectiveCamera, columns: Column[], radius: number) {
+  const raycaster = new Raycaster();
+  raycaster.setFromCamera(pointer, camera);
+  let nearest: number | null = null;
+  let nearestDistance = Infinity;
+  columns.forEach((column) => {
+    const distance = distanceInto(raycaster.ray, column, radius);
+    if (distance < nearestDistance) {
+      nearest = column.rod;
       nearestDistance = distance;
     }
   });
