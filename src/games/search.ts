@@ -42,6 +42,7 @@ class MinHeap<T> {
 
 export type SearchRules = {
   capacity: number;
+  shortest: boolean;
   isComplete: (rod: string) => boolean;
   canStack: (ring: number, onto: number) => boolean;
   staysOffEmpty?: (rod: string) => boolean;
@@ -59,17 +60,19 @@ type SearchNode = {
 
 const YIELD_EVERY = 64;
 
-const exploresFirst = (a: SearchNode, b: SearchNode) =>
+const byEstimate = (a: SearchNode, b: SearchNode) => a.estimatedLength < b.estimatedLength;
+
+const byEstimateThenDepth = (a: SearchNode, b: SearchNode) =>
   a.estimatedLength !== b.estimatedLength ? a.estimatedLength < b.estimatedLength : a.cost > b.cost;
 
 const stateKey = (rods: string[]) => rods.slice().sort().join('|');
 
 export function* searchRods(start: number[][], rules: SearchRules, nodeLimit: number): Task<Move[] | null> {
-  const { capacity, isComplete, canStack, staysOffEmpty, movesLeft } = rules;
+  const { capacity, shortest, isComplete, canStack, staysOffEmpty, movesLeft } = rules;
   const startRods = start.map((rod) => String.fromCharCode(...rod));
   const startKey = stateKey(startRods);
   const bestCost = new Map([[startKey, 0]]);
-  const open = new MinHeap<SearchNode>(exploresFirst);
+  const open = new MinHeap<SearchNode>(shortest ? byEstimateThenDepth : byEstimate);
   open.push({ rods: startRods, key: startKey, cost: 0, estimatedLength: movesLeft(startRods), parent: null, move: null });
 
   for (let expanded = 0; open.size > 0 && expanded < nodeLimit; ) {
@@ -100,7 +103,8 @@ export function* searchRods(start: number[][], rules: SearchRules, nodeLimit: nu
         next[t] = dst + src[src.length - 1];
         next[f] = src.slice(0, -1);
         const key = stateKey(next);
-        if ((bestCost.get(key) ?? Infinity) <= cost) continue;
+        const known = bestCost.get(key);
+        if (known !== undefined && (!shortest || known <= cost)) continue;
         bestCost.set(key, cost);
         open.push({ rods: next, key, cost, estimatedLength: cost + movesLeft(next), parent: node, move: [f, t] });
       }

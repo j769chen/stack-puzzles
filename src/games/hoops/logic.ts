@@ -78,6 +78,7 @@ function hoopsRules(start: Rods, cap: number): SearchRules {
   const uniform = (rod: string) => rod.length === 0 || bottomRun(rod) === rod.length;
   return {
     capacity: cap,
+    shortest: true,
     isComplete: (rod) => rod.length === cap && uniform(rod),
     canStack: (ring, onto) => ring === onto,
     staysOffEmpty: uniform,

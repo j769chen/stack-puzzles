@@ -58,6 +58,7 @@ function towerRules(sizes: number): SearchRules {
   };
   return {
     capacity: sizes,
+    shortest: false,
     isComplete: (rod) => rod.length === sizes && settledCount(rod) === sizes,
     canStack: (ring, onto) => onto % sizes > ring % sizes,
     movesLeft: (rods) => 3 * rods.reduce((sum, rod) => sum + rod.length - settledCount(rod), 0),

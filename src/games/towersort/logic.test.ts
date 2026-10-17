@@ -55,6 +55,13 @@ describe('tower sort levels', () => {
     );
   });
 
+  it('still deals the original rings for later levels', () => {
+    const levels = JSON.stringify([31, 100, 500, 3555].map((level) => generateTower(level)));
+    expect(createHash('sha256').update(levels).digest('hex')).toBe(
+      '55e470dc60590fdb7220a55609a1d029d8861d081cd34c3f9a963ad6f4a025bf',
+    );
+  });
+
   it('deals the same rings for the same level', () => {
     expect(generateTower(6)).toEqual(generateTower(6));
     expect(generateTower(7)).not.toEqual(generateTower(6));
