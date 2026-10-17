@@ -1,5 +1,5 @@
 import { type ReactNode, useEffect, useEffectEvent, useRef, useState } from 'react';
-import { AccessibilityInfo, StyleSheet, Text, View } from 'react-native';
+import { AccessibilityInfo, Alert, BackHandler, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { themedStyles } from '../theme';
 import { feedback } from '../feedback';
@@ -54,6 +54,25 @@ export function GameShell(props: GameShellProps) {
     };
   }, [props.won]);
 
+  const leave = () => {
+    if (moves === 0 || props.won) {
+      props.onBack();
+      return;
+    }
+    Alert.alert('Leave this puzzle?', 'Your moves so far will be lost.', [
+      { text: 'Keep playing', style: 'cancel' },
+      { text: 'Leave', style: 'destructive', onPress: props.onBack },
+    ], { cancelable: true });
+  };
+  const onHardwareBack = useEffectEvent(leave);
+  useEffect(() => {
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      onHardwareBack();
+      return true;
+    });
+    return () => sub.remove();
+  }, []);
+
   const { message } = props;
   const announcedMessage = useRef(message);
   useEffect(() => {
@@ -102,7 +121,7 @@ export function GameShell(props: GameShellProps) {
     <SafeAreaView style={styles.root}>
       <Header
         title={props.title}
-        onBack={props.onBack}
+        onBack={leave}
         action={props.onLevels && { label: props.levelsLabel ?? 'Levels', onPress: props.onLevels }}
       />
 

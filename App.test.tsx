@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { BackHandler } from 'react-native';
 import App from './App';
+import * as logic from './src/games/hoops/logic';
 import { getSettings, loadSettings } from './src/settings';
 
 jest.mock('./src/three/Board', () => ({ Board: () => null }));
@@ -86,5 +87,32 @@ describe('App', () => {
     expect(handled).toBe(true);
     expect(screen.queryByRole('button', { name: 'Level 1, not solved' })).toBeNull();
     expect(screen.getByText(/^Moves 0/)).toBeOnTheScreen();
+  });
+
+  describe('when a game fails', () => {
+    beforeEach(async () => {
+      jest.spyOn(console, 'error').mockImplementation(() => {});
+      jest.spyOn(logic, 'levelTask').mockImplementationOnce(function* () {
+        throw new Error('No deal found');
+      });
+      await renderApp();
+      await fireEvent.press(screen.getByText('Ring Sort'));
+      await screen.findByRole('button', { name: 'Back to home' });
+    });
+
+    it('shows a way home, and opens the game fresh next time', async () => {
+      await fireEvent.press(screen.getByRole('button', { name: 'Back to home' }));
+      await screen.findAllByText('Level 1 ›');
+      await open('Ring Sort');
+    });
+
+    it('goes home on the Android back button', async () => {
+      let handled: ReturnType<BackPressHandler>;
+      await act(() => {
+        handled = backPress(backEvent);
+      });
+      expect(handled).toBe(true);
+      expect(await screen.findAllByText('Level 1 ›')).toHaveLength(3);
+    });
   });
 });
