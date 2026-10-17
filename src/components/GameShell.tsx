@@ -62,7 +62,7 @@ export function GameShell(props: GameShellProps) {
     Alert.alert('Leave this puzzle?', 'Your moves so far will be lost.', [
       { text: 'Keep playing', style: 'cancel' },
       { text: 'Leave', style: 'destructive', onPress: props.onBack },
-    ]);
+    ], { cancelable: true });
   };
   const onHardwareBack = useEffectEvent(leave);
   useEffect(() => {

@@ -60,7 +60,9 @@ describe('GameShell', () => {
     it('asks before throwing away moves, and stays when told to', async () => {
       const props = await renderShell({ moves: 5 });
       await fireEvent.press(screen.getByRole('button', { name: 'Back' }));
-      expect(Alert.alert).toHaveBeenCalledWith('Leave this puzzle?', 'Your moves so far will be lost.', expect.any(Array));
+      expect(Alert.alert).toHaveBeenCalledWith('Leave this puzzle?', 'Your moves so far will be lost.', expect.any(Array), {
+        cancelable: true,
+      });
       leaveButton('Keep playing').onPress?.();
       expect(props.onBack).not.toHaveBeenCalled();
       leaveButton('Leave').onPress?.();
