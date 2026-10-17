@@ -18,12 +18,6 @@ export function canMoveDisk(state: HanoiState, from: number, to: number): boolea
   return target === undefined || target > disk;
 }
 
-export function moveDisk(state: HanoiState, from: number, to: number): HanoiState {
-  const next = state.map((peg) => [...peg]);
-  next[to].push(next[from].pop()!);
-  return next;
-}
-
 export function isHanoiSolved(state: HanoiState, disks: number): boolean {
   return state[0].length === 0 && state.some((peg) => peg.length === disks);
 }

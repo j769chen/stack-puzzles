@@ -1,3 +1,4 @@
+import { pour } from '../hoops/logic';
 import {
   HANOI_MAX_LEVEL,
   type HanoiState,
@@ -6,7 +7,6 @@ import {
   disksForLevel,
   isHanoiSolved,
   minMoves,
-  moveDisk,
 } from './logic';
 
 function allStates(disks: number): HanoiState[] {
@@ -29,7 +29,7 @@ function distancesTo(target: HanoiState): Map<string, number> {
       for (let from = 0; from < 3; from++)
         for (let to = 0; to < 3; to++) {
           if (!canMoveDisk(state, from, to)) continue;
-          const after = moveDisk(state, from, to);
+          const after = pour(state, from, to);
           if (distance.has(key(after))) continue;
           distance.set(key(after), distance.get(key(state))! + 1);
           next.push(after);
@@ -61,12 +61,6 @@ describe('hanoi logic', () => {
     expect(canMoveDisk(state, 0, 0)).toBe(false);
   });
 
-  it('moves without mutating the previous state', () => {
-    const state = createHanoi(3);
-    expect(moveDisk(state, 0, 2)).toEqual([[3, 2], [], [1]]);
-    expect(state).toEqual([[3, 2, 1], [], []]);
-  });
-
   it('counts the tower as solved on either non-starting peg', () => {
     expect(isHanoiSolved(createHanoi(3), 3)).toBe(false);
     expect(isHanoiSolved([[], [3, 2, 1], []], 3)).toBe(true);
@@ -92,7 +86,7 @@ describe('hanoi logic', () => {
       for (const state of states)
         for (let from = 0; from < 3; from++)
           for (let to = 0; to < 3; to++)
-            if (canMoveDisk(state, from, to)) expect(isWellStacked(moveDisk(state, from, to))).toBe(true);
+            if (canMoveDisk(state, from, to)) expect(isWellStacked(pour(state, from, to))).toBe(true);
     });
   });
 });

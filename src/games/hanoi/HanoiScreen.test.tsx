@@ -160,7 +160,7 @@ describe('HanoiScreen', () => {
       expect(screen.getByRole('button', { name: 'middle peg, empty' }).props.accessibilityHint).toBe('Moves here');
       await fireEvent.press(peg(2));
       expect(AccessibilityInfo.announceForAccessibility).toHaveBeenLastCalledWith(
-        "Can't put disk 2 on the right peg. Picked up disk 1 instead",
+        "Can't move disk 2 to the right peg. Picked up disk 1 instead",
       );
       await fireEvent.press(peg(2));
       expect(AccessibilityInfo.announceForAccessibility).toHaveBeenLastCalledWith('Put disk 1 back');

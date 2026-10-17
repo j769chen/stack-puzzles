@@ -1,9 +1,9 @@
-import { memo, useState } from 'react';
+import { memo } from 'react';
 import { TorusGeometry } from 'three';
 import { Board } from '../../three/Board';
 import { Piece } from '../../three/Piece';
 import { Plank, Rod } from '../../three/Rod';
-import { RodPicker } from '../../three/RodPicker';
+import { usePicker } from '../../three/RodPicker';
 import { patternMaterial } from '../../three/patterns';
 import { shared, standardMaterial } from '../../three/shared';
 import { useSettings } from '../../settings';
@@ -63,25 +63,24 @@ function boardLayout(count: number, capacity: number) {
 }
 
 export function HoopBoard({ rods, capacity, sizes, isRodComplete: complete, ids, selected, onPress, onDrop }: Props) {
-  const [hovered, setHovered] = useState<number | null>(null);
   const done = complete ?? ((rod: number[]) => isRodComplete(rod, capacity));
   const { patterns } = useSettings();
   const { poleHeight, liftY, rowSizes, rowZ, positions, size, tilt } = boardLayout(rods.length, capacity);
+  const { picker, spotOf } = usePicker({
+    rods: positions,
+    height: liftY + RING_H,
+    reach: SPACING / 2,
+    selected,
+    onPick: onPress,
+    onDrop,
+  });
 
   return (
     <Board {...size} tilt={tilt}>
       {rowZ.map((z, r) => (
         <Plank key={`plank${r}`} width={rowSizes[r] * SPACING + 0.3} depth={PLANK_DEPTH} z={z} />
       ))}
-      <RodPicker
-        rods={positions}
-        height={liftY + RING_H}
-        reach={SPACING / 2}
-        selected={selected}
-        onPick={onPress}
-        onDrop={onDrop}
-        onHover={setHovered}
-      />
+      {picker}
       {rods.flatMap((rod, i) => {
         const { x, z } = positions[i];
         const top = rod.length - 1;
@@ -96,7 +95,7 @@ export function HoopBoard({ rods, capacity, sizes, isRodComplete: complete, ids,
           />,
           ...rod.map((ring, k) => {
             const lifted = k === top && selected === i;
-            const spot = lifted && hovered !== null ? positions[hovered] : positions[i];
+            const spot = spotOf(i, lifted);
             return (
               <Ring
                 key={ids[i][k]}

@@ -2,7 +2,8 @@ import { act, create } from '@react-three/test-renderer';
 import { Color, type Mesh, type MeshStandardMaterial, type Object3D, PerspectiveCamera, Vector2, Vector3 } from 'three';
 import { theme } from '../../theme';
 import { HanoiBoard } from './HanoiBoard';
-import { type HanoiState, createHanoi, moveDisk } from './logic';
+import { pour } from '../hoops/logic';
+import { type HanoiState, createHanoi } from './logic';
 
 jest.mock('../../three/Board', () => ({ Board: ({ children }: { children: unknown }) => children }));
 
@@ -50,7 +51,7 @@ describe('HanoiBoard', () => {
     const scene = renderer.scene.instance;
     const smallest = disk(scene, 1);
 
-    await renderer.update(board({ state: moveDisk(start, 0, 2) }));
+    await renderer.update(board({ state: pour(start, 0, 2) }));
     expect(disk(scene, 1)).toBe(smallest);
     await renderer.advanceFrames(1, 0.016);
     expect(smallest.position.x).toBeLessThan(0);
