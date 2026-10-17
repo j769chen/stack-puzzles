@@ -17,7 +17,7 @@ const HEIGHT = 32;
 type Pattern = (u: number, v: number) => boolean;
 
 const spokes = (count: number): Pattern => (u) => (u * count) % 1 < 0.35;
-const band: Pattern = (_u, v) => Math.abs(v - 0.25) < 0.07 || Math.abs(v - 0.75) < 0.07;
+const band: Pattern = (_u, v) => Math.abs(v - Math.round(v)) < 0.07;
 
 export const PATTERNS: Pattern[] = [
   () => false,
