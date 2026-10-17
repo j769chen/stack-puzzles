@@ -98,20 +98,21 @@ export function DailyHistory({ today, onBack }: Props) {
           {weeks.map((week, w) => (
             <View key={w} style={styles.week}>
               {week.map((key, d) => {
-                if (key === null) return <View key={`blank${d}`} style={styles.blank} />;
+                if (key === null) return <View key={`blank${d}`} style={styles.day} />;
                 const stars = solved[key] ?? 0;
                 let label = dailyLabel(key);
                 if (key > today) label += ', upcoming';
                 else label += stars ? `, ${stars} of ${MAX_STARS} stars` : ', not solved';
                 return (
-                  <View
-                    key={key}
-                    style={[styles.cell, key === today && styles.today, key > today && styles.faded]}
-                    accessible
-                    accessibilityLabel={label}
-                  >
-                    <Text style={styles.dayNumber}>{key % 100}</Text>
-                    {stars > 0 && <Stars count={stars} size={starSize} />}
+                  <View key={key} style={styles.day}>
+                    <View
+                      style={[styles.cell, key === today && styles.today, key > today && styles.faded]}
+                      accessible
+                      accessibilityLabel={label}
+                    >
+                      <Text style={styles.dayNumber}>{key % 100}</Text>
+                      {stars > 0 && <Stars count={stars} size={starSize} />}
+                    </View>
                   </View>
                 );
               })}
@@ -139,9 +140,8 @@ const useStyles = themedStyles((colors) =>
     calendar: { gap: GAP },
     week: { flexDirection: 'row', gap: GAP },
     weekday: { flex: 1, textAlign: 'center', fontSize: 13, fontWeight: '700', color: colors.muted },
-    blank: { flex: 1 },
+    day: { flex: 1 },
     cell: {
-      flex: 1,
       aspectRatio: 1,
       borderRadius: 10,
       backgroundColor: colors.card,
