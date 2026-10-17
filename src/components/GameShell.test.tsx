@@ -251,6 +251,17 @@ describe('GameShell', () => {
       expect(jest.getTimerCount()).toBe(0);
     });
 
+    it('waits the full delay again when a solved puzzle is restarted and solved again', async () => {
+      const props = await renderShell({ won: true });
+      await act(() => jest.advanceTimersByTime(650));
+      expect(screen.getByText('Solved!')).toBeOnTheScreen();
+      await screen.rerender(<GameShell {...props} won={false} moves={0} />);
+      await screen.rerender(<GameShell {...props} won />);
+      expect(screen.queryByText('Solved!')).toBeNull();
+      await act(() => jest.advanceTimersByTime(650));
+      expect(screen.getByText('Solved!')).toBeOnTheScreen();
+    });
+
     it('drops the pending win card on a restart during the delay, and waits again for the next win', async () => {
       const onWinShown = jest.fn();
       const props = await renderShell({ won: true, onWinShown });
