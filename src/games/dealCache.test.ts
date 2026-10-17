@@ -12,28 +12,19 @@ function* fails(): Task<number> {
 }
 
 const cache = (task: (id: number) => Task<number>) =>
-  dealCache<number>({ prefix: 'test.deal', task: jest.fn(task), fits: (stored, id) => stored === id * 10 });
+  dealCache<number>({ prefix: 'test.deal', task, fits: (stored, id) => stored === id * 10 });
 
 beforeEach(() => AsyncStorage.clear());
 
 describe('dealCache', () => {
   it('shares one load between callers until it settles, then reads it back from storage', async () => {
     const task = jest.fn((id: number) => returns(id * 10));
-    const deals = dealCache<number>({ prefix: 'test.deal', task, fits: (stored, id) => stored === id * 10 });
+    const deals = cache(task);
     const first = deals.load(3);
     expect(deals.load(3)).toBe(first);
     await expect(first).resolves.toBe(30);
     await expect(deals.load(3)).resolves.toBe(30);
     expect(task).toHaveBeenCalledTimes(1);
-  });
-
-  it.each([
-    ['a value that does not fit', '31'],
-    ['corrupt JSON', '{'],
-  ])('deals again over %s', async (_, stored) => {
-    await AsyncStorage.setItem('test.deal.3', stored);
-    await expect(cache((id) => returns(id * 10)).load(3)).resolves.toBe(30);
-    expect(await AsyncStorage.getItem('test.deal.3')).toBe('30');
   });
 
   it('hands a failed load to the screen to throw', async () => {

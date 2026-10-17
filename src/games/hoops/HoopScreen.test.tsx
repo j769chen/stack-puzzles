@@ -285,7 +285,6 @@ describe('HoopScreen', () => {
       await act(() => jest.advanceTimersByTime(650));
       await waitFor(async () => expect(await AsyncStorage.getItem('hoops.deal.2')).not.toBeNull());
 
-      await act(async () => {});
       const generate = jest.spyOn(logic, 'levelTask');
       generate.mockClear();
       jest.mocked(AsyncStorage.getItem).mockImplementationOnce(() => new Promise(() => {}));
