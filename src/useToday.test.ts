@@ -8,7 +8,6 @@ function appStateListener() {
 }
 
 beforeEach(() => jest.useFakeTimers({ now: new Date(2026, 9, 16, 23, 50) }));
-afterEach(() => jest.useRealTimers());
 
 describe('useToday', () => {
   it("starts on today's date", async () => {

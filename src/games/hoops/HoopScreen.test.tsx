@@ -5,30 +5,12 @@ import { feedback } from '../../feedback';
 import { getStars, loadStars } from '../../stars';
 import { HoopScreen } from './HoopScreen';
 import * as logic from './logic';
-
-type MockBoardProps = { rods: number[][]; selected: number | null; onPress: (rod: number) => void };
+import { move, rodText } from '../mockBoard';
 
 let mockScreenReader = false;
 jest.mock('../../useScreenReader', () => ({ useScreenReader: () => mockScreenReader }));
 
-jest.mock('./HoopBoard', () => {
-  const { Pressable, Text } = jest.requireActual<typeof import('react-native')>('react-native');
-  return {
-    HoopBoard: ({ rods, selected, onPress }: MockBoardProps) =>
-      rods.map((rod, i) => (
-        <Pressable key={i} testID={`rod-${i}`} onPress={() => onPress(i)}>
-          <Text testID={`rod-${i}-rings`}>{`${selected === i ? '*' : ''}${rod.join(',')}`}</Text>
-        </Pressable>
-      )),
-  };
-});
-
-const rodText = (i: number) => screen.getByTestId(`rod-${i}-rings`).props.children as string;
-
-async function pour(from: number, to: number) {
-  await fireEvent.press(screen.getByTestId(`rod-${from}`));
-  await fireEvent.press(screen.getByTestId(`rod-${to}`));
-}
+jest.mock('./HoopBoard', () => ({ HoopBoard: jest.requireActual<typeof import('../mockBoard')>('../mockBoard').MockBoard }));
 
 async function start(rods?: logic.Rods) {
   if (rods) {
@@ -108,10 +90,10 @@ describe('HoopScreen', () => {
 
   it('moves one ring per tap, even when the ring below it matches', async () => {
     await start([[0, 1, 1], [1], [0, 0, 0, 1], [], []]);
-    await pour(0, 1);
+    await move(0, 1);
     expect(rodText(0)).toBe('0,1');
     expect(rodText(1)).toBe('1,1');
-    await pour(0, 1);
+    await move(0, 1);
     expect(rodText(0)).toBe('0');
     expect(rodText(1)).toBe('1,1,1');
     expect(screen.getByText('Moves 2')).toBeOnTheScreen();
@@ -119,7 +101,7 @@ describe('HoopScreen', () => {
 
   it('moves a ring onto a matching ring and counts the move', async () => {
     await start([[0, 1], [1], [0, 0, 0, 1], [], [1]]);
-    await pour(0, 1);
+    await move(0, 1);
     expect(rodText(1)).toBe('1,1');
     expect(screen.getByText('Moves 1')).toBeOnTheScreen();
   });
@@ -128,10 +110,10 @@ describe('HoopScreen', () => {
     const drop = jest.spyOn(feedback, 'drop');
     const complete = jest.spyOn(feedback, 'complete');
     await start([[0, 1], [1], [0, 0, 0, 1], [], [1]]);
-    await pour(0, 1);
+    await move(0, 1);
     expect(drop).toHaveBeenCalledTimes(1);
-    await pour(4, 1);
-    await pour(2, 1);
+    await move(4, 1);
+    await move(2, 1);
     expect(complete).toHaveBeenCalledTimes(1);
     expect(drop).toHaveBeenCalledTimes(2);
   });
@@ -146,7 +128,7 @@ describe('HoopScreen', () => {
 
   it('switches selection when a pour is not allowed, and deselects on a second tap', async () => {
     await start([[0, 0, 1], [1, 1, 0], [0, 1], []]);
-    await pour(0, 1);
+    await move(0, 1);
     expect(rodText(1)).toBe('*1,1,0');
     await fireEvent.press(screen.getByTestId('rod-1'));
     expect(rodText(1)).toBe('1,1,0');
@@ -173,7 +155,7 @@ describe('HoopScreen', () => {
 
   it('announces a dead end after the move that caused it', async () => {
     await start([[1, 2, 1], [2, 0, 0, 0], [2, 1, 0, 2], [1]]);
-    await pour(0, 3);
+    await move(0, 3);
     expect(AccessibilityInfo.announceForAccessibilityWithOptions).toHaveBeenLastCalledWith(
       'No way to finish from here. Undo or restart.',
       { queue: true },
@@ -191,8 +173,8 @@ describe('HoopScreen', () => {
 
   it('undoes and restarts', async () => {
     await start([[0, 1], [1], [0, 0, 0, 1], [], [1]]);
-    await pour(0, 1);
-    await pour(4, 1);
+    await move(0, 1);
+    await move(4, 1);
     await fireEvent.press(screen.getByText('Undo'));
     expect(rodText(1)).toBe('1,1');
     expect(rodText(4)).toBe('1');
@@ -203,14 +185,14 @@ describe('HoopScreen', () => {
 
   it('reports a dead end', async () => {
     await start([[1, 0, 1, 0], [2, 0, 2, 0], [1, 2, 1, 2], []]);
-    await pour(2, 3);
+    await move(2, 3);
     expect(screen.getByText('No way to finish from here. Undo or restart.')).toBeOnTheScreen();
   });
 
   it('reports a dead end even when a pointless move is still left', async () => {
     await start([[1, 2, 1], [2, 0, 0, 0], [2, 1, 0, 2], [1]]);
     expect(screen.queryByText('No way to finish from here. Undo or restart.')).toBeNull();
-    await pour(0, 3);
+    await move(0, 3);
     expect(screen.getByText('No way to finish from here. Undo or restart.')).toBeOnTheScreen();
     await fireEvent.press(screen.getByText('Undo'));
     expect(screen.queryByText('No way to finish from here. Undo or restart.')).toBeNull();
@@ -249,11 +231,10 @@ describe('HoopScreen', () => {
 
   describe('winning', () => {
     beforeEach(() => jest.useFakeTimers());
-    afterEach(() => jest.useRealTimers());
 
     it('praises a perfect solve and saves the next level', async () => {
       await start();
-      for (const [from, to] of logic.generateLevel(1).solution) await pour(from, to);
+      for (const [from, to] of logic.generateLevel(1).solution) await move(from, to);
       await act(() => jest.advanceTimersByTime(650));
       expect(screen.getByText(/^Sorted in \d+ moves\.$/)).toBeOnTheScreen();
       expect(screen.queryByLabelText(/of 3 stars/)).toBeNull();
@@ -265,7 +246,7 @@ describe('HoopScreen', () => {
 
     it('saves the next level as soon as the level is won, even when leaving without Next', async () => {
       await start([[0, 0, 0, 0], [1, 1, 1], [1], []]);
-      await pour(2, 1);
+      await move(2, 1);
       await act(() => jest.advanceTimersByTime(650));
       expect(screen.getByText('Sorted in 1 moves.')).toBeOnTheScreen();
       await fireEvent.press(screen.getByRole('button', { name: 'Levels' }));
@@ -280,7 +261,7 @@ describe('HoopScreen', () => {
     it('prepares the next level while the win card shows and drops the finished one', async () => {
       await start([[0, 0, 0, 0], [1, 1, 1], [1], []]);
       expect(await AsyncStorage.getItem('hoops.deal.1')).not.toBeNull();
-      await pour(2, 1);
+      await move(2, 1);
       expect(await AsyncStorage.getItem('hoops.deal.2')).toBeNull();
       await act(() => jest.advanceTimersByTime(650));
       await waitFor(async () => expect(await AsyncStorage.getItem('hoops.deal.2')).not.toBeNull());
@@ -301,7 +282,7 @@ describe('HoopScreen', () => {
 
     it('ignores taps between the winning pour and the win card', async () => {
       await start([[0, 0, 0, 0], [1, 1, 1], [1], []]);
-      await pour(2, 1);
+      await move(2, 1);
       await fireEvent.press(screen.getByTestId('rod-1'));
       expect(rodText(1)).toBe('1,1,1,1');
       expect(screen.queryByText('Solved!')).toBeNull();

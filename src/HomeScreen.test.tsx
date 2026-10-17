@@ -86,7 +86,6 @@ describe('HomeScreen', () => {
     const [, listener] = jest.mocked(AppState.addEventListener).mock.calls.at(-1)!;
     await act(() => (listener as (state: AppStateStatus) => void)('active'));
     expect(screen.getByText('Play today ›')).toBeOnTheScreen();
-    jest.useRealTimers();
   });
 
   it('shows the daily streak, still alive before today is played', async () => {

@@ -150,7 +150,6 @@ describe('GameShell', () => {
 
   describe('when won', () => {
     beforeEach(() => jest.useFakeTimers());
-    afterEach(() => jest.useRealTimers());
 
     it('shows the win card after the last move settles', async () => {
       const props = await renderShell({ won: true });
