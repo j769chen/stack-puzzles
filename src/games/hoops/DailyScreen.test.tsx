@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, fireEvent, renderAsync, screen } from '@testing-library/react-native';
 import { AppState, type AppStateStatus, Share } from 'react-native';
-import { dailyLabel } from '../../daily';
+import * as daily from '../../daily';
 import { getStars, loadStars, recordStars } from '../../stars';
 import { DailyScreen } from './DailyScreen';
 import * as logic from './logic';
@@ -39,7 +39,7 @@ async function start(onBack = jest.fn()) {
 beforeEach(async () => {
   await AsyncStorage.clear();
   await loadStars();
-  jest.spyOn(logic, 'dailyKey').mockReturnValue(TODAY);
+  jest.spyOn(daily, 'dailyKey').mockReturnValue(TODAY);
   jest.spyOn(logic, 'dailySpec').mockReturnValue({ colors: 2, capacity: 4, moves: [1, 99] });
   jest.spyOn(logic, 'dailyTask').mockImplementation(function* () {
     return DEAL;
@@ -53,7 +53,7 @@ afterEach(() => {
 describe('DailyScreen', () => {
   it('opens and closes the history from the header', async () => {
     await start();
-    jest.mocked(logic.dailyKey).mockRestore();
+    jest.mocked(daily.dailyKey).mockRestore();
     await fireEvent.press(screen.getByRole('button', { name: 'History' }));
     expect(screen.getByRole('header', { name: 'History' })).toBeOnTheScreen();
     await fireEvent.press(screen.getAllByRole('button', { name: 'Back' }).at(-1)!);
@@ -64,7 +64,7 @@ describe('DailyScreen', () => {
     await start();
     expect(logic.dailyTask).toHaveBeenCalledWith(TODAY);
     expect(screen.getByText('Daily Puzzle')).toBeOnTheScreen();
-    expect(screen.getByText(dailyLabel(TODAY))).toBeOnTheScreen();
+    expect(screen.getByText(daily.dailyLabel(TODAY))).toBeOnTheScreen();
     expect(screen.getByLabelText('3 of 3 stars')).toBeOnTheScreen();
     expect(screen.queryByRole('button', { name: 'Levels' })).toBeNull();
   });
@@ -75,7 +75,7 @@ describe('DailyScreen', () => {
     await start();
     expect(logic.dailyTask).toHaveBeenCalledTimes(1);
     await screen.unmountAsync();
-    jest.mocked(logic.dailyKey).mockReturnValue(TODAY + 1);
+    jest.mocked(daily.dailyKey).mockReturnValue(TODAY + 1);
     await start();
     expect(logic.dailyTask).toHaveBeenLastCalledWith(TODAY + 1);
     expect(JSON.parse((await AsyncStorage.getItem('daily.deal'))!).key).toBe(TODAY + 1);
@@ -97,13 +97,13 @@ describe('DailyScreen', () => {
   it("moves on to the new day's puzzle when the app comes back on a later day", async () => {
     const tomorrow = [[1, 0, 0, 0], [1, 1, 0, 1], [], []];
     await start();
-    jest.mocked(logic.dailyKey).mockReturnValue(TODAY + 1);
+    jest.mocked(daily.dailyKey).mockReturnValue(TODAY + 1);
     jest.mocked(logic.dailyTask).mockImplementation(function* () {
       return { rods: tomorrow, solution: logic.solveHoops(tomorrow, 4)! };
     });
     const [, listener] = jest.mocked(AppState.addEventListener).mock.calls.at(-1)!;
     await act(() => (listener as (state: AppStateStatus) => void)('active'));
-    expect(await screen.findByText(dailyLabel(TODAY + 1))).toBeOnTheScreen();
+    expect(await screen.findByText(daily.dailyLabel(TODAY + 1))).toBeOnTheScreen();
     expect(logic.dailyTask).toHaveBeenLastCalledWith(TODAY + 1);
     tomorrow.forEach((rod, i) => expect(screen.getByTestId(`rod-${i}-rings`)).toHaveTextContent(rod.join(',')));
   });
@@ -131,7 +131,7 @@ describe('DailyScreen', () => {
     expect(screen.getByText('3-day streak')).toBeOnTheScreen();
     await fireEvent.press(screen.getByText('Share'));
     expect(share).toHaveBeenCalledWith({
-      message: `Stack Puzzles Daily · ${dailyLabel(TODAY)}\n★★☆ 4/${DEAL.solution.length} moves\n3-day streak`,
+      message: `Stack Puzzles Daily · ${daily.dailyLabel(TODAY)}\n★★☆ 4/${DEAL.solution.length} moves\n3-day streak`,
     });
     jest.useRealTimers();
   });

@@ -18,3 +18,11 @@ export async function runInSlices<T>(task: Task<T>, sliceMs = 8): Promise<T> {
     }
   }
 }
+
+export function* firstFound<T>(attempt: () => Task<T | null>, tries: number): Task<T> {
+  for (let i = 0; i < tries; i++) {
+    const found = yield* attempt();
+    if (found !== null) return found;
+  }
+  throw new Error(`Nothing found in ${tries} tries`);
+}

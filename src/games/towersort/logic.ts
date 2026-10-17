@@ -1,5 +1,6 @@
-import { EMPTY_RODS, MinHeap, type Rods, mulberry32 } from '../hoops/logic';
-import { type Task, runTask } from '../task';
+import { EMPTY_RODS, MAX_DEAL_ATTEMPTS, type Rods, mulberry32 } from '../hoops/logic';
+import { type SearchRules, searchRods } from '../search';
+import { type Task, firstFound, runTask } from '../task';
 import type { Move } from '../useHistory';
 
 export type TowerSpec = { colors: number; sizes: number };
@@ -46,13 +47,8 @@ export function isTowerSolved(rods: Rods, sizes: number): boolean {
 }
 
 const NODE_LIMIT = 50_000;
-const YIELD_EVERY = 64;
 
-const stateKey = (rods: string[]) => rods.slice().sort().join('|');
-
-type SearchNode = { rods: string[]; cost: number; score: number; parent: SearchNode | null; move: Move | null };
-
-function* searchTower(start: Rods, sizes: number, nodeLimit: number): Task<Move[] | null> {
+function towerRules(sizes: number): SearchRules {
   const size = (rod: string, i: number) => rod.charCodeAt(i) % sizes;
   const color = (rod: string, i: number) => Math.floor(rod.charCodeAt(i) / sizes);
   const settledCount = (rod: string) => {
@@ -60,46 +56,17 @@ function* searchTower(start: Rods, sizes: number, nodeLimit: number): Task<Move[
     while (n < rod.length && color(rod, n) === color(rod, 0) && size(rod, n) === sizes - 1 - n) n++;
     return n;
   };
-  const complete = (rod: string) => rod.length === sizes && settledCount(rod) === sizes;
-  const unsettled = (rods: string[]) => rods.reduce((sum, rod) => sum + rod.length - settledCount(rod), 0);
+  return {
+    capacity: sizes,
+    shortest: false,
+    isComplete: (rod) => rod.length === sizes && settledCount(rod) === sizes,
+    canStack: (ring, onto) => onto % sizes > ring % sizes,
+    movesLeft: (rods) => 3 * rods.reduce((sum, rod) => sum + rod.length - settledCount(rod), 0),
+  };
+}
 
-  const startRods = start.map((rod) => String.fromCharCode(...rod));
-  const seen = new Set([stateKey(startRods)]);
-  const open = new MinHeap<SearchNode>((a, b) => a.score < b.score);
-  open.push({ rods: startRods, cost: 0, score: 0, parent: null, move: null });
-  for (let expanded = 0; open.size > 0 && expanded < nodeLimit; expanded++) {
-    if (expanded % YIELD_EVERY === 0) yield;
-    const node = open.pop();
-    const { rods } = node;
-    if (rods.every((rod) => rod.length === 0 || complete(rod))) {
-      const path: Move[] = [];
-      for (let n: SearchNode | null = node; n?.move; n = n.parent) path.unshift(n.move);
-      return path;
-    }
-    const cost = node.cost + 1;
-    for (let from = 0; from < rods.length; from++) {
-      const src = rods[from];
-      if (src.length === 0 || complete(src)) continue;
-      const ring = size(src, src.length - 1);
-      let usedEmpty = false;
-      for (let to = 0; to < rods.length; to++) {
-        const dst = rods[to];
-        if (to === from) continue;
-        if (dst.length === 0) {
-          if (usedEmpty) continue;
-          usedEmpty = true;
-        } else if (size(dst, dst.length - 1) <= ring) continue;
-        const next = rods.slice();
-        next[to] = dst + src[src.length - 1];
-        next[from] = src.slice(0, -1);
-        const key = stateKey(next);
-        if (seen.has(key)) continue;
-        seen.add(key);
-        open.push({ rods: next, cost, score: cost + 3 * unsettled(next), parent: node, move: [from, to] });
-      }
-    }
-  }
-  return null;
+function searchTower(start: Rods, sizes: number, nodeLimit: number): Task<Move[] | null> {
+  return searchRods(start, towerRules(sizes), nodeLimit);
 }
 
 export function solveTower(start: Rods, sizes: number, nodeLimit = NODE_LIMIT): Move[] | null {
@@ -123,14 +90,14 @@ function deal({ colors, sizes }: TowerSpec, rand: () => number): Rods {
   return rods;
 }
 
-export function* towerTask(level: number): Task<Rods> {
+export function towerTask(level: number): Task<Rods> {
   const spec = towerSpec(level);
   const rand = mulberry32(level * 7727 + 3);
-  for (;;) {
+  return firstFound(function* () {
     const rods = deal(spec, rand);
-    if (rods.some((rod) => isTowerComplete(rod, spec.sizes))) continue;
-    if (yield* searchTower(rods, spec.sizes, NODE_LIMIT)) return rods;
-  }
+    if (rods.some((rod) => isTowerComplete(rod, spec.sizes))) return null;
+    return (yield* searchTower(rods, spec.sizes, NODE_LIMIT)) ? rods : null;
+  }, MAX_DEAL_ATTEMPTS);
 }
 
 export function generateTower(level: number): Rods {

@@ -1,4 +1,28 @@
-import { bestStreak, dailyLabel, dailyStreak, monthCells, shareText } from './daily';
+import { bestStreak, dailyDate, dailyKey, dailyLabel, dailyStreak, monthCells, previousDay, shareText } from './daily';
+
+describe('daily keys', () => {
+  it('keys each local calendar day', () => {
+    expect(dailyKey(new Date(2026, 9, 16, 23, 59))).toBe(20261016);
+    expect(dailyKey(new Date(2026, 9, 17, 0, 1))).toBe(20261017);
+    expect(dailyDate(20261016)).toEqual(new Date(2026, 9, 16));
+  });
+
+  it('steps back a day across month and year ends', () => {
+    expect(previousDay(20261016)).toBe(20261015);
+    expect(previousDay(20261101)).toBe(20261031);
+    expect(previousDay(20270101)).toBe(20261231);
+    expect(previousDay(20280301)).toBe(20280229);
+  });
+
+  it('steps back exactly one calendar day across daylight-saving changes', () => {
+    expect(previousDay(20260309)).toBe(20260308);
+    expect(previousDay(20261102)).toBe(20261101);
+    expect(previousDay(20260330)).toBe(20260329);
+    expect(previousDay(20261026)).toBe(20261025);
+    expect(previousDay(20260406)).toBe(20260405);
+    expect(previousDay(20260928)).toBe(20260927);
+  });
+});
 
 describe('dailyStreak', () => {
   it('counts consecutive solved days ending today', () => {

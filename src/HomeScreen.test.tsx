@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { AppState, type AppStateStatus, type ColorSchemeName, type StyleProp, StyleSheet, type ViewStyle } from 'react-native';
-import { dailyKey, previousDay } from './games/hoops/logic';
+import { dailyKey, previousDay } from './daily';
 import { HomeScreen } from './HomeScreen';
 import { getSettings, loadSettings } from './settings';
 import { loadStars, recordStars } from './stars';
