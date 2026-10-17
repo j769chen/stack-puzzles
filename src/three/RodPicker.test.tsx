@@ -161,8 +161,9 @@ describe('RodPicker', () => {
     await press(at(-2, 1));
     await select(0);
     await fire('pointerMove', at(2, 1));
-    await fire('pointerUp', at(2, 1));
+    const lift = fire('pointerUp', at(2, 1));
     touchCancelled.current = true;
+    await lift;
     await settle();
     expect(onHover).toHaveBeenLastCalledWith(null);
     expect(onDrop).not.toHaveBeenCalled();
