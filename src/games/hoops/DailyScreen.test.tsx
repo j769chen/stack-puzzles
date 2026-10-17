@@ -5,30 +5,14 @@ import * as daily from '../../daily';
 import { getStars, loadStars, recordStars } from '../../stars';
 import { DailyScreen } from './DailyScreen';
 import * as logic from './logic';
+import { drag, move, rodText } from '../mockBoard';
 
-type MockBoardProps = { rods: number[][]; onPress: (rod: number) => void };
-
-jest.mock('./HoopBoard', () => {
-  const { Pressable, Text } = jest.requireActual<typeof import('react-native')>('react-native');
-  return {
-    HoopBoard: ({ rods, onPress }: MockBoardProps) =>
-      rods.map((rod, i) => (
-        <Pressable key={i} testID={`rod-${i}`} onPress={() => onPress(i)}>
-          <Text testID={`rod-${i}-rings`}>{rod.join(',')}</Text>
-        </Pressable>
-      )),
-  };
-});
+jest.mock('./HoopBoard', () => ({ HoopBoard: jest.requireActual<typeof import('../mockBoard')>('../mockBoard').MockBoard }));
 
 const TODAY = 20261016;
 const RODS: logic.Rods = [[0, 0, 0, 1], [1, 1, 1, 0], [], []];
 const DEAL = { rods: RODS, solution: logic.solveHoops(RODS, 4)! };
 const START = `Moves 0/${DEAL.solution.length}`;
-
-async function pour(from: number, to: number) {
-  await fireEvent.press(screen.getByTestId(`rod-${from}`));
-  await fireEvent.press(screen.getByTestId(`rod-${to}`));
-}
 
 async function start(onBack = jest.fn()) {
   await renderAsync(<DailyScreen onBack={onBack} />);
@@ -45,10 +29,7 @@ beforeEach(async () => {
     return DEAL;
   });
 });
-afterEach(() => {
-  jest.useRealTimers();
-  jest.restoreAllMocks();
-});
+afterEach(() => jest.restoreAllMocks());
 
 describe('DailyScreen', () => {
   it('opens and closes the history from the header', async () => {
@@ -67,6 +48,17 @@ describe('DailyScreen', () => {
     expect(screen.getByText(daily.dailyLabel(TODAY))).toBeOnTheScreen();
     expect(screen.getByLabelText('3 of 3 stars')).toBeOnTheScreen();
     expect(screen.queryByRole('button', { name: 'Levels' })).toBeNull();
+  });
+
+  it('moves a dragged ring onto a legal rod and puts it back from an illegal one', async () => {
+    await start();
+    await drag(0, 2);
+    expect(rodText(0)).toBe('0,0,0');
+    expect(rodText(2)).toBe('1');
+    await drag(1, 2);
+    expect(rodText(1)).toBe('1,1,1,0');
+    expect(rodText(2)).toBe('1');
+    expect(screen.getByText(`Moves 1/${DEAL.solution.length}`)).toBeOnTheScreen();
   });
 
   it('reuses the stored deal for the same day and replaces it on a new day', async () => {
@@ -90,7 +82,7 @@ describe('DailyScreen', () => {
     await renderAsync(<DailyScreen onBack={jest.fn()} />);
     await screen.findByText(`Moves 0/${solution.length}`);
     jest.useFakeTimers();
-    for (const [from, to] of solution) await pour(from, to);
+    for (const [from, to] of solution) await move(from, to);
     await act(() => jest.advanceTimersByTime(650));
     expect(screen.getByText(`Perfect! ${solution.length} moves, the minimum possible.`)).toBeOnTheScreen();
   });
@@ -106,19 +98,18 @@ describe('DailyScreen', () => {
     await act(() => (listener as (state: AppStateStatus) => void)('active'));
     expect(await screen.findByText(daily.dailyLabel(TODAY + 1))).toBeOnTheScreen();
     expect(logic.dailyTask).toHaveBeenLastCalledWith(TODAY + 1);
-    tomorrow.forEach((rod, i) => expect(screen.getByTestId(`rod-${i}-rings`)).toHaveTextContent(rod.join(',')));
+    tomorrow.forEach((rod, i) => expect(rodText(i)).toBe(rod.join(',')));
   });
 
   it("records today's stars and closes with Done", async () => {
     jest.useFakeTimers();
     const onBack = await start();
-    for (const [from, to] of DEAL.solution) await pour(from, to);
+    for (const [from, to] of DEAL.solution) await move(from, to);
     await act(() => jest.advanceTimersByTime(650));
     expect(screen.getByText(/^Perfect! \d+ moves, the minimum possible\.$/)).toBeOnTheScreen();
     expect(getStars('daily')).toEqual({ [TODAY]: 3 });
     await fireEvent.press(screen.getByText('Done'));
     expect(onBack).toHaveBeenCalledTimes(1);
-    jest.useRealTimers();
   });
 
   it('shows the streak on the win card and shares the result', async () => {
@@ -127,13 +118,12 @@ describe('DailyScreen', () => {
     recordStars('daily', TODAY - 2, 3);
     recordStars('daily', TODAY - 1, 1);
     await start();
-    for (const [from, to] of [[0, 2], [2, 3], [1, 0], [3, 1]]) await pour(from, to);
+    for (const [from, to] of [[0, 2], [2, 3], [1, 0], [3, 1]]) await move(from, to);
     await act(() => jest.advanceTimersByTime(650));
     expect(screen.getByText('3-day streak')).toBeOnTheScreen();
     await fireEvent.press(screen.getByText('Share'));
     expect(share).toHaveBeenCalledWith({
       message: `Stack Puzzles Daily · ${daily.dailyLabel(TODAY)}\n★★☆ 4/${DEAL.solution.length} moves\n3-day streak`,
     });
-    jest.useRealTimers();
   });
 });

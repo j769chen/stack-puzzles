@@ -150,7 +150,6 @@ describe('GameShell', () => {
 
   describe('when won', () => {
     beforeEach(() => jest.useFakeTimers());
-    afterEach(() => jest.useRealTimers());
 
     it('shows the win card after the last move settles', async () => {
       const props = await renderShell({ won: true });
@@ -245,13 +244,36 @@ describe('GameShell', () => {
       expect(props.onBack).toHaveBeenCalledTimes(1);
     });
 
-    it('does not show the win card if it unmounts before the delay', async () => {
-      const errors = jest.spyOn(console, 'error').mockImplementation(() => {});
+    it('cancels the win card delay if it unmounts first', async () => {
       await renderShell({ won: true });
+      expect(jest.getTimerCount()).toBe(1);
       screen.unmount();
+      expect(jest.getTimerCount()).toBe(0);
+    });
+
+    it('waits the full delay again when a solved puzzle is restarted and solved again', async () => {
+      const props = await renderShell({ won: true });
       await act(() => jest.advanceTimersByTime(650));
-      expect(errors).not.toHaveBeenCalled();
-      errors.mockRestore();
+      expect(screen.getByText('Solved!')).toBeOnTheScreen();
+      await screen.rerender(<GameShell {...props} won={false} moves={0} />);
+      await screen.rerender(<GameShell {...props} won />);
+      expect(screen.queryByText('Solved!')).toBeNull();
+      await act(() => jest.advanceTimersByTime(650));
+      expect(screen.getByText('Solved!')).toBeOnTheScreen();
+    });
+
+    it('drops the pending win card on a restart during the delay, and waits again for the next win', async () => {
+      const onWinShown = jest.fn();
+      const props = await renderShell({ won: true, onWinShown });
+      await act(() => jest.advanceTimersByTime(400));
+      await screen.rerender(<GameShell {...props} won={false} moves={0} />);
+      await act(() => jest.advanceTimersByTime(650));
+      expect(screen.queryByText('Solved!')).toBeNull();
+      expect(onWinShown).not.toHaveBeenCalled();
+      await screen.rerender(<GameShell {...props} won />);
+      expect(screen.queryByText('Solved!')).toBeNull();
+      await act(() => jest.advanceTimersByTime(650));
+      expect(screen.getByText('Solved!')).toBeOnTheScreen();
     });
 
     it('reports when the win card is on screen', async () => {

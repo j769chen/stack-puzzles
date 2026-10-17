@@ -2,35 +2,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, fireEvent, renderAsync, screen, waitFor } from '@testing-library/react-native';
 import { TowerSortScreen } from './TowerSortScreen';
 import * as logic from './logic';
+import { drag, move, rod, rodText } from '../mockBoard';
 
 let mockScreenReader = false;
 jest.mock('../../useScreenReader', () => ({ useScreenReader: () => mockScreenReader }));
 
-type MockBoardProps = {
-  rods: number[][];
-  selected: number | null;
-  onPress: (rod: number) => void;
-  onDrop: (rod: number) => void;
-};
-
-jest.mock('../hoops/HoopBoard', () => {
-  const { Pressable, Text } = jest.requireActual<typeof import('react-native')>('react-native');
-  return {
-    HoopBoard: ({ rods, selected, onPress, onDrop }: MockBoardProps) =>
-      rods.map((rod, i) => (
-        <Pressable key={i} testID={`rod-${i}`} onPress={() => onPress(i)} onLongPress={() => onDrop(i)}>
-          <Text testID={`rod-${i}-rings`}>{`${selected === i ? '*' : ''}${rod.join(',')}`}</Text>
-        </Pressable>
-      )),
-  };
-});
-
-const rodText = (i: number) => screen.getByTestId(`rod-${i}-rings`).props.children as string;
-
-async function move(from: number, to: number) {
-  await fireEvent.press(screen.getByTestId(`rod-${from}`));
-  await fireEvent.press(screen.getByTestId(`rod-${to}`));
-}
+jest.mock('../hoops/HoopBoard', () => ({ HoopBoard: jest.requireActual<typeof import('../mockBoard')>('../mockBoard').MockBoard }));
 
 const START = [[2, 1], [5, 0], [8, 7, 6], [4, 3], []];
 
@@ -89,10 +66,10 @@ describe('TowerSortScreen', () => {
     await start();
     await move(3, 1);
     expect(rodText(1)).toBe('*5,0');
-    await fireEvent.press(screen.getByTestId('rod-1'));
+    await fireEvent.press(rod(1));
     await move(0, 3);
     expect(rodText(3)).toBe('*4,3');
-    await fireEvent.press(screen.getByTestId('rod-3'));
+    await fireEvent.press(rod(3));
     expect(screen.getByText('Moves 0')).toBeOnTheScreen();
     await move(1, 0);
     expect(rodText(0)).toBe('2,1,0');
@@ -103,14 +80,12 @@ describe('TowerSortScreen', () => {
 
   it('moves a dragged ring onto a bigger one and puts it back from a smaller one', async () => {
     await start();
-    await fireEvent.press(screen.getByTestId('rod-0'));
-    await fireEvent(screen.getByTestId('rod-3'), 'longPress');
+    await drag(0, 3);
     expect(rodText(0)).toBe('2,1');
     expect(rodText(3)).toBe('4,3');
-    await fireEvent(screen.getByTestId('rod-1'), 'longPress');
+    await fireEvent(rod(1), 'longPress');
     expect(rodText(1)).toBe('5,0');
-    await fireEvent.press(screen.getByTestId('rod-1'));
-    await fireEvent(screen.getByTestId('rod-0'), 'longPress');
+    await drag(1, 0);
     expect(rodText(0)).toBe('2,1,0');
     expect(screen.getByText('Moves 1')).toBeOnTheScreen();
   });
@@ -149,7 +124,6 @@ describe('TowerSortScreen', () => {
     await screen.unmountAsync();
     await renderAsync(<TowerSortScreen onBack={jest.fn()} />);
     expect(await screen.findByText('Level 2')).toBeOnTheScreen();
-    jest.useRealTimers();
   });
 
   it('wins a sorted board and moves on to the next level', async () => {
@@ -164,6 +138,5 @@ describe('TowerSortScreen', () => {
     expect(await AsyncStorage.getItem('towersort.level')).toBe('2');
     await waitFor(async () => expect(await AsyncStorage.getItem('towersort.deal.1')).toBeNull());
     expect(await AsyncStorage.getItem('towersort.deal.2')).not.toBeNull();
-    jest.useRealTimers();
   });
 });

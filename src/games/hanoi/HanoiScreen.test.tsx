@@ -5,38 +5,19 @@ import { feedback } from '../../feedback';
 import { getStars, loadStars } from '../../stars';
 import { HanoiScreen } from './HanoiScreen';
 import * as logic from './logic';
+import { type MockBoardProps, drag, move, rod, rodText } from '../mockBoard';
 
 const { HANOI_MAX_LEVEL, minMoves } = logic;
 
 let mockScreenReader = false;
 jest.mock('../../useScreenReader', () => ({ useScreenReader: () => mockScreenReader }));
 
-type MockBoardProps = {
-  state: number[][];
-  selected: number | null;
-  onPress: (peg: number) => void;
-  onDrop: (peg: number) => void;
-};
+type MockHanoiBoardProps = Omit<MockBoardProps, 'rods'> & { state: number[][] };
 
 jest.mock('./HanoiBoard', () => {
-  const { Pressable, Text } = jest.requireActual<typeof import('react-native')>('react-native');
-  return {
-    HanoiBoard: ({ state, selected, onPress, onDrop }: MockBoardProps) =>
-      state.map((peg, i) => (
-        <Pressable key={i} testID={`peg-${i}`} onPress={() => onPress(i)} onLongPress={() => onDrop(i)}>
-          <Text testID={`peg-${i}-disks`}>{`${selected === i ? '*' : ''}${peg.join(',')}`}</Text>
-        </Pressable>
-      )),
-  };
+  const { MockBoard } = jest.requireActual<typeof import('../mockBoard')>('../mockBoard');
+  return { HanoiBoard: ({ state, ...props }: MockHanoiBoardProps) => <MockBoard rods={state} {...props} /> };
 });
-
-const peg = (i: number) => screen.getByTestId(`peg-${i}`);
-const pegText = (i: number) => screen.getByTestId(`peg-${i}-disks`).props.children as string;
-
-async function move(from: number, to: number) {
-  await fireEvent.press(peg(from));
-  await fireEvent.press(peg(to));
-}
 
 async function start(level?: number) {
   if (level) await AsyncStorage.setItem('hanoi.level', String(level));
@@ -47,19 +28,17 @@ async function start(level?: number) {
 describe('dragging', () => {
   it('moves the disk when it is dropped on a legal peg', async () => {
     await start();
-    await fireEvent.press(peg(0));
-    await fireEvent(peg(2), 'longPress');
-    expect(pegText(2)).toBe('1');
+    await drag(0, 2);
+    expect(rodText(2)).toBe('1');
     expect(screen.getByText('Moves 1/7')).toBeOnTheScreen();
   });
 
   it('puts the disk back when it is dropped on a peg it cannot go on', async () => {
     await start();
     await move(0, 2);
-    await fireEvent.press(peg(0));
-    await fireEvent(peg(2), 'longPress');
-    expect(pegText(0)).toBe('3,2');
-    expect(pegText(2)).toBe('1');
+    await drag(0, 2);
+    expect(rodText(0)).toBe('3,2');
+    expect(rodText(2)).toBe('1');
     expect(screen.getByText('Moves 1/7')).toBeOnTheScreen();
   });
 });
@@ -80,33 +59,33 @@ afterEach(() => jest.restoreAllMocks());
 describe('HanoiScreen', () => {
   it('starts level 1 with three disks on the left peg', async () => {
     await start();
-    expect(pegText(0)).toBe('3,2,1');
+    expect(rodText(0)).toBe('3,2,1');
     expect(screen.getByText('Move all 3 disks to another peg')).toBeOnTheScreen();
   });
 
   it('selects, moves and counts', async () => {
     await start();
-    await fireEvent.press(peg(0));
-    expect(pegText(0)).toBe('*3,2,1');
-    await fireEvent.press(peg(2));
-    expect(pegText(2)).toBe('1');
+    await fireEvent.press(rod(0));
+    expect(rodText(0)).toBe('*3,2,1');
+    await fireEvent.press(rod(2));
+    expect(rodText(2)).toBe('1');
     expect(screen.getByText('Moves 1/7')).toBeOnTheScreen();
   });
 
   it('deselects on a second tap and ignores empty pegs', async () => {
     await start();
-    await fireEvent.press(peg(1));
-    expect(pegText(1)).toBe('');
-    await fireEvent.press(peg(0));
-    await fireEvent.press(peg(0));
-    expect(pegText(0)).toBe('3,2,1');
+    await fireEvent.press(rod(1));
+    expect(rodText(1)).toBe('');
+    await fireEvent.press(rod(0));
+    await fireEvent.press(rod(0));
+    expect(rodText(0)).toBe('3,2,1');
   });
 
   it('switches selection on an illegal move', async () => {
     await start();
     await move(0, 2);
     await move(0, 2);
-    expect(pegText(2)).toBe('*1');
+    expect(rodText(2)).toBe('*1');
     expect(screen.getByText('Moves 1/7')).toBeOnTheScreen();
   });
 
@@ -115,10 +94,10 @@ describe('HanoiScreen', () => {
     await move(0, 2);
     await move(0, 1);
     await fireEvent.press(screen.getByText('Undo'));
-    expect(pegText(1)).toBe('');
+    expect(rodText(1)).toBe('');
     expect(screen.getByText('Moves 1/7')).toBeOnTheScreen();
     await fireEvent.press(screen.getByText('Restart'));
-    expect(pegText(0)).toBe('3,2,1');
+    expect(rodText(0)).toBe('3,2,1');
     expect(screen.getByText('Moves 0/7')).toBeOnTheScreen();
   });
 
@@ -126,7 +105,7 @@ describe('HanoiScreen', () => {
     const pick = jest.spyOn(feedback, 'pick');
     const drop = jest.spyOn(feedback, 'drop');
     await start();
-    await fireEvent.press(peg(1));
+    await fireEvent.press(rod(1));
     expect(pick).not.toHaveBeenCalled();
     await move(0, 2);
     expect(pick).toHaveBeenCalledTimes(1);
@@ -152,17 +131,17 @@ describe('HanoiScreen', () => {
     it('tells which pegs a picked-up disk cannot go on, and what tapping them does', async () => {
       await start();
       await move(0, 2);
-      await fireEvent.press(peg(0));
+      await fireEvent.press(rod(0));
       expect(AccessibilityInfo.announceForAccessibility).toHaveBeenLastCalledWith('Picked up disk 2 from the left peg');
       expect(screen.getByRole('button', { name: 'right peg, disks 1 from the bottom' }).props.accessibilityHint).toBe(
         "Can't move here",
       );
       expect(screen.getByRole('button', { name: 'middle peg, empty' }).props.accessibilityHint).toBe('Moves here');
-      await fireEvent.press(peg(2));
+      await fireEvent.press(rod(2));
       expect(AccessibilityInfo.announceForAccessibility).toHaveBeenLastCalledWith(
         "Can't move disk 2 to the right peg. Picked up disk 1 instead",
       );
-      await fireEvent.press(peg(2));
+      await fireEvent.press(rod(2));
       expect(AccessibilityInfo.announceForAccessibility).toHaveBeenLastCalledWith('Put disk 1 back');
     });
   });
@@ -175,7 +154,7 @@ describe('HanoiScreen', () => {
       expect(screen.getByRole('button', { name: 'Level 4, locked' })).toBeDisabled();
       await fireEvent.press(screen.getByRole('button', { name: 'Level 1, not solved' }));
       expect(await screen.findByText('Level 1')).toBeOnTheScreen();
-      expect(pegText(0)).toBe('3,2,1');
+      expect(rodText(0)).toBe('3,2,1');
 
       await fireEvent.press(screen.getByRole('button', { name: 'Levels' }));
       expect(screen.getByRole('button', { name: 'Level 3, not solved' })).toBeEnabled();
@@ -201,7 +180,6 @@ describe('HanoiScreen', () => {
 
   describe('winning', () => {
     beforeEach(() => jest.useFakeTimers());
-    afterEach(() => jest.useRealTimers());
 
     it('praises a perfect solve and saves the next level', async () => {
       await start();
@@ -227,8 +205,8 @@ describe('HanoiScreen', () => {
       jest.spyOn(logic, 'disksForLevel').mockReturnValue(1);
       await start();
       await move(0, 2);
-      await fireEvent.press(peg(2));
-      expect(pegText(2)).toBe('1');
+      await fireEvent.press(rod(2));
+      expect(rodText(2)).toBe('1');
       expect(screen.getByText('Moves 1/1')).toBeOnTheScreen();
     });
 

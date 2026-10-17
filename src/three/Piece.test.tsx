@@ -142,6 +142,5 @@ describe('Piece', () => {
     internal.frames = 0;
     await renderer.advanceFrames(1, 0.016);
     expect(internal.frames).toBe(0);
-    jest.useRealTimers();
   });
 });

@@ -49,16 +49,17 @@ describe('usePersistentNumber', () => {
     expect(await AsyncStorage.getItem('level')).toBe('30');
   });
 
-  it('does not update after unmounting before storage answers', async () => {
-    let answer: (value: string | null) => void = () => {};
-    jest.mocked(AsyncStorage.getItem).mockReturnValueOnce(new Promise((resolve) => (answer = resolve)));
-    const errors = jest.spyOn(console, 'error').mockImplementation(() => {});
-    const { result, unmount } = await renderHook(() => usePersistentNumber('level', 1));
-    unmount();
-    await act(async () => answer('9'));
-    expect(result.current[0]).toBe(1);
-    expect(errors).not.toHaveBeenCalled();
-    errors.mockRestore();
+  it('ignores a slow answer for a key it has moved on from', async () => {
+    let answerA: (value: string | null) => void = () => {};
+    jest.mocked(AsyncStorage.getItem).mockReturnValueOnce(new Promise((resolve) => (answerA = resolve)));
+    const { result, rerender } = await renderHook(({ key }: { key: string }) => usePersistentNumber(key, 1), {
+      initialProps: { key: 'a' },
+    });
+    await AsyncStorage.setItem('b', '6');
+    await rerender({ key: 'b' });
+    await waitFor(() => expect(result.current[0]).toBe(6));
+    await act(async () => answerA('3'));
+    expect(result.current.slice(0, 3)).toEqual([6, expect.any(Function), true]);
   });
 
   it('reloads when the key changes', async () => {
