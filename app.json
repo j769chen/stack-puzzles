@@ -9,6 +9,10 @@
     "ios": {
       "bundleIdentifier": "com.j769chen.stackpuzzles",
       "supportsTablet": true,
+      "requireFullScreen": true,
+      "infoPlist": {
+        "UISupportedInterfaceOrientations~ipad": ["UIInterfaceOrientationPortrait", "UIInterfaceOrientationPortraitUpsideDown"]
+      },
       "config": {
         "usesNonExemptEncryption": false
       }
