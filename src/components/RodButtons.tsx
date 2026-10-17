@@ -6,16 +6,17 @@ type Props = {
   rowSizes: number[];
   selected: number | null;
   canMoveTo: (rod: number) => boolean;
+  cantPick: (rod: number) => string | null;
   onPress: (rod: number) => void;
 };
 
-export function RodButtons({ labels, rowSizes, selected, canMoveTo, onPress }: Props) {
+export function RodButtons({ labels, rowSizes, selected, canMoveTo, cantPick, onPress }: Props) {
   const screenReader = useScreenReader();
   if (!screenReader) return null;
 
   const rowStarts = rowSizes.map((_, r) => rowSizes.slice(0, r).reduce((a, b) => a + b, 0));
   const hint = (i: number) => {
-    if (selected === null) return 'Picks up the top';
+    if (selected === null) return cantPick(i) ?? 'Picks up the top';
     if (selected === i) return 'Puts it back';
     return canMoveTo(i) ? 'Moves here' : "Can't move here";
   };

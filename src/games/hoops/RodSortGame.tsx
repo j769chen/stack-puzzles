@@ -66,6 +66,7 @@ export function RodSortGame({ start, rules, ...shell }: Props) {
         rowSizes={rodRows(rods.length)}
         selected={game.selected}
         canMoveTo={game.canMoveTo}
+        cantPick={game.cantPick}
         onPress={game.press}
       />
     </GameShell>
