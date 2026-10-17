@@ -32,7 +32,7 @@ beforeEach(async () => {
   await loadStars();
 });
 
-function leaveButton(label: string) {
+function alertButton(label: string) {
   const buttons: AlertButton[] = jest.mocked(Alert.alert).mock.calls.at(-1)![2]!;
   return buttons.find((button) => button.text === label)!;
 }
@@ -43,6 +43,49 @@ function hardwareBack() {
 }
 
 describe('GameShell', () => {
+  describe('restarting', () => {
+    beforeEach(() => jest.spyOn(Alert, 'alert').mockImplementation(() => {}));
+    afterEach(() => jest.restoreAllMocks());
+
+    it('asks before throwing away moves, and stays when told to', async () => {
+      const props = await renderShell({ moves: 5 });
+      await fireEvent.press(screen.getByRole('button', { name: 'Restart' }));
+      expect(Alert.alert).toHaveBeenCalledWith('Restart this puzzle?', 'Your moves so far will be lost.', expect.any(Array), {
+        cancelable: true,
+      });
+      alertButton('Keep playing').onPress?.();
+      expect(props.onRestart).not.toHaveBeenCalled();
+      alertButton('Restart').onPress?.();
+      expect(props.onRestart).toHaveBeenCalledTimes(1);
+    });
+
+    it('restarts straight away before any move', async () => {
+      const props = await renderShell({ moves: 0 });
+      await fireEvent.press(screen.getByRole('button', { name: 'Restart' }));
+      expect(props.onRestart).toHaveBeenCalledTimes(1);
+      expect(Alert.alert).not.toHaveBeenCalled();
+    });
+
+    it('plays a solved puzzle again from the win card without asking', async () => {
+      jest.useFakeTimers();
+      const props = await renderShell({ moves: 7, won: true });
+      await act(() => jest.advanceTimersByTime(650));
+      await fireEvent.press(screen.getByRole('button', { name: 'Play again' }));
+      expect(props.onRestart).toHaveBeenCalledTimes(1);
+      expect(Alert.alert).not.toHaveBeenCalled();
+    });
+  });
+
+  it('reports whether the puzzle is new, being played or won', async () => {
+    const onProgress = jest.fn();
+    const props = await renderShell({ moves: 0, onProgress });
+    await screen.rerender(<GameShell {...props} moves={1} />);
+    await screen.rerender(<GameShell {...props} moves={2} />);
+    await screen.rerender(<GameShell {...props} moves={3} won />);
+    await screen.rerender(<GameShell {...props} moves={0} />);
+    expect(onProgress.mock.calls).toEqual([['new'], ['playing'], ['won'], ['new']]);
+  });
+
   describe('leaving', () => {
     beforeEach(() => {
       jest.spyOn(Alert, 'alert').mockImplementation(() => {});
@@ -63,9 +106,9 @@ describe('GameShell', () => {
       expect(Alert.alert).toHaveBeenCalledWith('Leave this puzzle?', 'Your moves so far will be lost.', expect.any(Array), {
         cancelable: true,
       });
-      leaveButton('Keep playing').onPress?.();
+      alertButton('Keep playing').onPress?.();
       expect(props.onBack).not.toHaveBeenCalled();
-      leaveButton('Leave').onPress?.();
+      alertButton('Leave').onPress?.();
       expect(props.onBack).toHaveBeenCalledTimes(1);
     });
 
@@ -73,7 +116,7 @@ describe('GameShell', () => {
       const props = await renderShell({ moves: 5 });
       expect(hardwareBack()).toBe(true);
       expect(props.onBack).not.toHaveBeenCalled();
-      leaveButton('Leave').onPress?.();
+      alertButton('Leave').onPress?.();
       expect(props.onBack).toHaveBeenCalledTimes(1);
     });
 

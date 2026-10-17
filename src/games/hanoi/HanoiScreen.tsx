@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { GameShell } from '../../components/GameShell';
+import { GameShell, type Progress, confirmDiscard } from '../../components/GameShell';
 import { LevelSelect } from '../../components/LevelSelect';
 import { WithOverlay } from '../../components/WithOverlay';
 import { RodButtons } from '../../components/RodButtons';
@@ -29,6 +29,8 @@ export function HanoiScreen({ onBack }: { onBack: () => void }) {
   const stars = useStars('hanoi');
   const { level, unlocked, goTo, complete, loaded } = useProgress('hanoi', HANOI_MAX_LEVEL, stars);
   const [picking, setPicking] = useState(false);
+  const [round, setRound] = useState(0);
+  const [progress, setProgress] = useState<Progress>('new');
   if (!loaded) return null;
   const next = level >= HANOI_MAX_LEVEL ? 1 : level + 1;
   const levels = picking && (
@@ -38,30 +40,41 @@ export function HanoiScreen({ onBack }: { onBack: () => void }) {
       unlocked={unlocked}
       current={level}
       stars={stars}
-      onPick={(picked) => {
-        goTo(picked);
-        setPicking(false);
-      }}
+      onPick={(picked) =>
+        confirmDiscard(progress, 'Leave', () => {
+          goTo(picked);
+          setRound((r) => r + 1);
+          setPicking(false);
+        })
+      }
       onBack={() => setPicking(false)}
     />
   );
   return (
     <WithOverlay overlay={levels}>
       <HanoiGame
-        key={level}
+        key={`${level}.${round}`}
         level={level}
         onBack={onBack}
         onLevels={() => setPicking(true)}
         onNext={() => goTo(next)}
         onWin={() => complete(next)}
+        onProgress={setProgress}
       />
     </WithOverlay>
   );
 }
 
-type GameProps = { level: number; onBack: () => void; onLevels: () => void; onNext: () => void; onWin: () => void };
+type GameProps = {
+  level: number;
+  onBack: () => void;
+  onLevels: () => void;
+  onNext: () => void;
+  onWin: () => void;
+  onProgress: (progress: Progress) => void;
+};
 
-function HanoiGame({ level, onBack, onLevels, onNext, onWin }: GameProps) {
+function HanoiGame({ level, onBack, onLevels, onNext, onWin, onProgress }: GameProps) {
   const disks = disksForLevel(level);
   const game = useRodGame(() => createHanoi(disks), {
     canMove: canMoveDisk,
@@ -84,6 +97,7 @@ function HanoiGame({ level, onBack, onLevels, onNext, onWin }: GameProps) {
       nextLabel={level >= HANOI_MAX_LEVEL ? 'Play again from level 1' : 'Next level'}
       onNext={onNext}
       onWin={onWin}
+      onProgress={onProgress}
     >
       <HanoiBoard state={state} disks={disks} selected={game.selected} onPress={game.press} onDrop={game.drop} />
       <RodButtons

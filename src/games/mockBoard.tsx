@@ -1,5 +1,5 @@
-import { fireEvent, screen } from '@testing-library/react-native';
-import { Pressable, Text } from 'react-native';
+import { act, fireEvent, screen } from '@testing-library/react-native';
+import { Alert, type AlertButton, Pressable, Text } from 'react-native';
 
 export type MockBoardProps = {
   rods: number[][];
@@ -28,4 +28,9 @@ export async function move(from: number, to: number) {
 export async function drag(from: number, to: number) {
   await fireEvent.press(rod(from));
   await fireEvent(rod(to), 'longPress');
+}
+
+export async function answerAlert(button: string) {
+  const buttons: AlertButton[] = jest.mocked(Alert.alert).mock.calls.at(-1)![2]!;
+  await act(async () => buttons.find((b) => b.text === button)!.onPress?.());
 }

@@ -1,11 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, fireEvent, renderAsync, screen } from '@testing-library/react-native';
-import { AccessibilityInfo } from 'react-native';
+import { AccessibilityInfo, Alert } from 'react-native';
 import { feedback } from '../../feedback';
 import { getStars, loadStars } from '../../stars';
 import { HanoiScreen } from './HanoiScreen';
 import * as logic from './logic';
-import { type MockBoardProps, drag, move, rod, rodText } from '../mockBoard';
+import { type MockBoardProps, answerAlert, drag, move, rod, rodText } from '../mockBoard';
 
 const { HANOI_MAX_LEVEL, minMoves } = logic;
 
@@ -89,7 +89,8 @@ describe('HanoiScreen', () => {
     expect(screen.getByText('Moves 1/7')).toBeOnTheScreen();
   });
 
-  it('undoes and restarts', async () => {
+  it('undoes, and restarts once confirmed', async () => {
+    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
     await start();
     await move(0, 2);
     await move(0, 1);
@@ -97,6 +98,8 @@ describe('HanoiScreen', () => {
     expect(rodText(1)).toBe('');
     expect(screen.getByText('Moves 1/7')).toBeOnTheScreen();
     await fireEvent.press(screen.getByText('Restart'));
+    expect(screen.getByText('Moves 1/7')).toBeOnTheScreen();
+    await answerAlert('Restart');
     expect(rodText(0)).toBe('3,2,1');
     expect(screen.getByText('Moves 0/7')).toBeOnTheScreen();
   });
@@ -169,12 +172,20 @@ describe('HanoiScreen', () => {
       expect(screen.getByText('Moves 1/7')).toBeOnTheScreen();
     });
 
-    it('resumes the game in progress when its own level is picked', async () => {
+    it('asks before a picked level throws away moves, and starts it afresh', async () => {
+      jest.spyOn(Alert, 'alert').mockImplementation(() => {});
       await start();
       await move(0, 2);
       await fireEvent.press(screen.getByRole('button', { name: 'Levels' }));
       await fireEvent.press(screen.getByRole('button', { name: 'Level 1, not solved' }));
-      expect(screen.getByText('Moves 1/7')).toBeOnTheScreen();
+      expect(Alert.alert).toHaveBeenCalledWith('Leave this puzzle?', 'Your moves so far will be lost.', expect.any(Array), {
+        cancelable: true,
+      });
+      expect(screen.getByRole('button', { name: 'Level 1, not solved' })).toBeOnTheScreen();
+      await answerAlert('Leave');
+      expect(screen.queryByRole('button', { name: /^Level 1,/ })).toBeNull();
+      expect(screen.getByText('Moves 0/7')).toBeOnTheScreen();
+      expect(rodText(0)).toBe('3,2,1');
     });
   });
 
@@ -208,6 +219,31 @@ describe('HanoiScreen', () => {
       await fireEvent.press(rod(2));
       expect(rodText(2)).toBe('1');
       expect(screen.getByText('Moves 1/1')).toBeOnTheScreen();
+    });
+
+    it('plays a won level again from the win card', async () => {
+      await start();
+      await play([[0, 1], [1, 2], ...SOLVE_THREE.slice(1)]);
+      expect(screen.getByText(`8 moves. Solve it in ${minMoves(3)} for three stars.`)).toBeOnTheScreen();
+      await fireEvent.press(screen.getByText('Play again'));
+      expect(screen.queryByText('Solved!')).toBeNull();
+      expect(screen.getByText('Moves 0/7')).toBeOnTheScreen();
+      expect(rodText(0)).toBe('3,2,1');
+      await play(SOLVE_THREE);
+      expect(getStars('hanoi')).toEqual({ 1: 3 });
+    });
+
+    it('starts a won level afresh when it is picked again, without asking', async () => {
+      const alert = jest.spyOn(Alert, 'alert');
+      await start();
+      await play(SOLVE_THREE);
+      await fireEvent.press(screen.getByRole('button', { name: 'Levels' }));
+      await fireEvent.press(screen.getByRole('button', { name: 'Level 1, 3 of 3 stars' }));
+      expect(alert).not.toHaveBeenCalled();
+      await act(() => jest.advanceTimersByTime(650));
+      expect(screen.queryByText('Solved!')).toBeNull();
+      expect(screen.getByText('Moves 0/7')).toBeOnTheScreen();
+      expect(rodText(0)).toBe('3,2,1');
     });
 
     it('reports extra moves', async () => {

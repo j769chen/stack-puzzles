@@ -11,6 +11,19 @@ import { WithOverlay } from './WithOverlay';
 
 type Scoring = { game: Game; key: number; optimal: number };
 
+export type Progress = 'new' | 'playing' | 'won';
+
+export function confirmDiscard(progress: Progress, action: 'Leave' | 'Restart', onConfirm: () => void) {
+  if (progress !== 'playing') {
+    onConfirm();
+    return;
+  }
+  Alert.alert(`${action} this puzzle?`, 'Your moves so far will be lost.', [
+    { text: 'Keep playing', style: 'cancel' },
+    { text: action, style: 'destructive', onPress: onConfirm },
+  ], { cancelable: true });
+}
+
 export type GameShellProps = {
   title: string;
   label: string;
@@ -30,6 +43,7 @@ export type GameShellProps = {
   onNext: () => void;
   onWin?: () => void;
   onWinShown?: () => void;
+  onProgress?: (progress: Progress) => void;
   children: ReactNode;
 };
 
@@ -38,6 +52,8 @@ export function GameShell(props: GameShellProps) {
   const [winDelayPassed, setWinDelayPassed] = useState(false);
   const showWin = props.won && winDelayPassed;
   const { scoring, moves } = props;
+  let progress: Progress = moves > 0 ? 'playing' : 'new';
+  if (props.won) progress = 'won';
   const stars = scoring ? starsFor(moves, scoring.optimal) : null;
   let winText = `Sorted in ${moves} moves.`;
   if (scoring && stars === 3) winText = `Perfect! ${moves} moves, the minimum possible.`;
@@ -54,16 +70,12 @@ export function GameShell(props: GameShellProps) {
     };
   }, [props.won]);
 
-  const leave = () => {
-    if (moves === 0 || props.won) {
-      props.onBack();
-      return;
-    }
-    Alert.alert('Leave this puzzle?', 'Your moves so far will be lost.', [
-      { text: 'Keep playing', style: 'cancel' },
-      { text: 'Leave', style: 'destructive', onPress: props.onBack },
-    ], { cancelable: true });
-  };
+  const reportProgress = useEffectEvent((next: Progress) => props.onProgress?.(next));
+  useEffect(() => {
+    reportProgress(progress);
+  }, [progress]);
+
+  const leave = () => confirmDiscard(progress, 'Leave', props.onBack);
   const onHardwareBack = useEffectEvent(leave);
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -112,6 +124,7 @@ export function GameShell(props: GameShellProps) {
         <Text style={styles.winText}>{winText}</Text>
         {props.winNote && <Text style={styles.winNote}>{props.winNote}</Text>}
         {props.onShare && <Button label="Share" onPress={() => props.onShare?.(moves)} />}
+        <Button label="Play again" onPress={props.onRestart} />
         <Button label={props.nextLabel} onPress={props.onNext} primary />
       </View>
     </View>
@@ -146,7 +159,7 @@ export function GameShell(props: GameShellProps) {
 
         <View style={styles.controls}>
           <Button label="Undo" onPress={props.onUndo} disabled={!props.canUndo || props.won} />
-          <Button label="Restart" onPress={props.onRestart} />
+          <Button label="Restart" onPress={() => confirmDiscard(progress, 'Restart', props.onRestart)} />
         </View>
       </WithOverlay>
     </SafeAreaView>

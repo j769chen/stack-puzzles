@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
+import { type Progress, confirmDiscard } from '../components/GameShell';
 import { LevelSelect } from '../components/LevelSelect';
 import { LoadingScreen } from '../components/LoadingScreen';
 import { WithOverlay } from '../components/WithOverlay';
@@ -19,6 +20,8 @@ type Props<T> = {
 export function LevelSortScreen<T>({ game, title, deals, rules, start, onBack }: Props<T>) {
   const { level, unlocked, goTo, complete, loaded } = useProgress(game);
   const [picking, setPicking] = useState(false);
+  const [round, setRound] = useState(0);
+  const [progress, setProgress] = useState<Progress>('new');
   const { deal, prepare } = useDeal(deals, loaded ? level : null);
   const levelRules = useMemo(() => rules(level), [rules, level]);
   const prepareNext = useCallback(() => prepare(level + 1), [prepare, level]);
@@ -29,17 +32,20 @@ export function LevelSortScreen<T>({ game, title, deals, rules, start, onBack }:
       count={unlocked}
       unlocked={unlocked}
       current={level}
-      onPick={(picked) => {
-        goTo(picked);
-        setPicking(false);
-      }}
+      onPick={(picked) =>
+        confirmDiscard(progress, 'Leave', () => {
+          goTo(picked);
+          setRound((r) => r + 1);
+          setPicking(false);
+        })
+      }
       onBack={() => setPicking(false)}
     />
   );
   return (
     <WithOverlay overlay={levels}>
       <RodSortGame
-        key={level}
+        key={`${level}.${round}`}
         start={start(deal)}
         rules={levelRules}
         title={title}
@@ -50,6 +56,7 @@ export function LevelSortScreen<T>({ game, title, deals, rules, start, onBack }:
         onNext={() => goTo(level + 1)}
         onWin={() => complete(level + 1)}
         onWinShown={prepareNext}
+        onProgress={setProgress}
       />
     </WithOverlay>
   );
