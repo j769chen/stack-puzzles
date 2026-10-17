@@ -49,35 +49,38 @@ export function dealCache<T>({ prefix, task, fits }: Options<T>) {
       .catch(() => {});
   }
 
-  function useDeal(id: number | null) {
-    const [current, setCurrent] = useState<Loaded<T> | null>(null);
-    const [ahead, setAhead] = useState<Loaded<T> | null>(null);
-    const [failure, setFailure] = useState<{ error: unknown } | null>(null);
+  return { load, forgetAllBut };
+}
 
-    useEffect(() => {
-      if (id === null) return;
-      let active = true;
-      load(id).then(
-        (value) => active && setCurrent({ id, value }),
-        (error: unknown) => active && setFailure({ error }),
-      );
-      forgetAllBut(id);
-      return () => {
-        active = false;
-      };
-    }, [id]);
+export function useDeal<T>(deals: DealCache<T>, id: number | null) {
+  const [current, setCurrent] = useState<Loaded<T> | null>(null);
+  const [ahead, setAhead] = useState<Loaded<T> | null>(null);
+  const [failure, setFailure] = useState<{ error: unknown } | null>(null);
 
-    const prepare = useCallback((next: number) => {
-      load(next).then(
+  useEffect(() => {
+    if (id === null) return;
+    let active = true;
+    deals.load(id).then(
+      (value) => active && setCurrent({ id, value }),
+      (error: unknown) => active && setFailure({ error }),
+    );
+    deals.forgetAllBut(id);
+    return () => {
+      active = false;
+    };
+  }, [deals, id]);
+
+  const prepare = useCallback(
+    (next: number) => {
+      deals.load(next).then(
         (value) => setAhead({ id: next, value }),
         () => {},
       );
-    }, []);
+    },
+    [deals],
+  );
 
-    if (failure) throw failure.error;
-    const deal = [current, ahead].find((loaded) => loaded?.id === id);
-    return { deal: deal?.value ?? null, prepare };
-  }
-
-  return { load, useDeal };
+  if (failure) throw failure.error;
+  const deal = [current, ahead].find((loaded) => loaded?.id === id);
+  return { deal: deal?.value ?? null, prepare };
 }

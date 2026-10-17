@@ -287,10 +287,13 @@ describe('HoopScreen', () => {
 
       const generate = jest.spyOn(logic, 'levelTask');
       generate.mockClear();
-      jest.mocked(AsyncStorage.getItem).mockImplementationOnce(() => new Promise(() => {}));
+      const stored = await AsyncStorage.getItem('hoops.deal.2');
+      let answer: () => void = () => {};
+      jest.mocked(AsyncStorage.getItem).mockImplementationOnce(() => new Promise((resolve) => (answer = () => resolve(stored))));
       await fireEvent.press(screen.getByText('Next level'));
       expect(screen.getByText('Level 2')).toBeOnTheScreen();
       expect(screen.queryByLabelText('Loading')).toBeNull();
+      await act(async () => answer());
       expect(generate).not.toHaveBeenCalled();
       logic.generateLevel(2).rods.forEach((rod, i) => expect(rodText(i)).toBe(rod.join(',')));
       await waitFor(async () => expect(await AsyncStorage.getItem('hoops.deal.1')).toBeNull());
