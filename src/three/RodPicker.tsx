@@ -1,5 +1,5 @@
 import type { ThreeEvent } from '@react-three/fiber/native';
-import { useContext, useRef } from 'react';
+import { useContext, useRef, useState } from 'react';
 import { type Intersection, type Mesh, type PerspectiveCamera, type Raycaster, Vector3 } from 'three';
 import { type RodSpot, nearestRod } from './pick';
 import { TouchCancelled } from './touch';
@@ -66,4 +66,12 @@ export function RodPicker({ rods, height, reach, selected, onPick, onDrop, onHov
       onPointerUp={up}
     />
   );
+}
+
+export function usePicker(props: Omit<Props, 'onHover'>) {
+  const [hovered, setHovered] = useState<number | null>(null);
+  return {
+    picker: <RodPicker {...props} onHover={setHovered} />,
+    spotOf: (rod: number, lifted: boolean) => props.rods[lifted && hovered !== null ? hovered : rod],
+  };
 }

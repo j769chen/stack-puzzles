@@ -1,9 +1,9 @@
-import { memo, useMemo, useState } from 'react';
+import { memo, useMemo } from 'react';
 import { Vector2 } from 'three';
 import { Board } from '../../three/Board';
 import { Piece } from '../../three/Piece';
 import { Plank, Rod } from '../../three/Rod';
-import { RodPicker } from '../../three/RodPicker';
+import { usePicker } from '../../three/RodPicker';
 import { standardMaterial } from '../../three/shared';
 import { theme } from '../../theme';
 import type { HanoiState } from './logic';
@@ -22,7 +22,6 @@ type Props = {
 };
 
 export function HanoiBoard({ state, disks, selected, onPress, onDrop }: Props) {
-  const [hovered, setHovered] = useState<number | null>(null);
   const maxR = SPACING * 0.45;
   const minR = 0.5;
   const radius = (size: number) => minR + ((maxR - minR) * (size - 1)) / Math.max(disks - 1, 1);
@@ -30,19 +29,19 @@ export function HanoiBoard({ state, disks, selected, onPress, onDrop }: Props) {
   const liftY = poleH + 0.35;
   const width = SPACING * 3 + 0.4;
   const depth = maxR * 2 + 0.6;
+  const { picker, spotOf } = usePicker({
+    rods: PEGS,
+    height: liftY + DISK_H,
+    reach: SPACING / 2,
+    selected,
+    onPick: onPress,
+    onDrop,
+  });
 
   return (
     <Board width={width} height={liftY + DISK_H} depth={depth}>
       <Plank width={width} depth={depth} />
-      <RodPicker
-        rods={PEGS}
-        height={liftY + DISK_H}
-        reach={SPACING / 2}
-        selected={selected}
-        onPick={onPress}
-        onDrop={onDrop}
-        onHover={setHovered}
-      />
+      {picker}
       {state.flatMap((peg, i) => {
         const { x } = PEGS[i];
         return [
@@ -58,7 +57,7 @@ export function HanoiBoard({ state, disks, selected, onPress, onDrop }: Props) {
             return (
               <Disk
                 key={size}
-                x={lifted && hovered !== null ? PEGS[hovered].x : x}
+                x={spotOf(i, lifted).x}
                 y={lifted ? liftY : k * DISK_H}
                 liftY={liftY}
                 radius={radius(size)}
