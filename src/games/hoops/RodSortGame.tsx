@@ -1,7 +1,8 @@
-import { useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { GameShell, type GameShellProps } from '../../components/GameShell';
 import { RodButtons } from '../../components/RodButtons';
-import { isDeadEnd } from '../deadEnd';
+import { deadEndTask } from '../deadEnd';
+import { runInSlices } from '../task';
 import { useRodGame } from '../useRodGame';
 import { HoopBoard } from './HoopBoard';
 import { rodRows } from './layout';
@@ -47,7 +48,18 @@ export function RodSortGame({ start, rules, ...shell }: Props) {
     placeName: (rod) => `rod ${rod + 1}`,
   });
   const { rods } = game;
-  const stuck = useMemo(() => isDeadEnd(rods, rules.canPour, (state) => isSolved(state, rules)), [rods, rules]);
+  const [deadEnd, setDeadEnd] = useState<Rods | null>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const check = deadEndTask(rods, rules.canPour, (state) => isSolved(state, rules));
+    runInSlices(check, { signal: controller.signal }).then(
+      (dead) => dead && setDeadEnd(rods),
+      () => {},
+    );
+    return () => controller.abort();
+  }, [rods, rules]);
+  const stuck = deadEnd === rods;
 
   return (
     <GameShell {...shell} {...game.controls} message={stuck ? 'No way to finish from here. Undo or restart.' : rules.goal}>

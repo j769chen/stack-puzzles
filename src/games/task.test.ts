@@ -18,15 +18,24 @@ describe('tasks', () => {
   it('lets other work run between slices', async () => {
     const log: string[] = [];
     setTimeout(() => log.push('timer'), 0);
-    await expect(runInSlices(steps(log), 0)).resolves.toBe('done');
+    await expect(runInSlices(steps(log), { sliceMs: 0 })).resolves.toBe('done');
     expect(log).toEqual(['first', 'timer', 'second']);
   });
 
   it('keeps going without pausing while the slice lasts', async () => {
     const log: string[] = [];
     setTimeout(() => log.push('timer'), 0);
-    await expect(runInSlices(steps(log), 60_000)).resolves.toBe('done');
+    await expect(runInSlices(steps(log), { sliceMs: 60_000 })).resolves.toBe('done');
     expect(log).toEqual(['first', 'second']);
+  });
+
+  it('stops at the next slice once cancelled', async () => {
+    const log: string[] = [];
+    const controller = new AbortController();
+    const run = runInSlices(steps(log), { sliceMs: 0, signal: controller.signal });
+    controller.abort();
+    await expect(run).rejects.toThrow('Cancelled');
+    expect(log).toEqual(['first']);
   });
 
   it('returns the first attempt that finds something', () => {
