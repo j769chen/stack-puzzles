@@ -134,7 +134,7 @@ function GameCard({ title, description, status, stars = 0, chips, onPress }: Car
         <Text style={styles.cardTitle}>{title}</Text>
         <Text style={styles.cardText}>{description}</Text>
         <View style={styles.cardFooter}>
-          <Text style={styles.cardLevel}>{status === null ? ' ' : `${status} ›`}</Text>
+          <Text style={styles.cardLevel}>{status === null ? ' ' : `${status}\u00a0›`}</Text>
           {stars > 0 && <Text style={styles.cardStars}>{`★ ${stars}`}</Text>}
         </View>
       </View>
@@ -167,9 +167,9 @@ const useStyles = themedStyles((colors) =>
     cardBody: { flex: 1, gap: 4 },
     cardTitle: { fontSize: 20, fontWeight: '800', color: colors.ink },
     cardText: { fontSize: 14, color: colors.muted, lineHeight: 19 },
-    cardFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 },
+    cardFooter: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 12, marginTop: 4 },
     cardLevel: { fontSize: 15, fontWeight: '700', color: colors.accent },
-    cardStars: { fontSize: 15, fontWeight: '700', color: colors.muted },
+    cardStars: { marginLeft: 'auto', fontSize: 15, fontWeight: '700', color: colors.muted },
     settings: {
       backgroundColor: colors.card,
       borderRadius: 20,

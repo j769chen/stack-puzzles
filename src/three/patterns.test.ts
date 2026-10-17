@@ -1,4 +1,4 @@
-import { LinearFilter, LinearMipmapLinearFilter, RepeatWrapping, SRGBColorSpace } from 'three';
+import { LinearFilter, LinearMipmapLinearFilter, RepeatWrapping, SRGBColorSpace, TorusGeometry } from 'three';
 import { theme } from '../theme';
 import { PATTERNS, patternMaterial, patternPixels } from './patterns';
 
@@ -9,6 +9,15 @@ const marks = (pixels: Uint8Array, mark: number) => {
   for (let i = 0; i < pixels.length; i += 4) if (pixels[i] === mark && pixels[i + 1] === mark && pixels[i + 2] === mark) count++;
   return count;
 };
+const shape = (pattern: (typeof PATTERNS)[number], keep = (_v: number) => true) => {
+  let bits = '';
+  for (let y = 0; y < 32; y++) {
+    const v = (y + 0.5) / 32;
+    if (keep(v)) for (let x = 0; x < 128; x++) bits += pattern((x + 0.5) / 128, v) ? '1' : '0';
+  }
+  return bits;
+};
+const outside = (v: number) => Math.abs(v - Math.round(v)) < 1 / 12;
 
 describe('color-blind patterns', () => {
   it('has a pattern for every ring color', () => {
@@ -16,10 +25,17 @@ describe('color-blind patterns', () => {
   });
 
   it('draws a different pattern for every color', () => {
-    const shapes = PATTERNS.map((pattern) =>
-      Array.from({ length: 128 * 32 }, (_, i) => (pattern(((i % 128) + 0.5) / 128, (Math.floor(i / 128) + 0.5) / 32) ? 1 : 0)).join(''),
-    );
-    expect(new Set(shapes).size).toBe(PATTERNS.length);
+    expect(new Set(PATTERNS.map((pattern) => shape(pattern))).size).toBe(PATTERNS.length);
+  });
+
+  it('marks every color but red on the outside of the tube, which stays in view between stacked rings', () => {
+    const { position, uv } = new TorusGeometry(1, 0.25, 8, 8).attributes;
+    expect([uv!.getY(0), position!.getX(0)]).toEqual([0, 1.25]);
+    expect(PATTERNS.map((pattern) => shape(pattern, outside).includes('1'))).toEqual([false, ...Array(9).fill(true)]);
+  });
+
+  it('keeps every pattern different on the outside of the tube', () => {
+    expect(new Set(PATTERNS.map((pattern) => shape(pattern, outside))).size).toBe(PATTERNS.length);
   });
 
   it('leaves red plain and marks the others in a contrasting shade', () => {

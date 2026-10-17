@@ -1,11 +1,19 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
-import { BackHandler, StyleSheet } from 'react-native';
+import { BackHandler, type StyleProp, StyleSheet, type ViewStyle } from 'react-native';
 import { dailyLabel } from '../daily';
 import { loadStars, recordStars } from '../stars';
 import { DailyHistory } from './DailyHistory';
 
 const TODAY = 20261016;
+
+type Node = { props: { style?: StyleProp<ViewStyle> } };
+
+const columnOf = (key: number) => {
+  let node = screen.getByLabelText(new RegExp(`^${dailyLabel(key)},`));
+  while (StyleSheet.flatten(node.parent!.props.style)?.flexDirection !== 'row') node = node.parent!;
+  return node;
+};
 
 beforeEach(async () => {
   await AsyncStorage.clear();
@@ -39,11 +47,18 @@ describe('DailyHistory', () => {
   it('puts every day of the month in its weekday column, in rows of seven', async () => {
     await render(<DailyHistory today={TODAY} onBack={jest.fn()} />);
     for (let day = 1; day <= 31; day++) {
-      const key = 20261000 + day;
-      const cell = screen.getByLabelText(new RegExp(`^${dailyLabel(key)},`)).parent!;
-      const week = cell.parent!;
+      const column = columnOf(20261000 + day);
+      const week = column.parent!;
       expect(week.children).toHaveLength(7);
-      expect(week.children.indexOf(cell)).toBe((new Date(2026, 9, day).getDay() + 6) % 7);
+      expect(week.children.indexOf(column)).toBe((new Date(2026, 9, day).getDay() + 6) % 7);
+    }
+  });
+
+  it('sizes blank and day columns alike so partial weeks line up with full ones', async () => {
+    await render(<DailyHistory today={20260930} onBack={jest.fn()} />);
+    for (const key of [20260901, 20260930]) {
+      const week = columnOf(key).parent!;
+      expect(week.children.map((column: Node) => StyleSheet.flatten(column.props.style))).toEqual(Array(7).fill({ flex: 1 }));
     }
   });
 
