@@ -73,12 +73,14 @@ describe('HomeScreen', () => {
     await render(<HomeScreen onOpen={jest.fn()} />);
     expect(await screen.findByRole('button', { name: 'Daily Puzzle, solved today, 2 stars' })).toBeOnTheScreen();
     expect(screen.getByText('Solved today ›')).toBeOnTheScreen();
+    await screen.findAllByText('Level 1 ›');
   });
 
   it('notices a new day when the app comes back to the foreground', async () => {
     jest.useFakeTimers({ now: new Date(2026, 9, 16, 22, 0) });
     recordStars('daily', 20261016, 3);
     await render(<HomeScreen onOpen={jest.fn()} />);
+    await screen.findAllByText('Level 1 ›');
     expect(screen.getByText('Solved today ›')).toBeOnTheScreen();
     jest.setSystemTime(new Date(2026, 9, 17, 8, 0));
     const [, listener] = jest.mocked(AppState.addEventListener).mock.calls.at(-1)!;
@@ -94,6 +96,7 @@ describe('HomeScreen', () => {
     recordStars('daily', yesterday, 3);
     await render(<HomeScreen onOpen={jest.fn()} />);
     expect(await screen.findByText('Play today · 2-day streak ›')).toBeOnTheScreen();
+    await screen.findAllByText('Level 1 ›');
   });
 
   it('hides the star count until a game has stars', async () => {

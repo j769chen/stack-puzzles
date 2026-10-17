@@ -1,41 +1,52 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+type State = { key: string; value: number; loaded: boolean; changed: boolean };
+
+const write = (key: string, n: number) => AsyncStorage.setItem(key, String(n)).catch(() => {});
+
 export function usePersistentNumber(key: string, initial: number) {
-  const [value, setValue] = useState(initial);
-  const [loaded, setLoaded] = useState(false);
+  const [state, setState] = useState<State>({ key, value: initial, loaded: false, changed: false });
   const readKey = useRef<string | null>(null);
+  const unsaved = useRef<{ key: string; value: number } | null>(null);
 
   useEffect(() => {
     let active = true;
-    AsyncStorage.getItem(key)
-      .then((stored) => {
+    const finish = (value: number) =>
+      setState((s) => (s.key === key && s.changed ? { ...s, loaded: true } : { key, value, loaded: true, changed: false }));
+    AsyncStorage.getItem(key).then(
+      (stored) => {
         if (!active) return;
         readKey.current = key;
+        const early = unsaved.current;
+        unsaved.current = null;
+        if (early?.key === key) write(key, early.value);
         const n = Number(stored);
-        if (stored !== null && Number.isInteger(n) && n >= 1) setValue(n);
-      })
-      .catch(() => {})
-      .finally(() => active && setLoaded(true));
+        finish(stored !== null && Number.isInteger(n) && n >= 1 ? n : initial);
+      },
+      () => active && finish(initial),
+    );
     return () => {
       active = false;
     };
-  }, [key]);
+  }, [key, initial]);
 
   const save = useCallback(
     (n: number) => {
-      if (readKey.current === key) AsyncStorage.setItem(key, String(n)).catch(() => {});
+      if (readKey.current === key) write(key, n);
+      else unsaved.current = { key, value: n };
     },
     [key],
   );
 
   const update = useCallback(
     (n: number) => {
-      setValue(n);
+      setState((s) => ({ key, value: n, loaded: s.key === key && s.loaded, changed: true }));
       save(n);
     },
-    [save],
+    [key, save],
   );
 
-  return [value, update, loaded, save] as const;
+  const current = state.key === key ? state : { value: initial, loaded: false };
+  return [current.value, update, current.loaded, save] as const;
 }
