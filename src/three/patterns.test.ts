@@ -1,4 +1,4 @@
-import { LinearFilter, LinearMipmapLinearFilter, SRGBColorSpace } from 'three';
+import { LinearFilter, LinearMipmapLinearFilter, RepeatWrapping, SRGBColorSpace } from 'three';
 import { theme } from '../theme';
 import { PATTERNS, patternMaterial, patternPixels } from './patterns';
 
@@ -40,5 +40,16 @@ describe('color-blind patterns', () => {
     expect(map!.magFilter).toBe(LinearFilter);
     expect(map!.minFilter).toBe(LinearMipmapLinearFilter);
     expect(map!.generateMipmaps).toBe(true);
+    expect([map!.wrapS, map!.wrapT]).toEqual([RepeatWrapping, RepeatWrapping]);
+  });
+
+  it('draws patterns that repeat seamlessly around the ring and the tube', () => {
+    for (const pattern of PATTERNS) {
+      for (let i = 0; i < 64; i++) {
+        const t = (i + 0.5) / 64;
+        expect(pattern(0.001, t)).toBe(pattern(1.001, t));
+        expect(pattern(t, 0.001)).toBe(pattern(t, 1.001));
+      }
+    }
   });
 });

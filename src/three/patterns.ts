@@ -5,6 +5,7 @@ import {
   LinearMipmapLinearFilter,
   MeshStandardMaterial,
   RGBAFormat,
+  RepeatWrapping,
   SRGBColorSpace,
 } from 'three';
 import { theme } from '../theme';
@@ -60,6 +61,8 @@ export function patternMaterial(colorIndex: number): MeshStandardMaterial {
     map.magFilter = LinearFilter;
     map.minFilter = LinearMipmapLinearFilter;
     map.generateMipmaps = true;
+    map.wrapS = RepeatWrapping;
+    map.wrapT = RepeatWrapping;
     map.needsUpdate = true;
     material = shared(new MeshStandardMaterial({ map, roughness: 0.3 }));
     materials.set(colorIndex, material);
