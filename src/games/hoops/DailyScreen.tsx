@@ -6,14 +6,14 @@ import { WithOverlay } from '../../components/WithOverlay';
 import { dailyLabel, dailyStreak, shareText } from '../../daily';
 import { starsFor, useStars } from '../../stars';
 import { useToday } from '../../useToday';
-import { useDailyDeal } from './deals';
+import { dailyDeals } from './deals';
 import { RingSortGame } from './HoopScreen';
 import { dailySpec } from './logic';
 
 export function DailyScreen({ onBack }: { onBack: () => void }) {
   const key = useToday();
   const [showingHistory, setShowingHistory] = useState(false);
-  const deal = useDailyDeal(key);
+  const { deal } = dailyDeals.useDeal(key);
   const streak = dailyStreak(useStars('daily'), key);
   if (!deal) return <LoadingScreen title="Daily Puzzle" onBack={onBack} />;
   const optimal = deal.solution.length;

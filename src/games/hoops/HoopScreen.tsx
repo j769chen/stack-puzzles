@@ -1,11 +1,8 @@
-import { useCallback, useMemo, useState } from 'react';
-import { LevelSelect } from '../../components/LevelSelect';
-import { LoadingScreen } from '../../components/LoadingScreen';
-import { WithOverlay } from '../../components/WithOverlay';
+import { useMemo } from 'react';
 import { theme } from '../../theme';
-import { useProgress } from '../useProgress';
+import { LevelSortScreen } from '../LevelSortScreen';
+import { levelDeals } from './deals';
 import { type Deal, type Rods, canPour, isRodComplete, levelSpec, topRun } from './logic';
-import { loadDeal, useDeal } from './deals';
 import { RodSortGame, type ShellProps, type SortRules } from './RodSortGame';
 
 const colorName = (color: number) => theme.ringNames[color];
@@ -21,41 +18,12 @@ function rodLabel(rods: Rods, rod: number, capacity: number) {
   return `Rod ${rod + 1}, ${contents}`;
 }
 
+const levelRules = (level: number) => ringSortRules(levelSpec(level).capacity);
+const dealRods = (deal: Deal) => deal.rods;
+
 export function HoopScreen({ onBack }: { onBack: () => void }) {
-  const { level, unlocked, goTo, complete, loaded } = useProgress('hoops');
-  const [picking, setPicking] = useState(false);
-  const deal = useDeal(loaded ? level : null);
-  const prepareNext = useCallback(() => loadDeal(level + 1), [level]);
-  if (!deal) return <LoadingScreen title="Ring Sort" onBack={onBack} />;
-  const levels = picking && (
-    <LevelSelect
-      title="Ring Sort"
-      count={unlocked}
-      unlocked={unlocked}
-      current={level}
-      onPick={(picked) => {
-        goTo(picked);
-        setPicking(false);
-      }}
-      onBack={() => setPicking(false)}
-    />
-  );
   return (
-    <WithOverlay overlay={levels}>
-      <RingSortGame
-        key={level}
-        deal={deal}
-        capacity={levelSpec(level).capacity}
-        title="Ring Sort"
-        label={`Level ${level}`}
-        onBack={onBack}
-        onLevels={() => setPicking(true)}
-        nextLabel="Next level"
-        onNext={() => goTo(level + 1)}
-        onWin={() => complete(level + 1)}
-        onWinShown={prepareNext}
-      />
-    </WithOverlay>
+    <LevelSortScreen game="hoops" title="Ring Sort" deals={levelDeals} rules={levelRules} start={dealRods} onBack={onBack} />
   );
 }
 

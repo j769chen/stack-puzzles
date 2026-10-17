@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { act, fireEvent, renderAsync, screen } from '@testing-library/react-native';
+import { act, fireEvent, renderAsync, screen, waitFor } from '@testing-library/react-native';
 import { AppState, type AppStateStatus, Share } from 'react-native';
 import * as daily from '../../daily';
 import { getStars, loadStars, recordStars } from '../../stars';
@@ -78,7 +78,8 @@ describe('DailyScreen', () => {
     jest.mocked(daily.dailyKey).mockReturnValue(TODAY + 1);
     await start();
     expect(logic.dailyTask).toHaveBeenLastCalledWith(TODAY + 1);
-    expect(JSON.parse((await AsyncStorage.getItem('daily.deal'))!).key).toBe(TODAY + 1);
+    expect(await AsyncStorage.getItem(`daily.deal.${TODAY + 1}`)).not.toBeNull();
+    await waitFor(async () => expect(await AsyncStorage.getItem(`daily.deal.${TODAY}`)).toBeNull());
   });
 
   it("plays today's real deal on its own rod height through to a win", async () => {
