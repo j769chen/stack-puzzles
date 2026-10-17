@@ -1,7 +1,7 @@
 import type { Task } from './task';
 import type { Move } from './useHistory';
 
-export class MinHeap<T> {
+class MinHeap<T> {
   private items: T[] = [];
 
   constructor(private readonly before: (a: T, b: T) => boolean) {}
