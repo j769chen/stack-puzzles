@@ -33,6 +33,7 @@ export type ShellProps = Pick<
   | 'onNext'
   | 'onWin'
   | 'onWinShown'
+  | 'onProgress'
 >;
 
 type Props = ShellProps & { start: Rods; rules: SortRules };

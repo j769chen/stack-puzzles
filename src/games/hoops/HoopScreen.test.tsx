@@ -1,11 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, fireEvent, renderAsync, screen, waitFor } from '@testing-library/react-native';
-import { AccessibilityInfo } from 'react-native';
+import { AccessibilityInfo, Alert } from 'react-native';
 import { feedback } from '../../feedback';
 import { getStars, loadStars } from '../../stars';
 import { HoopScreen } from './HoopScreen';
 import * as logic from './logic';
-import { move, rod, rodText } from '../mockBoard';
+import { answerAlert, move, rod, rodText } from '../mockBoard';
 
 let mockScreenReader = false;
 jest.mock('../../useScreenReader', () => ({ useScreenReader: () => mockScreenReader }));
@@ -171,7 +171,8 @@ describe('HoopScreen', () => {
     expect(rodText(0)).toBe('0,0,0,0');
   });
 
-  it('undoes and restarts', async () => {
+  it('undoes, and restarts once confirmed', async () => {
+    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
     await start([[0, 1], [1], [0, 0, 0, 1], [], [1]]);
     await move(0, 1);
     await move(4, 1);
@@ -179,6 +180,8 @@ describe('HoopScreen', () => {
     expect(rodText(1)).toBe('1,1');
     expect(rodText(4)).toBe('1');
     await fireEvent.press(screen.getByText('Restart'));
+    expect(screen.getByText('Moves 1')).toBeOnTheScreen();
+    await answerAlert('Restart');
     expect(rodText(0)).toBe('0,1');
     expect(screen.getByText('Moves 0')).toBeOnTheScreen();
   });
@@ -229,8 +232,47 @@ describe('HoopScreen', () => {
     expect(await AsyncStorage.getItem('hoops.furthest')).toBe('5');
   });
 
+  it('asks before a picked level throws away moves', async () => {
+    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    await AsyncStorage.setItem('hoops.level', '2');
+    await renderAsync(<HoopScreen onBack={jest.fn()} />);
+    await screen.findByText('Level 2');
+    const [from, to] = logic.generateLevel(2).solution[0]!;
+    await move(from, to);
+    await fireEvent.press(screen.getByRole('button', { name: 'Levels' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Level 1' }));
+    expect(Alert.alert).toHaveBeenCalledWith('Leave this puzzle?', 'Your moves so far will be lost.', expect.any(Array), {
+      cancelable: true,
+    });
+    expect(screen.getByRole('button', { name: 'Level 1' })).toBeOnTheScreen();
+    await answerAlert('Leave');
+    expect(await screen.findByText('Level 1')).toBeOnTheScreen();
+    logic.generateLevel(1).rods.forEach((rod, i) => expect(rodText(i)).toBe(rod.join(',')));
+  });
+
   describe('winning', () => {
     beforeEach(() => jest.useFakeTimers());
+
+    it('plays a won level again from the win card or from level select, without asking', async () => {
+      const alert = jest.spyOn(Alert, 'alert');
+      await start([[0, 0, 0, 0], [1, 1, 1], [1], []]);
+      await move(2, 1);
+      await act(() => jest.advanceTimersByTime(650));
+      await fireEvent.press(screen.getByText('Play again'));
+      expect(screen.queryByText('Solved!')).toBeNull();
+      expect(rodText(2)).toBe('1');
+      expect(screen.getByText('Moves 0')).toBeOnTheScreen();
+
+      await move(2, 1);
+      await act(() => jest.advanceTimersByTime(650));
+      await fireEvent.press(screen.getByRole('button', { name: 'Levels' }));
+      await fireEvent.press(screen.getByRole('button', { name: 'Level 1' }));
+      await act(() => jest.advanceTimersByTime(650));
+      expect(screen.queryByText('Solved!')).toBeNull();
+      expect(rodText(2)).toBe('1');
+      expect(screen.getByText('Moves 0')).toBeOnTheScreen();
+      expect(alert).not.toHaveBeenCalled();
+    });
 
     it('praises a perfect solve and saves the next level', async () => {
       await start();

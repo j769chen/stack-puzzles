@@ -12,13 +12,15 @@ import { RingSortGame } from './HoopScreen';
 import { dailySpec } from './logic';
 
 export function DailyScreen({ onBack }: { onBack: () => void }) {
-  const key = useToday();
+  const today = useToday();
+  const [kept, setKept] = useState<number | null>(null);
+  const key = kept ?? today;
   const [showingHistory, setShowingHistory] = useState(false);
   const { deal } = useDeal(dailyDeals, key);
   const streak = dailyStreak(useStars('daily'), key);
   if (!deal) return <LoadingScreen title="Daily Puzzle" onBack={onBack} />;
   const optimal = deal.solution.length;
-  const history = showingHistory && <DailyHistory today={key} onBack={() => setShowingHistory(false)} />;
+  const history = showingHistory && <DailyHistory today={today} onBack={() => setShowingHistory(false)} />;
   return (
     <WithOverlay overlay={history}>
       <RingSortGame
@@ -36,6 +38,7 @@ export function DailyScreen({ onBack }: { onBack: () => void }) {
         levelsLabel="History"
         nextLabel="Done"
         onNext={onBack}
+        onProgress={(progress) => setKept(progress === 'new' ? null : key)}
       />
     </WithOverlay>
   );

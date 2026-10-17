@@ -1,11 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, fireEvent, renderAsync, screen, waitFor } from '@testing-library/react-native';
-import { AppState, type AppStateStatus, Share } from 'react-native';
+import { Alert, AppState, type AppStateStatus, Share } from 'react-native';
 import * as daily from '../../daily';
 import { getStars, loadStars, recordStars } from '../../stars';
 import { DailyScreen } from './DailyScreen';
 import * as logic from './logic';
-import { drag, move, rodText } from '../mockBoard';
+import { answerAlert, drag, move, rodText } from '../mockBoard';
 
 jest.mock('./HoopBoard', () => ({ HoopBoard: jest.requireActual<typeof import('../mockBoard')>('../mockBoard').MockBoard }));
 
@@ -13,11 +13,21 @@ const TODAY = 20261016;
 const RODS: logic.Rods = [[0, 0, 0, 1], [1, 1, 1, 0], [], []];
 const DEAL = { rods: RODS, solution: logic.solveHoops(RODS, 4)! };
 const START = `Moves 0/${DEAL.solution.length}`;
+const TOMORROW: logic.Rods = [[1, 0, 0, 0], [1, 1, 0, 1], [], []];
 
 async function start(onBack = jest.fn()) {
   await renderAsync(<DailyScreen onBack={onBack} />);
   await screen.findByText(START);
   return onBack;
+}
+
+async function comeBackTomorrow() {
+  jest.mocked(daily.dailyKey).mockReturnValue(TODAY + 1);
+  jest.mocked(logic.dailyTask).mockImplementation(function* () {
+    return { rods: TOMORROW, solution: logic.solveHoops(TOMORROW, 4)! };
+  });
+  const [, listener] = jest.mocked(AppState.addEventListener).mock.calls.at(-1)!;
+  await act(() => (listener as (state: AppStateStatus) => void)('active'));
 }
 
 beforeEach(async () => {
@@ -88,17 +98,46 @@ describe('DailyScreen', () => {
   });
 
   it("moves on to the new day's puzzle when the app comes back on a later day", async () => {
-    const tomorrow = [[1, 0, 0, 0], [1, 1, 0, 1], [], []];
     await start();
-    jest.mocked(daily.dailyKey).mockReturnValue(TODAY + 1);
-    jest.mocked(logic.dailyTask).mockImplementation(function* () {
-      return { rods: tomorrow, solution: logic.solveHoops(tomorrow, 4)! };
-    });
-    const [, listener] = jest.mocked(AppState.addEventListener).mock.calls.at(-1)!;
-    await act(() => (listener as (state: AppStateStatus) => void)('active'));
+    await comeBackTomorrow();
     expect(await screen.findByText(daily.dailyLabel(TODAY + 1))).toBeOnTheScreen();
     expect(logic.dailyTask).toHaveBeenLastCalledWith(TODAY + 1);
-    tomorrow.forEach((rod, i) => expect(rodText(i)).toBe(rod.join(',')));
+    TOMORROW.forEach((rod, i) => expect(rodText(i)).toBe(rod.join(',')));
+  });
+
+  it('keeps a started puzzle when the app comes back on a later day, and moves on once it is restarted', async () => {
+    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    await start();
+    await move(0, 2);
+    await comeBackTomorrow();
+    expect(screen.getByText(daily.dailyLabel(TODAY))).toBeOnTheScreen();
+    expect(screen.getByText(`Moves 1/${DEAL.solution.length}`)).toBeOnTheScreen();
+    expect(rodText(2)).toBe('1');
+    expect(logic.dailyTask).not.toHaveBeenCalledWith(TODAY + 1);
+
+    jest.mocked(daily.dailyKey).mockRestore();
+    await fireEvent.press(screen.getByRole('button', { name: 'History' }));
+    expect(screen.getByLabelText(`${daily.dailyLabel(TODAY + 1)}, not solved`)).toBeOnTheScreen();
+    await fireEvent.press(screen.getAllByRole('button', { name: 'Back' }).at(-1)!);
+
+    await fireEvent.press(screen.getByText('Restart'));
+    await answerAlert('Restart');
+    expect(await screen.findByText(daily.dailyLabel(TODAY + 1))).toBeOnTheScreen();
+    TOMORROW.forEach((rod, i) => expect(rodText(i)).toBe(rod.join(',')));
+  });
+
+  it('keeps a solved puzzle when the app comes back on a later day, and moves on with Play again', async () => {
+    jest.useFakeTimers();
+    await start();
+    for (const [from, to] of DEAL.solution) await move(from, to);
+    await act(() => jest.advanceTimersByTime(650));
+    await comeBackTomorrow();
+    expect(screen.getByText(/^Perfect! \d+ moves, the minimum possible\.$/)).toBeOnTheScreen();
+    expect(getStars('daily')).toEqual({ [TODAY]: 3 });
+
+    await fireEvent.press(screen.getByText('Play again'));
+    expect(await screen.findByText(daily.dailyLabel(TODAY + 1))).toBeOnTheScreen();
+    TOMORROW.forEach((rod, i) => expect(rodText(i)).toBe(rod.join(',')));
   });
 
   it("records today's stars and closes with Done", async () => {
