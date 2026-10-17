@@ -66,10 +66,10 @@ describe('TowerSortScreen', () => {
     await start();
     await move(3, 1);
     expect(rodText(1)).toBe('*5,0');
-    await fireEvent.press(screen.getByTestId('rod-1'));
+    await fireEvent.press(rod(1));
     await move(0, 3);
     expect(rodText(3)).toBe('*4,3');
-    await fireEvent.press(screen.getByTestId('rod-3'));
+    await fireEvent.press(rod(3));
     expect(screen.getByText('Moves 0')).toBeOnTheScreen();
     await move(1, 0);
     expect(rodText(0)).toBe('2,1,0');

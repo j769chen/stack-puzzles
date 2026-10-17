@@ -5,7 +5,7 @@ import { feedback } from '../../feedback';
 import { getStars, loadStars } from '../../stars';
 import { HoopScreen } from './HoopScreen';
 import * as logic from './logic';
-import { move, rodText } from '../mockBoard';
+import { move, rod, rodText } from '../mockBoard';
 
 let mockScreenReader = false;
 jest.mock('../../useScreenReader', () => ({ useScreenReader: () => mockScreenReader }));
@@ -120,8 +120,8 @@ describe('HoopScreen', () => {
 
   it('will not select an empty or complete rod', async () => {
     await start([[0, 0, 0, 0], [], [1, 1, 1], [1]]);
-    await fireEvent.press(screen.getByTestId('rod-0'));
-    await fireEvent.press(screen.getByTestId('rod-1'));
+    await fireEvent.press(rod(0));
+    await fireEvent.press(rod(1));
     expect(rodText(0)).toBe('0,0,0,0');
     expect(rodText(1)).toBe('');
   });
@@ -130,26 +130,26 @@ describe('HoopScreen', () => {
     await start([[0, 0, 1], [1, 1, 0], [0, 1], []]);
     await move(0, 1);
     expect(rodText(1)).toBe('*1,1,0');
-    await fireEvent.press(screen.getByTestId('rod-1'));
+    await fireEvent.press(rod(1));
     expect(rodText(1)).toBe('1,1,0');
   });
 
   it('tells screen reader users about picking up, putting back and taps that cannot move', async () => {
     await start([[0, 0, 1], [1, 1], [0], []]);
     const announce = jest.mocked(AccessibilityInfo.announceForAccessibility);
-    await fireEvent.press(screen.getByTestId('rod-0'));
+    await fireEvent.press(rod(0));
     expect(announce).toHaveBeenLastCalledWith('Picked up orange from rod 1');
-    await fireEvent.press(screen.getByTestId('rod-0'));
+    await fireEvent.press(rod(0));
     expect(announce).toHaveBeenLastCalledWith('Put orange back');
-    await fireEvent.press(screen.getByTestId('rod-0'));
-    await fireEvent.press(screen.getByTestId('rod-2'));
+    await fireEvent.press(rod(0));
+    await fireEvent.press(rod(2));
     expect(announce).toHaveBeenLastCalledWith("Can't move orange to rod 3. Picked up red instead");
   });
 
   it('says so when a tap on a full rod drops the selection', async () => {
     await start([[0, 0, 0, 0], [1, 1], [1, 1], []]);
-    await fireEvent.press(screen.getByTestId('rod-1'));
-    await fireEvent.press(screen.getByTestId('rod-0'));
+    await fireEvent.press(rod(1));
+    await fireEvent.press(rod(0));
     expect(AccessibilityInfo.announceForAccessibility).toHaveBeenLastCalledWith("Can't move orange to rod 1");
   });
 
@@ -164,9 +164,9 @@ describe('HoopScreen', () => {
 
   it('drops the selection when a full rod is tapped instead of a target', async () => {
     await start([[0, 0, 0, 0], [1, 1], [1, 1], []]);
-    await fireEvent.press(screen.getByTestId('rod-1'));
+    await fireEvent.press(rod(1));
     expect(rodText(1)).toBe('*1,1');
-    await fireEvent.press(screen.getByTestId('rod-0'));
+    await fireEvent.press(rod(0));
     expect(rodText(1)).toBe('1,1');
     expect(rodText(0)).toBe('0,0,0,0');
   });
@@ -283,7 +283,7 @@ describe('HoopScreen', () => {
     it('ignores taps between the winning pour and the win card', async () => {
       await start([[0, 0, 0, 0], [1, 1, 1], [1], []]);
       await move(2, 1);
-      await fireEvent.press(screen.getByTestId('rod-1'));
+      await fireEvent.press(rod(1));
       expect(rodText(1)).toBe('1,1,1,1');
       expect(screen.queryByText('Solved!')).toBeNull();
     });
