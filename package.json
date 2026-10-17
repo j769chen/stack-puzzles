@@ -8,7 +8,7 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "typecheck": "tsc --noEmit",
-    "lint": "expo lint --max-warnings 0",
+    "lint": "expo lint . --max-warnings 0",
     "test": "jest",
     "test:coverage": "jest --coverage",
     "test:timezones": "for tz in America/Los_Angeles Pacific/Auckland; do TZ=$tz jest src/daily.test.ts src/useToday.test.ts src/games/hoops/logic.test.ts src/components/DailyHistory.test.tsx || exit 1; done",
