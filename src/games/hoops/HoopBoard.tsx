@@ -56,7 +56,7 @@ function boardLayout(count: number, capacity: number) {
   });
   const size = {
     width: cols * SPACING + 0.3,
-    height: liftY + capacity * RING_H,
+    height: liftY + RING_H,
     depth: (rows - 1) * ROW_GAP + PLANK_DEPTH,
   };
   return { poleHeight, liftY, rowSizes, rowZ, positions, size, tilt: rows === 1 ? 0.55 : 1 };

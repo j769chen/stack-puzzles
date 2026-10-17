@@ -1,4 +1,4 @@
-import { SRGBColorSpace } from 'three';
+import { LinearFilter, LinearMipmapLinearFilter, SRGBColorSpace } from 'three';
 import { theme } from '../theme';
 import { PATTERNS, patternMaterial, patternPixels } from './patterns';
 
@@ -33,5 +33,12 @@ describe('color-blind patterns', () => {
     expect(patternMaterial(3)).toBe(material);
     expect(material.map!.colorSpace).toBe(SRGBColorSpace);
     expect((material.map!.image as { width: number }).width).toBe(128);
+  });
+
+  it('smooths patterns up close and mipmaps them at a distance so they do not shimmer', () => {
+    const { map } = patternMaterial(5);
+    expect(map!.magFilter).toBe(LinearFilter);
+    expect(map!.minFilter).toBe(LinearMipmapLinearFilter);
+    expect(map!.generateMipmaps).toBe(true);
   });
 });

@@ -1,4 +1,12 @@
-import { Color, DataTexture, MeshStandardMaterial, RGBAFormat, SRGBColorSpace } from 'three';
+import {
+  Color,
+  DataTexture,
+  LinearFilter,
+  LinearMipmapLinearFilter,
+  MeshStandardMaterial,
+  RGBAFormat,
+  SRGBColorSpace,
+} from 'three';
 import { theme } from '../theme';
 import { shared } from './shared';
 
@@ -49,6 +57,9 @@ export function patternMaterial(colorIndex: number): MeshStandardMaterial {
   if (!material) {
     const map = shared(new DataTexture(patternPixels(colorIndex), WIDTH, HEIGHT, RGBAFormat));
     map.colorSpace = SRGBColorSpace;
+    map.magFilter = LinearFilter;
+    map.minFilter = LinearMipmapLinearFilter;
+    map.generateMipmaps = true;
     map.needsUpdate = true;
     material = shared(new MeshStandardMaterial({ map, roughness: 0.3 }));
     materials.set(colorIndex, material);
