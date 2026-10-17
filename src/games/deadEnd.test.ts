@@ -1,11 +1,44 @@
-import { isDeadEnd } from './deadEnd';
+import { deadEndTask } from './deadEnd';
 import { type Rods, canPour, generateLevel, isHoopsSolved, levelSpec } from './hoops/logic';
+import { runTask } from './task';
 import { canStack, generateTower, isTowerSolved, towerSpec } from './towersort/logic';
 
 const ringSort = (cap: number) =>
   [(rods: Rods, from: number, to: number) => canPour(rods, from, to, cap), (rods: Rods) => isHoopsSolved(rods, cap)] as const;
 
-describe('isDeadEnd', () => {
+const isDeadEnd = (...args: Parameters<typeof deadEndTask>) => runTask(deadEndTask(...args));
+
+const LEVEL_50_DEAD_END = [
+  [3, 4, 2, 4, 5, 5],
+  [4, 9, 5, 8, 0, 6],
+  [8, 8, 2, 5, 9, 6],
+  [7, 3, 0, 1, 0],
+  [3, 4, 7, 0, 7],
+  [1, 9, 5, 2, 4, 0],
+  [5, 1, 1, 1, 8, 3],
+  [1, 4, 6, 6, 7, 6],
+  [9, 0, 6, 3],
+  [8, 2, 7, 7, 3, 8],
+  [2, 2],
+  [9, 9],
+];
+
+const LEVEL_91_DEAD_END = [
+  [8, 0, 2, 2, 2, 2],
+  [6, 0, 2, 4],
+  [8, 7, 8, 3, 7, 7],
+  [0, 5, 7, 8, 5, 5],
+  [9, 3, 3, 2, 9, 7],
+  [1, 5, 6, 5, 4, 4],
+  [1, 0, 0, 4],
+  [4, 1, 3, 7, 3, 3],
+  [1, 1, 9, 9, 9, 9],
+  [1, 5, 4, 8, 8],
+  [6, 6, 6, 6],
+  [0],
+];
+
+describe('deadEndTask', () => {
   it('finds a dead end with no legal move', () => {
     expect(isDeadEnd([[1, 0, 1, 0], [2, 0, 2, 0], [1, 2, 1, 2], [2]], ...ringSort(4))).toBe(true);
   });
@@ -14,6 +47,11 @@ describe('isDeadEnd', () => {
     const rods = [[1, 2], [2, 0, 0, 0], [2, 1, 0, 2], [1, 1]];
     expect(canPour(rods, 2, 0, 4)).toBe(true);
     expect(isDeadEnd(rods, ...ringSort(4))).toBe(true);
+  });
+
+  it('finds dead ends on 10-color boards that take thousands of positions to prove', () => {
+    expect(isDeadEnd(LEVEL_50_DEAD_END, ...ringSort(6))).toBe(true);
+    expect(isDeadEnd(LEVEL_91_DEAD_END, ...ringSort(6))).toBe(true);
   });
 
   it('is not a dead end when the puzzle can still be solved', () => {
@@ -26,10 +64,12 @@ describe('isDeadEnd', () => {
   });
 
   it('does not call a position a dead end when it runs out of room to prove it', () => {
-    const { rods } = generateLevel(60);
-    const { capacity } = levelSpec(60);
-    const [fits, solved] = ringSort(capacity);
-    expect(isDeadEnd(rods, fits, solved, 5)).toBe(false);
+    const [fits, solved] = ringSort(6);
+    expect(isDeadEnd(LEVEL_50_DEAD_END, fits, solved, 300)).toBe(false);
+  });
+
+  it('pauses between positions so it can run in slices', () => {
+    expect(deadEndTask(LEVEL_50_DEAD_END, ...ringSort(6)).next().done).toBe(false);
   });
 
   it('works with Tower Sort rules', () => {

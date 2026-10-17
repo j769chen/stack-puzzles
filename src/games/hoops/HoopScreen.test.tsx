@@ -3,6 +3,7 @@ import { act, fireEvent, renderAsync, screen, waitFor } from '@testing-library/r
 import { AccessibilityInfo, Alert } from 'react-native';
 import { feedback } from '../../feedback';
 import { getStars, loadStars } from '../../stars';
+import * as deadEnd from '../deadEnd';
 import { HoopScreen } from './HoopScreen';
 import * as logic from './logic';
 import { answerAlert, move, rod, rodText } from '../mockBoard';
@@ -158,9 +159,11 @@ describe('HoopScreen', () => {
   it('announces a dead end after the move that caused it', async () => {
     await start([[1, 2, 1], [2, 0, 0, 0], [2, 1, 0, 2], [1]]);
     await move(0, 3);
-    expect(AccessibilityInfo.announceForAccessibilityWithOptions).toHaveBeenLastCalledWith(
-      'No way to finish from here. Undo or restart.',
-      { queue: true },
+    await waitFor(() =>
+      expect(AccessibilityInfo.announceForAccessibilityWithOptions).toHaveBeenLastCalledWith(
+        'No way to finish from here. Undo or restart.',
+        { queue: true },
+      ),
     );
   });
 
@@ -191,16 +194,38 @@ describe('HoopScreen', () => {
   it('reports a dead end', async () => {
     await start([[1, 0, 1, 0], [2, 0, 2, 0], [1, 2, 1, 2], []]);
     await move(2, 3);
-    expect(screen.getByText('No way to finish from here. Undo or restart.')).toBeOnTheScreen();
+    expect(await screen.findByText('No way to finish from here. Undo or restart.')).toBeOnTheScreen();
   });
 
   it('reports a dead end even when a pointless move is still left', async () => {
     await start([[1, 2, 1], [2, 0, 0, 0], [2, 1, 0, 2], [1]]);
     expect(screen.queryByText('No way to finish from here. Undo or restart.')).toBeNull();
     await move(0, 3);
-    expect(screen.getByText('No way to finish from here. Undo or restart.')).toBeOnTheScreen();
+    expect(await screen.findByText('No way to finish from here. Undo or restart.')).toBeOnTheScreen();
     await fireEvent.press(screen.getByText('Undo'));
     expect(screen.queryByText('No way to finish from here. Undo or restart.')).toBeNull();
+  });
+
+  it('stops checking for a dead end once the board changes or the screen closes', async () => {
+    const steps: number[] = [];
+    jest.spyOn(deadEnd, 'deadEndTask').mockImplementation(function* () {
+      const check = steps.push(0) - 1;
+      for (;;) {
+        steps[check]! += 1;
+        yield;
+      }
+    });
+    await start([[0, 1], [1], [0, 0, 0, 1], [], [1]]);
+    await move(0, 1);
+    const afterMove = [...steps];
+    expect(afterMove).toHaveLength(2);
+    await waitFor(() => expect(steps[1]).toBeGreaterThan(afterMove[1]!));
+    expect(steps[0]).toBe(afterMove[0]);
+
+    await screen.unmountAsync();
+    const afterUnmount = [...steps];
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(steps).toEqual(afterUnmount);
   });
 
   describe('with a screen reader', () => {

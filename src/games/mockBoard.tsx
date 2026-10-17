@@ -1,4 +1,4 @@
-import { act, fireEvent, screen } from '@testing-library/react-native';
+import { act, fireEventAsync, screen } from '@testing-library/react-native';
 import { Alert, type AlertButton, Pressable, Text } from 'react-native';
 
 export type MockBoardProps = {
@@ -21,13 +21,13 @@ export const rod = (i: number) => screen.getByTestId(`rod-${i}`);
 export const rodText = (i: number) => screen.getByTestId(`rod-${i}-pieces`).props.children as string;
 
 export async function move(from: number, to: number) {
-  await fireEvent.press(rod(from));
-  await fireEvent.press(rod(to));
+  await fireEventAsync.press(rod(from));
+  await fireEventAsync.press(rod(to));
 }
 
 export async function drag(from: number, to: number) {
-  await fireEvent.press(rod(from));
-  await fireEvent(rod(to), 'longPress');
+  await fireEventAsync.press(rod(from));
+  await fireEventAsync(rod(to), 'longPress');
 }
 
 export async function answerAlert(button: string) {
