@@ -1,7 +1,8 @@
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useState } from 'react';
+import { useEffect, useEffectEvent, useState } from 'react';
 import { BackHandler } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { feedback } from './src/feedback';
 import { HomeScreen } from './src/HomeScreen';
 import { HanoiScreen } from './src/games/hanoi/HanoiScreen';
@@ -22,25 +23,31 @@ export default function App() {
     feedback.prepare();
   }, []);
 
+  const onHardwareBack = useEffectEvent(() => {
+    if (screen === 'home') return false;
+    setScreen('home');
+    return true;
+  });
   useEffect(() => {
-    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (screen === 'home') return false;
-      setScreen('home');
-      return true;
-    });
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => onHardwareBack());
     return () => sub.remove();
-  }, [screen]);
+  }, []);
 
   const goHome = () => setScreen('home');
 
   return (
     <SafeAreaProvider>
       <StatusBar style="auto" />
-      {screen === 'home' && <HomeScreen onOpen={setScreen} />}
-      {screen === 'hanoi' && <HanoiScreen onBack={goHome} />}
-      {screen === 'hoops' && <HoopScreen onBack={goHome} />}
-      {screen === 'daily' && <DailyScreen onBack={goHome} />}
-      {screen === 'towersort' && <TowerSortScreen onBack={goHome} />}
+      {screen === 'home' ? (
+        <HomeScreen onOpen={setScreen} />
+      ) : (
+        <ErrorBoundary key={screen} onBack={goHome}>
+          {screen === 'hanoi' && <HanoiScreen onBack={goHome} />}
+          {screen === 'hoops' && <HoopScreen onBack={goHome} />}
+          {screen === 'daily' && <DailyScreen onBack={goHome} />}
+          {screen === 'towersort' && <TowerSortScreen onBack={goHome} />}
+        </ErrorBoundary>
+      )}
     </SafeAreaProvider>
   );
 }

@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
-import { AccessibilityInfo, Text } from 'react-native';
+import { AccessibilityInfo, Alert, type AlertButton, BackHandler, Text } from 'react-native';
 import { feedback } from '../feedback';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getStars, loadStars } from '../stars';
@@ -32,7 +32,57 @@ beforeEach(async () => {
   await loadStars();
 });
 
+function leaveButton(label: string) {
+  const buttons: AlertButton[] = jest.mocked(Alert.alert).mock.calls.at(-1)![2]!;
+  return buttons.find((button) => button.text === label)!;
+}
+
+function hardwareBack() {
+  const [, handler] = jest.mocked(BackHandler.addEventListener).mock.calls.at(-1)!;
+  return handler({ type: 'hardwareBackPress', timeStamp: 0 } as never);
+}
+
 describe('GameShell', () => {
+  describe('leaving', () => {
+    beforeEach(() => {
+      jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+      jest.spyOn(BackHandler, 'addEventListener').mockImplementation(() => ({ remove: jest.fn() }));
+    });
+    afterEach(() => jest.restoreAllMocks());
+
+    it('goes straight back before any move', async () => {
+      const props = await renderShell({ moves: 0 });
+      await fireEvent.press(screen.getByRole('button', { name: 'Back' }));
+      expect(props.onBack).toHaveBeenCalledTimes(1);
+      expect(Alert.alert).not.toHaveBeenCalled();
+    });
+
+    it('asks before throwing away moves, and stays when told to', async () => {
+      const props = await renderShell({ moves: 5 });
+      await fireEvent.press(screen.getByRole('button', { name: 'Back' }));
+      expect(Alert.alert).toHaveBeenCalledWith('Leave this puzzle?', 'Your moves so far will be lost.', expect.any(Array));
+      leaveButton('Keep playing').onPress?.();
+      expect(props.onBack).not.toHaveBeenCalled();
+      leaveButton('Leave').onPress?.();
+      expect(props.onBack).toHaveBeenCalledTimes(1);
+    });
+
+    it('asks the same way on the Android back button', async () => {
+      const props = await renderShell({ moves: 5 });
+      expect(hardwareBack()).toBe(true);
+      expect(props.onBack).not.toHaveBeenCalled();
+      leaveButton('Leave').onPress?.();
+      expect(props.onBack).toHaveBeenCalledTimes(1);
+    });
+
+    it('goes straight back once the puzzle is solved', async () => {
+      const props = await renderShell({ moves: 5, won: true });
+      expect(hardwareBack()).toBe(true);
+      expect(props.onBack).toHaveBeenCalledTimes(1);
+      expect(Alert.alert).not.toHaveBeenCalled();
+    });
+  });
+
   it('shows the title, stats, message and board', async () => {
     await renderShell();
     expect(screen.getByText('Test Game')).toBeOnTheScreen();
@@ -71,7 +121,7 @@ describe('GameShell', () => {
   });
 
   it('wires the header and control buttons', async () => {
-    const props = await renderShell();
+    const props = await renderShell({ moves: 0 });
     await fireEvent.press(screen.getByText('‹ Back'));
     await fireEvent.press(screen.getByRole('button', { name: 'Levels' }));
     await fireEvent.press(screen.getByText('Undo'));

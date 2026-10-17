@@ -13,15 +13,20 @@ export function loadOnce<T>(id: string, load: () => Promise<T>): Promise<T> {
 
 export function useLoaded<T>(id: number | null, load: (id: number) => Promise<T>): T | null {
   const [loaded, setLoaded] = useState<{ id: number; value: T } | null>(null);
+  const [failure, setFailure] = useState<{ error: unknown } | null>(null);
 
   useEffect(() => {
     if (id === null) return;
     let active = true;
-    load(id).then((value) => active && setLoaded({ id, value }));
+    load(id).then(
+      (value) => active && setLoaded({ id, value }),
+      (error: unknown) => active && setFailure({ error }),
+    );
     return () => {
       active = false;
     };
   }, [id, load]);
 
+  if (failure) throw failure.error;
   return loaded?.id === id ? loaded.value : null;
 }
