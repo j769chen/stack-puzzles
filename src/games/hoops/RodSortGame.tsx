@@ -38,17 +38,13 @@ export type ShellProps = Pick<
 type Props = ShellProps & { start: Rods; rules: SortRules };
 
 export function RodSortGame({ start, rules, ...shell }: Props) {
-  const rodRules = useMemo(
-    () => ({
-      canMove: rules.canPour,
-      isRodComplete: rules.isRodComplete,
-      isSolved: (rods: Rods) => isSolved(rods, rules),
-      pieceName: rules.ringName,
-      placeName: (rod: number) => `rod ${rod + 1}`,
-    }),
-    [rules],
-  );
-  const game = useRodGame(() => start, rodRules);
+  const game = useRodGame(() => start, {
+    canMove: rules.canPour,
+    isRodComplete: rules.isRodComplete,
+    isSolved: (rods) => isSolved(rods, rules),
+    pieceName: rules.ringName,
+    placeName: (rod) => `rod ${rod + 1}`,
+  });
   const { rods } = game;
   const stuck = useMemo(() => isDeadEnd(rods, rules.canPour, (state) => isSolved(state, rules)), [rods, rules]);
 

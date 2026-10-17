@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { GameShell } from '../../components/GameShell';
 import { LevelSelect } from '../../components/LevelSelect';
 import { WithOverlay } from '../../components/WithOverlay';
@@ -63,17 +63,13 @@ type GameProps = { level: number; onBack: () => void; onLevels: () => void; onNe
 
 function HanoiGame({ level, onBack, onLevels, onNext, onWin }: GameProps) {
   const disks = disksForLevel(level);
-  const rules = useMemo(
-    () => ({
-      canMove: canMoveDisk,
-      isRodComplete: () => false,
-      isSolved: (state: HanoiState) => isHanoiSolved(state, disks),
-      pieceName: (disk: number) => `disk ${disk}`,
-      placeName: (peg: number) => `the ${PEG_NAMES[peg]} peg`,
-    }),
-    [disks],
-  );
-  const game = useRodGame(() => createHanoi(disks), rules);
+  const game = useRodGame(() => createHanoi(disks), {
+    canMove: canMoveDisk,
+    isRodComplete: () => false,
+    isSolved: (state) => isHanoiSolved(state, disks),
+    pieceName: (disk) => `disk ${disk}`,
+    placeName: (peg) => `the ${PEG_NAMES[peg]} peg`,
+  });
   const state = game.rods;
 
   return (

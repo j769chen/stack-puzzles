@@ -4,7 +4,7 @@ import { feedback } from '../feedback';
 import { type Rods, pour } from './hoops/logic';
 import { useHistory } from './useHistory';
 
-export type RodRules = {
+type RodRules = {
   canMove: (rods: Rods, from: number, to: number) => boolean;
   isRodComplete: (rod: number[]) => boolean;
   isSolved: (rods: Rods) => boolean;
