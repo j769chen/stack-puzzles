@@ -5,16 +5,18 @@ import { feedback } from '../../feedback';
 import { getStars, loadStars } from '../../stars';
 import { HanoiScreen } from './HanoiScreen';
 import * as logic from './logic';
-import { drag, move, rod, rodText } from '../mockBoard';
+import { type MockBoardProps, drag, move, rod, rodText } from '../mockBoard';
 
 const { HANOI_MAX_LEVEL, minMoves } = logic;
 
 let mockScreenReader = false;
 jest.mock('../../useScreenReader', () => ({ useScreenReader: () => mockScreenReader }));
 
+type MockHanoiBoardProps = Omit<MockBoardProps, 'rods'> & { state: number[][] };
+
 jest.mock('./HanoiBoard', () => {
   const { MockBoard } = jest.requireActual<typeof import('../mockBoard')>('../mockBoard');
-  return { HanoiBoard: ({ state, ...props }: { state: number[][] } & Omit<Parameters<typeof MockBoard>[0], 'rods'>) => MockBoard({ rods: state, ...props }) };
+  return { HanoiBoard: ({ state, ...props }: MockHanoiBoardProps) => <MockBoard rods={state} {...props} /> };
 });
 
 async function start(level?: number) {

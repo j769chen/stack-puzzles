@@ -14,7 +14,7 @@ module.exports = {
     '^three$': '<rootDir>/node_modules/three/build/three.module.js',
     '^expo-modules-core(/.*)?$': `${expoModulesCore}$1`,
   },
-  collectCoverageFrom: ['App.tsx', 'src/**/*.{ts,tsx}', '!src/**/*.test.{ts,tsx}'],
+  collectCoverageFrom: ['App.tsx', 'src/**/*.{ts,tsx}', '!src/**/*.test.{ts,tsx}', '!src/games/mockBoard.tsx'],
   coverageThreshold: {
     global: { statements: 98, branches: 95, functions: 95, lines: 98 },
   },
