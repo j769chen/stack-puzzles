@@ -98,6 +98,20 @@ describe('HomeScreen', () => {
     await screen.findAllByText('Level 1 ›');
   });
 
+  it('wraps a long daily status instead of pushing the star count off the card', async () => {
+    const today = dailyKey(new Date());
+    recordStars('daily', previousDay(today), 3);
+    recordStars('daily', today, 3);
+    await render(<HomeScreen onOpen={jest.fn()} />);
+    const stars = await screen.findByText('★ 6');
+    let footer = stars.parent!;
+    while (StyleSheet.flatten(footer.props.style)?.flexDirection !== 'row') footer = footer.parent!;
+    expect(StyleSheet.flatten(footer.props.style)).toMatchObject({ flexWrap: 'wrap', columnGap: 12 });
+    expect(StyleSheet.flatten(stars.props.style)).toMatchObject({ marginLeft: 'auto' });
+    expect(screen.getByText('Solved today · 2-day streak ›')).toHaveTextContent('Solved today · 2-day streak\u00a0›', { normalizer: (text) => text });
+    await screen.findAllByText('Level 1 ›');
+  });
+
   it('hides the star count until a game has stars', async () => {
     await render(<HomeScreen onOpen={jest.fn()} />);
     await screen.findAllByText('Level 1 ›');
