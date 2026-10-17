@@ -89,15 +89,30 @@ describe('App', () => {
     expect(screen.getByText(/^Moves 0/)).toBeOnTheScreen();
   });
 
-  it('shows a way home when a game fails, and opens it fresh next time', async () => {
-    jest.spyOn(console, 'error').mockImplementation(() => {});
-    jest.spyOn(logic, 'levelTask').mockImplementationOnce(function* () {
-      throw new Error('No deal found');
+  describe('when a game fails', () => {
+    beforeEach(async () => {
+      jest.spyOn(console, 'error').mockImplementation(() => {});
+      jest.spyOn(logic, 'levelTask').mockImplementationOnce(function* () {
+        throw new Error('No deal found');
+      });
+      await renderApp();
+      await fireEvent.press(screen.getByText('Ring Sort'));
+      await screen.findByRole('button', { name: 'Back to home' });
     });
-    await renderApp();
-    await fireEvent.press(screen.getByText('Ring Sort'));
-    await fireEvent.press(await screen.findByRole('button', { name: 'Back to home' }));
-    await screen.findAllByText('Level 1 ›');
-    await open('Ring Sort');
+
+    it('shows a way home, and opens the game fresh next time', async () => {
+      await fireEvent.press(screen.getByRole('button', { name: 'Back to home' }));
+      await screen.findAllByText('Level 1 ›');
+      await open('Ring Sort');
+    });
+
+    it('goes home on the Android back button', async () => {
+      let handled: ReturnType<BackPressHandler>;
+      await act(() => {
+        handled = backPress(backEvent);
+      });
+      expect(handled).toBe(true);
+      expect(await screen.findAllByText('Level 1 ›')).toHaveLength(3);
+    });
   });
 });

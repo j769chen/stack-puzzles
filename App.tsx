@@ -41,7 +41,7 @@ export default function App() {
       {screen === 'home' ? (
         <HomeScreen onOpen={setScreen} />
       ) : (
-        <ErrorBoundary key={screen} onBack={goHome}>
+        <ErrorBoundary onBack={goHome}>
           {screen === 'hanoi' && <HanoiScreen onBack={goHome} />}
           {screen === 'hoops' && <HoopScreen onBack={goHome} />}
           {screen === 'daily' && <DailyScreen onBack={goHome} />}
