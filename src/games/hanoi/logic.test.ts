@@ -13,7 +13,7 @@ function allStates(disks: number): HanoiState[] {
   const states: HanoiState[] = [];
   for (let code = 0; code < 3 ** disks; code++) {
     const state: HanoiState = [[], [], []];
-    for (let size = disks, rest = code; size >= 1; size--, rest = Math.floor(rest / 3)) state[rest % 3].push(size);
+    for (let size = disks, rest = code; size >= 1; size--, rest = Math.floor(rest / 3)) state[rest % 3]!.push(size);
     states.push(state);
   }
   return states;
@@ -39,7 +39,7 @@ function distancesTo(target: HanoiState): Map<string, number> {
   return distance;
 }
 
-const isWellStacked = (state: HanoiState) => state.every((peg) => peg.every((d, i) => i === 0 || peg[i - 1] > d));
+const isWellStacked = (state: HanoiState) => state.every((peg) => peg.every((d, i) => i === 0 || peg[i - 1]! > d));
 
 describe('hanoi logic', () => {
   it('maps levels to disk counts and caps at the last level', () => {

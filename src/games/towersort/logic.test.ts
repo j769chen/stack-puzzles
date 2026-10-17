@@ -72,7 +72,7 @@ describe('tower sort levels', () => {
     const rods = generateTower(level);
     expect(rods).toHaveLength(colors + 2);
     expect(rods.flat().sort((a, b) => a - b)).toEqual(Array.from({ length: colors * sizes }, (_, i) => i));
-    rods.forEach((rod) => rod.forEach((r, i) => i > 0 && expect(ringSize(r, sizes)).toBeLessThan(ringSize(rod[i - 1], sizes))));
+    rods.forEach((rod) => rod.forEach((r, i) => i > 0 && expect(ringSize(r, sizes)).toBeLessThan(ringSize(rod[i - 1]!, sizes))));
     expect(rods.some((rod) => isTowerComplete(rod, sizes))).toBe(false);
     const end = solveTower(rods, sizes)!.reduce((state, [from, to]) => {
       expect(canStack(state, from, to, sizes)).toBe(true);

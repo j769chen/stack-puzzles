@@ -25,7 +25,7 @@ export function RodButtons({ labels, rowSizes, selected, canMoveTo, onPress }: P
       {rowSizes.map((size, r) => (
         <View key={r} style={styles.row}>
           {Array.from({ length: size }, (_, k) => {
-            const i = rowStarts[r] + k;
+            const i = rowStarts[r]! + k;
             return (
               <Pressable
                 key={i}

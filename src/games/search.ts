@@ -15,15 +15,15 @@ class MinHeap<T> {
     items.push(value);
     for (let i = items.length - 1; i > 0; ) {
       const parent = (i - 1) >> 1;
-      if (!this.before(items[i], items[parent])) break;
-      [items[i], items[parent]] = [items[parent], items[i]];
+      if (!this.before(items[i]!, items[parent]!)) break;
+      [items[i], items[parent]] = [items[parent]!, items[i]!];
       i = parent;
     }
   }
 
   pop(): T {
     const items = this.items;
-    const top = items[0];
+    const top = items[0]!;
     const last = items.pop()!;
     if (items.length === 0) return top;
     items[0] = last;
@@ -31,10 +31,10 @@ class MinHeap<T> {
       const left = 2 * i + 1;
       const right = left + 1;
       let first = i;
-      if (left < items.length && this.before(items[left], items[first])) first = left;
-      if (right < items.length && this.before(items[right], items[first])) first = right;
+      if (left < items.length && this.before(items[left]!, items[first]!)) first = left;
+      if (right < items.length && this.before(items[right]!, items[first]!)) first = right;
       if (first === i) return top;
-      [items[i], items[first]] = [items[first], items[i]];
+      [items[i], items[first]] = [items[first]!, items[i]!];
       i = first;
     }
   }
@@ -88,12 +88,12 @@ export function* searchRods(start: number[][], rules: SearchRules, nodeLimit: nu
     if (expanded % YIELD_EVERY === 0) yield;
     const cost = node.cost + 1;
     for (let f = 0; f < rods.length; f++) {
-      const src = rods[f];
+      const src = rods[f]!;
       if (src.length === 0 || isComplete(src)) continue;
       const ring = src.charCodeAt(src.length - 1);
       let usedEmpty = false;
       for (let t = 0; t < rods.length; t++) {
-        const dst = rods[t];
+        const dst = rods[t]!;
         if (t === f || dst.length >= capacity) continue;
         if (dst.length === 0) {
           if (usedEmpty || staysOffEmpty?.(src)) continue;

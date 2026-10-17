@@ -52,7 +52,7 @@ export const feedback = {
   },
   drop() {
     buzz(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid));
-    play(DROPS[drops++ % DROPS.length]);
+    play(DROPS[drops++ % DROPS.length]!);
   },
   complete() {
     buzz(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid));

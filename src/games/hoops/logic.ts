@@ -26,7 +26,7 @@ export function levelSpec(level: number): LevelSpec {
     }
     tierStart += tierLevels;
   }
-  return { capacity: TIERS[TIERS.length - 1].capacity, colors: MAX_COLORS };
+  return { capacity: TIERS[TIERS.length - 1]!.capacity, colors: MAX_COLORS };
 }
 
 export function topRun(rod: number[]): number {
@@ -42,15 +42,15 @@ function isUniform(rod: number[]): boolean {
 
 export function canPour(rods: Rods, from: number, to: number, cap: number): boolean {
   if (from === to) return false;
-  const src = rods[from];
-  const dst = rods[to];
+  const src = rods[from]!;
+  const dst = rods[to]!;
   if (src.length === 0 || dst.length >= cap) return false;
   return dst.length === 0 || dst.at(-1) === src.at(-1);
 }
 
 export function pour(rods: Rods, from: number, to: number): Rods {
   const next = rods.map((r) => [...r]);
-  next[to].push(next[from].pop()!);
+  next[to]!.push(next[from]!.pop()!);
   return next;
 }
 
@@ -91,10 +91,10 @@ function hoopsRules(start: Rods, cap: number): SearchRules {
         const run = bottomRun(rod);
         const color = rod.charCodeAt(0);
         bound += rod.length - run;
-        runSums[color] += run;
-        runMaxes[color] = Math.max(runMaxes[color], run);
+        runSums[color]! += run;
+        runMaxes[color] = Math.max(runMaxes[color]!, run);
       }
-      for (let color = 0; color < colors; color++) bound += runSums[color] - runMaxes[color];
+      for (let color = 0; color < colors; color++) bound += runSums[color]! - runMaxes[color]!;
       return bound;
     },
   };
@@ -134,7 +134,7 @@ const DAILY_SPECS: DailySpec[] = [
 ];
 
 export function dailySpec(key: number): DailySpec {
-  return DAILY_SPECS[dailyDate(key).getDay()];
+  return DAILY_SPECS[dailyDate(key).getDay()]!;
 }
 
 export function levelTask(level: number): Task<Deal> {
@@ -161,7 +161,7 @@ function dealTask({ colors, capacity: cap }: LevelSpec, seed: number, fits = (_l
     const rings = Array.from({ length: colors * cap }, (_, i) => Math.floor(i / cap));
     for (let i = rings.length - 1; i > 0; i--) {
       const j = Math.floor(rand() * (i + 1));
-      [rings[i], rings[j]] = [rings[j], rings[i]];
+      [rings[i], rings[j]] = [rings[j]!, rings[i]!];
     }
     const rods: Rods = Array.from({ length: colors }, (_, i) => rings.slice(i * cap, (i + 1) * cap));
     for (let i = 0; i < EMPTY_RODS; i++) rods.push([]);

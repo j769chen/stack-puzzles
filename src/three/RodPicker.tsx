@@ -72,6 +72,6 @@ export function usePicker(props: Omit<Props, 'onHover'>) {
   const [hovered, setHovered] = useState<number | null>(null);
   return {
     picker: <RodPicker {...props} onHover={setHovered} />,
-    spotOf: (rod: number, lifted: boolean) => props.rods[lifted && hovered !== null ? hovered : rod],
+    spotOf: (rod: number, lifted: boolean) => props.rods[lifted && hovered !== null ? hovered : rod]!,
   };
 }

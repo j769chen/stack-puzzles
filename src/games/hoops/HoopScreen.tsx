@@ -5,14 +5,14 @@ import { levelDeals } from './deals';
 import { type Deal, type Rods, canPour, isRodComplete, levelSpec, topRun } from './logic';
 import { RodSortGame, type ShellProps, type SortRules } from './RodSortGame';
 
-const colorName = (color: number) => theme.ringNames[color];
+const colorName = (color: number) => theme.ringNames[color]!;
 
 function rodLabel(rods: Rods, rod: number, capacity: number) {
-  const rings = rods[rod];
+  const rings = rods[rod]!;
   let contents = 'empty';
-  if (isRodComplete(rings, capacity)) contents = `complete, ${colorName(rings[0])}`;
+  if (isRodComplete(rings, capacity)) contents = `complete, ${colorName(rings[0]!)}`;
   else if (rings.length) {
-    const top = `${topRun(rings)} ${colorName(rings[rings.length - 1])}`;
+    const top = `${topRun(rings)} ${colorName(rings[rings.length - 1]!)}`;
     contents = `${rings.map(colorName).join(', ')} from the bottom, top ${top}`;
   }
   return `Rod ${rod + 1}, ${contents}`;

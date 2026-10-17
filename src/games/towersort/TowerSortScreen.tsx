@@ -16,9 +16,9 @@ function towerRules(sizes: number): SortRules {
     isRodComplete: (rod) => isTowerComplete(rod, sizes),
     ringName,
     rodLabel: (rods: Rods, rod: number) => {
-      const rings = rods[rod];
+      const rings = rods[rod]!;
       let contents = 'empty';
-      if (isTowerComplete(rings, sizes)) contents = `complete, ${colorName(rings[0])}`;
+      if (isTowerComplete(rings, sizes)) contents = `complete, ${colorName(rings[0]!)}`;
       else if (rings.length) contents = `${rings.map(ringName).join(', ')} from the bottom`;
       return `Rod ${rod + 1}, ${contents}`;
     },

@@ -25,7 +25,7 @@ async function renderPiece(x: number, y: number) {
       <mesh />
     </Piece>,
   );
-  const group = renderer.scene.children[0].instance as Group;
+  const group = renderer.scene.children[0]!.instance as Group;
   const moveTo = (nx: number, ny: number) =>
     renderer.update(
       <Piece x={nx} y={ny} z={0} liftY={LIFT}>
@@ -127,7 +127,7 @@ describe('Piece', () => {
       </>
     );
     const renderer = await create(piece(0), { frameloop: 'demand' });
-    const group = renderer.scene.children[0].instance as Group;
+    const group = renderer.scene.children[0]!.instance as Group;
 
     internal.frames = 0;
     await renderer.update(piece(2));
