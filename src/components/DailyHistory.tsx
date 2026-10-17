@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import { BackHandler, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { bestStreak, dailyLabel, dailyStreak, monthCells } from '../daily';
-import { dailyDate } from '../games/hoops/logic';
+import { bestStreak, dailyDate, dailyLabel, dailyStreak, monthCells } from '../daily';
 import { MAX_STARS, totalStars, useStars } from '../stars';
 import { themedStyles } from '../theme';
 import { Header } from './Header';

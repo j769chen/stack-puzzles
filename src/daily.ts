@@ -1,17 +1,27 @@
-import { dailyDate, dailyKey, previousDay } from './games/hoops/logic';
 import { type LevelStars, MAX_STARS } from './stars';
+
+export function dailyKey(date: Date): number {
+  return date.getFullYear() * 10000 + (date.getMonth() + 1) * 100 + date.getDate();
+}
+
+export function dailyDate(key: number): Date {
+  return new Date(Math.floor(key / 10000), (Math.floor(key / 100) % 100) - 1, key % 100);
+}
+
+function addDays(key: number, days: number): number {
+  const date = dailyDate(key);
+  date.setDate(date.getDate() + days);
+  return dailyKey(date);
+}
+
+export const previousDay = (key: number) => addDays(key, -1);
+const nextDay = (key: number) => addDays(key, 1);
 
 export function dailyStreak(solved: LevelStars, today: number): number {
   let day = today in solved ? today : previousDay(today);
   let streak = 0;
   for (; day in solved; day = previousDay(day)) streak++;
   return streak;
-}
-
-function nextDay(key: number): number {
-  const date = dailyDate(key);
-  date.setDate(date.getDate() + 1);
-  return dailyKey(date);
 }
 
 export function bestStreak(solved: LevelStars): number {

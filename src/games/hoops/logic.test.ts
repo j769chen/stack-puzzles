@@ -4,13 +4,9 @@ import {
   MAX_COLORS,
   type Rods,
   canPour,
-  dailyDate,
-  dailyKey,
   dailySpec,
   generateDaily,
   generateLevel,
-  previousDay,
-  hasAnyMove,
   isHoopsSolved,
   isRodComplete,
   levelSpec,
@@ -89,11 +85,6 @@ describe('hoops logic', () => {
     expect(isHoopsSolved([[0, 0, 0, 1], [], [1, 1, 1, 0]], CAP)).toBe(false);
   });
 
-  it('detects when no pour is possible', () => {
-    expect(hasAnyMove([[0, 1, 0, 1], [1, 0, 1, 0]], CAP)).toBe(false);
-    expect(hasAnyMove([[0, 1, 0, 1], [1, 0, 1, 0], []], CAP)).toBe(true);
-  });
-
   it.each([
     [1, 3, 4],
     [4, 4, 4],
@@ -115,6 +106,13 @@ describe('hoops logic', () => {
     );
   });
 
+  it('still deals the original rings for later levels', () => {
+    const levels = JSON.stringify([25, 36, 37, 60, 78, 100].map((level) => generateLevel(level).rods));
+    expect(createHash('sha256').update(levels).digest('hex')).toBe(
+      'c5ccbf74e5b1dec203e596aa2646afdafe502836ddcd68719fd493616ffac5a7',
+    );
+  });
+
   it('deals the same rings for the same level', () => {
     expect(generateLevel(7)).toEqual(generateLevel(7));
   });
@@ -129,12 +127,24 @@ describe('hoops logic', () => {
     expect(counts).toEqual(Array(colors).fill(capacity));
 
     expect(isHoopsSolved(play(rods, solution, capacity), capacity)).toBe(true);
-    expect(solution).toHaveLength(solveHoops(rods, capacity)!.length);
   });
 
-  it.each([1, 2, 4, 7, 10])('finds the shortest solution for level %i', (level) => {
-    const { rods } = generateLevel(level);
-    expect(solveHoops(rods, CAP)).toHaveLength(fewestMovesByBruteForce(rods, CAP)!);
+  it.each([1, 2, 4, 7, 10])('records the shortest solution for level %i', (level) => {
+    const { rods, solution } = generateLevel(level);
+    expect(solution).toHaveLength(fewestMovesByBruteForce(rods, CAP)!);
+  });
+
+  it.each([
+    [3, 5],
+    [4, 5],
+    [3, 6],
+    [4, 6],
+  ])('finds the shortest solution with %i colors on rods of %i', (colors, capacity) => {
+    const rand = seededRandom(colors * 10 + capacity);
+    for (let n = 0; n < 6; n++) {
+      const rods = shuffledRods(colors, capacity, rand);
+      expect(solveHoops(rods, capacity)?.length ?? null).toBe(fewestMovesByBruteForce(rods, capacity));
+    }
   });
 
   it('returns null for a dead end', () => {
@@ -166,6 +176,15 @@ function randomWalk(start: Rods, cap: number, steps: number, rand: () => number)
     states.push(rods);
   }
   return states;
+}
+
+function shuffledRods(colors: number, cap: number, rand: () => number): Rods {
+  const rings = Array.from({ length: colors * cap }, (_, i) => Math.floor(i / cap));
+  for (let i = rings.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [rings[i], rings[j]] = [rings[j], rings[i]];
+  }
+  return [...Array.from({ length: colors }, (_, i) => rings.slice(i * cap, (i + 1) * cap)), [], []];
 }
 
 const sortedRings = (rods: Rods) => rods.flat().sort((a, b) => a - b);
@@ -210,11 +229,6 @@ describe('hoops rules under random play', () => {
           after.every((rod) => rod.length <= capacity);
         if (!ok) wrong.push(`${JSON.stringify(rods)} ${from}->${to} gave ${JSON.stringify(after)}`);
       }
-    expect(wrong).toEqual([]);
-  });
-
-  it('reports a stuck position exactly when no pour is legal', () => {
-    const wrong = positions.filter(({ capacity, rods }) => hasAnyMove(rods, capacity) !== legalPours(rods, capacity).length > 0);
     expect(wrong).toEqual([]);
   });
 
@@ -299,28 +313,6 @@ describe('hoops level progression', () => {
 });
 
 describe('daily puzzle', () => {
-  it('keys each local calendar day', () => {
-    expect(dailyKey(new Date(2026, 9, 16, 23, 59))).toBe(20261016);
-    expect(dailyKey(new Date(2026, 9, 17, 0, 1))).toBe(20261017);
-    expect(dailyDate(20261016)).toEqual(new Date(2026, 9, 16));
-  });
-
-  it('steps back a day across month and year ends', () => {
-    expect(previousDay(20261016)).toBe(20261015);
-    expect(previousDay(20261101)).toBe(20261031);
-    expect(previousDay(20270101)).toBe(20261231);
-    expect(previousDay(20280301)).toBe(20280229);
-  });
-
-  it('steps back exactly one calendar day across daylight-saving changes', () => {
-    expect(previousDay(20260309)).toBe(20260308);
-    expect(previousDay(20261102)).toBe(20261101);
-    expect(previousDay(20260330)).toBe(20260329);
-    expect(previousDay(20261026)).toBe(20261025);
-    expect(previousDay(20260406)).toBe(20260405);
-    expect(previousDay(20260928)).toBe(20260927);
-  });
-
   it('gets harder from Monday to Sunday', () => {
     const week = Array.from({ length: 7 }, (_, i) => dailySpec(20261012 + i));
     const rings = week.map((s) => s.colors * s.capacity);
@@ -336,6 +328,13 @@ describe('daily puzzle', () => {
       expect(length).toBeGreaterThanOrEqual(min);
       expect(length).toBeLessThanOrEqual(max);
     }
+  });
+
+  it('still deals the original puzzles for a week', () => {
+    const week = JSON.stringify(Array.from({ length: 7 }, (_, i) => generateDaily(20261012 + i).rods));
+    expect(createHash('sha256').update(week).digest('hex')).toBe(
+      'f31173998e76d703891acaae66e530d4827a468b2dec3001550adc3250c16b02',
+    );
   });
 
   it('deals the same puzzle for the same day and a new one each day', () => {

@@ -1,3 +1,4 @@
+import { createHash } from 'crypto';
 import { pour } from '../hoops/logic';
 import {
   canStack,
@@ -45,6 +46,13 @@ describe('tower sort levels', () => {
     expect(towerSpec(13)).toEqual({ colors: 4, sizes: 4 });
     expect(towerSpec(21)).toEqual({ colors: 5, sizes: 4 });
     expect(towerSpec(500)).toEqual({ colors: 5, sizes: 4 });
+  });
+
+  it('still deals the original rings for levels 1 to 30', () => {
+    const levels = JSON.stringify(Array.from({ length: 30 }, (_, i) => generateTower(i + 1)));
+    expect(createHash('sha256').update(levels).digest('hex')).toBe(
+      '282f1af7468dc6d343ba3627ae9451579075c09a25247a9c2f68999dfe009841',
+    );
   });
 
   it('deals the same rings for the same level', () => {

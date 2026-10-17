@@ -1,4 +1,4 @@
-import { runInSlices, runTask } from './task';
+import { firstFound, runInSlices, runTask } from './task';
 
 function* steps(log: string[]) {
   log.push('first');
@@ -27,5 +27,28 @@ describe('tasks', () => {
     setTimeout(() => log.push('timer'), 0);
     await expect(runInSlices(steps(log), 60_000)).resolves.toBe('done');
     expect(log).toEqual(['first', 'second']);
+  });
+
+  it('returns the first attempt that finds something', () => {
+    const results = [null, null, 'third', 'fourth'];
+    let tries = 0;
+    const found = runTask(
+      firstFound(function* () {
+        yield;
+        return results[tries++];
+      }, 10),
+    );
+    expect(found).toBe('third');
+    expect(tries).toBe(3);
+  });
+
+  it('gives up after the allowed number of attempts', () => {
+    let tries = 0;
+    const search = firstFound(function* () {
+      tries++;
+      return null;
+    }, 5);
+    expect(() => runTask(search)).toThrow('Nothing found in 5 tries');
+    expect(tries).toBe(5);
   });
 });

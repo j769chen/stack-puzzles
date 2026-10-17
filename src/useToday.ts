@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AppState } from 'react-native';
-import { dailyKey } from './games/hoops/logic';
+import { dailyKey } from './daily';
 
 export function useToday(): number {
   const [today, setToday] = useState(() => dailyKey(new Date()));
