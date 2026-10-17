@@ -3,7 +3,7 @@ import { Pressable, Text } from 'react-native';
 
 type Props = {
   rods: number[][];
-  selected?: number | null;
+  selected: number | null;
   onPress: (rod: number) => void;
   onDrop: (rod: number) => void;
 };

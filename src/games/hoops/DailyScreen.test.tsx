@@ -98,7 +98,7 @@ describe('DailyScreen', () => {
     await act(() => (listener as (state: AppStateStatus) => void)('active'));
     expect(await screen.findByText(daily.dailyLabel(TODAY + 1))).toBeOnTheScreen();
     expect(logic.dailyTask).toHaveBeenLastCalledWith(TODAY + 1);
-    tomorrow.forEach((rod, i) => expect(screen.getByTestId(`rod-${i}-pieces`)).toHaveTextContent(rod.join(',')));
+    tomorrow.forEach((rod, i) => expect(rodText(i)).toBe(rod.join(',')));
   });
 
   it("records today's stars and closes with Done", async () => {
