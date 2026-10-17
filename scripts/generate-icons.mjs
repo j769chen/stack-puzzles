@@ -25,7 +25,7 @@ function render(name, { box, background }) {
   const fill = background ? `<rect width="${SIZE}" height="${SIZE}" fill="${background}"/>` : '';
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${SIZE}" height="${SIZE}">${fill}${stack(box)}</svg>`;
   const flatten = background ? ['-alpha', 'off'] : [];
-  execFileSync('magick', ['-background', 'none', 'svg:-', ...flatten, '-depth', '8', join(OUT, name)], { input: svg });
+  execFileSync('magick', ['-background', 'none', 'svg:-', ...flatten, '-depth', '8', '-define', 'png:exclude-chunks=date,time', join(OUT, name)], { input: svg });
 }
 
 render('icon.png', { box: 720, background: BG });

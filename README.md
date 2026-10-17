@@ -39,7 +39,7 @@ npm run typecheck       # tsc
 npm run lint            # expo lint
 npm test                # jest
 npm run test:coverage   # jest with coverage thresholds
-npm run check           # typecheck, lint and tests
+npm run check           # typecheck, lint and tests with coverage, as CI runs them
 ```
 
 Sound effects in `assets/sounds` are synthesized by `node scripts/generate-sounds.mjs`; tweak the tones there and rerun it.
@@ -75,5 +75,5 @@ The first Android upload has to be done by hand in the Play Console. After that,
 
 GitHub Actions runs on every pull request and on pushes to `main`:
 
-- Typecheck, lint, and tests with coverage, which fail under the thresholds in `package.json`.
+- Typecheck, lint (any warning fails), and tests with coverage, which fail under the thresholds in `jest.config.js`.
 - `expo-doctor` plus a production `expo export` for iOS and Android, which catches bundling errors that Jest can't.
