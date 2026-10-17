@@ -23,7 +23,7 @@ function parse(stored: string | null): AllStars {
   let saved: Record<string, unknown> = {};
   try {
     const value: unknown = JSON.parse(stored ?? '{}');
-    if (typeof value === 'object' && value !== null && !Array.isArray(value)) saved = value as Record<string, unknown>;
+    if (typeof value === 'object' && value !== null) saved = value as Record<string, unknown>;
   } catch {}
   return { ...saved, ...eachGame((game) => parseLevels(saved[game])) };
 }

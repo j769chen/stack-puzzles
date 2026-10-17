@@ -12,6 +12,8 @@ export function usePersistentNumber(key: string, initial: number) {
 
   useEffect(() => {
     let active = true;
+    const finish = (value: number) =>
+      setState((s) => (s.key === key && s.changed ? { ...s, loaded: true } : { key, value, loaded: true, changed: false }));
     AsyncStorage.getItem(key).then(
       (stored) => {
         if (!active) return;
@@ -20,12 +22,9 @@ export function usePersistentNumber(key: string, initial: number) {
         unsaved.current = null;
         if (early?.key === key) write(key, early.value);
         const n = Number(stored);
-        const value = stored !== null && Number.isInteger(n) && n >= 1 ? n : initial;
-        setState((s) => (s.key === key && s.changed ? { ...s, loaded: true } : { key, value, loaded: true, changed: false }));
+        finish(stored !== null && Number.isInteger(n) && n >= 1 ? n : initial);
       },
-      () => {
-        if (active) setState((s) => (s.key === key ? { ...s, loaded: true } : { key, value: initial, loaded: true, changed: false }));
-      },
+      () => active && finish(initial),
     );
     return () => {
       active = false;
