@@ -16,15 +16,21 @@ let drops = 0;
 type Sound = keyof typeof sounds;
 
 const players = new Map<Sound, AudioPlayer>();
-let preparing: Promise<void> | null = null;
+let audioMode: Promise<void> | null = null;
+
+function createMissingPlayers() {
+  for (const sound of Object.keys(sounds) as Sound[]) {
+    try {
+      if (!players.has(sound)) players.set(sound, createAudioPlayer(sounds[sound]));
+    } catch {}
+  }
+}
 
 function prepare(): Promise<void> {
-  preparing ??= setAudioModeAsync({ playsInSilentMode: false, interruptionMode: 'mixWithOthers' })
-    .then(() => {
-      for (const sound of Object.keys(sounds) as Sound[]) players.set(sound, createAudioPlayer(sounds[sound]));
-    })
-    .catch(() => {});
-  return preparing;
+  audioMode ??= setAudioModeAsync({ playsInSilentMode: false, interruptionMode: 'mixWithOthers' });
+  return audioMode.then(createMissingPlayers, () => {
+    audioMode = null;
+  });
 }
 
 function play(sound: Sound) {
