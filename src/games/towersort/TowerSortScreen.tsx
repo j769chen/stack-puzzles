@@ -1,12 +1,8 @@
-import { useCallback, useMemo, useState } from 'react';
-import { LevelSelect } from '../../components/LevelSelect';
-import { LoadingScreen } from '../../components/LoadingScreen';
-import { WithOverlay } from '../../components/WithOverlay';
 import { theme } from '../../theme';
 import type { Rods } from '../hoops/logic';
-import { RodSortGame, type SortRules } from '../hoops/RodSortGame';
-import { useProgress } from '../useProgress';
-import { loadTowerLevel, useTowerLevel } from './deals';
+import type { SortRules } from '../hoops/RodSortGame';
+import { LevelSortScreen } from '../LevelSortScreen';
+import { towerDeals } from './deals';
 import { canStack, isTowerComplete, ringColor, ringSize, towerSpec } from './logic';
 
 function towerRules(sizes: number): SortRules {
@@ -29,41 +25,11 @@ function towerRules(sizes: number): SortRules {
   };
 }
 
+const levelRules = (level: number) => towerRules(towerSpec(level).sizes);
+const asRods = (rods: Rods) => rods;
+
 export function TowerSortScreen({ onBack }: { onBack: () => void }) {
-  const { level, unlocked, goTo, complete, loaded } = useProgress('towersort');
-  const [picking, setPicking] = useState(false);
-  const start = useTowerLevel(loaded ? level : null);
-  const rules = useMemo(() => towerRules(towerSpec(level).sizes), [level]);
-  const prepareNext = useCallback(() => loadTowerLevel(level + 1), [level]);
-  if (!start) return <LoadingScreen title="Tower Sort" onBack={onBack} />;
-  const levels = picking && (
-    <LevelSelect
-      title="Tower Sort"
-      count={unlocked}
-      unlocked={unlocked}
-      current={level}
-      onPick={(picked) => {
-        goTo(picked);
-        setPicking(false);
-      }}
-      onBack={() => setPicking(false)}
-    />
-  );
   return (
-    <WithOverlay overlay={levels}>
-      <RodSortGame
-        key={level}
-        start={start}
-        rules={rules}
-        title="Tower Sort"
-        label={`Level ${level}`}
-        onBack={onBack}
-        onLevels={() => setPicking(true)}
-        nextLabel="Next level"
-        onNext={() => goTo(level + 1)}
-        onWin={() => complete(level + 1)}
-        onWinShown={prepareNext}
-      />
-    </WithOverlay>
+    <LevelSortScreen game="towersort" title="Tower Sort" deals={towerDeals} rules={levelRules} start={asRods} onBack={onBack} />
   );
 }

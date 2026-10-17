@@ -69,6 +69,17 @@ describe('HoopScreen', () => {
     logic.generateLevel(1).rods.forEach((rod, i) => expect(rodText(i)).toBe(rod.join(',')));
   });
 
+  it('keeps only the current and next levels in storage', async () => {
+    await AsyncStorage.multiSet([1, 2, 3, 5, 6].map((level) => [`hoops.deal.${level}`, 'old']));
+    await AsyncStorage.setItem('hoops.level', '4');
+    await renderAsync(<HoopScreen onBack={jest.fn()} />);
+    await screen.findByText('Level 4');
+    await waitFor(async () => {
+      const deals = (await AsyncStorage.getAllKeys()).filter((key) => key.startsWith('hoops.deal.'));
+      expect(deals.sort()).toEqual(['hoops.deal.4', 'hoops.deal.5']);
+    });
+  });
+
   it('keeps Back working while the level is being dealt', async () => {
     const deal = logic.generateLevel(1);
     let dealt = false;
@@ -276,8 +287,13 @@ describe('HoopScreen', () => {
 
       const generate = jest.spyOn(logic, 'levelTask');
       generate.mockClear();
+      const stored = await AsyncStorage.getItem('hoops.deal.2');
+      let answer: () => void = () => {};
+      jest.mocked(AsyncStorage.getItem).mockImplementationOnce(() => new Promise((resolve) => (answer = () => resolve(stored))));
       await fireEvent.press(screen.getByText('Next level'));
-      expect(await screen.findByText('Level 2')).toBeOnTheScreen();
+      expect(screen.getByText('Level 2')).toBeOnTheScreen();
+      expect(screen.queryByLabelText('Loading')).toBeNull();
+      await act(async () => answer());
       expect(generate).not.toHaveBeenCalled();
       logic.generateLevel(2).rods.forEach((rod, i) => expect(rodText(i)).toBe(rod.join(',')));
       await waitFor(async () => expect(await AsyncStorage.getItem('hoops.deal.1')).toBeNull());
